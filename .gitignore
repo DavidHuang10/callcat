@@ -1,0 +1,79 @@
+# ====================
+# Node.js / Frontend
+# ====================
+node_modules/
+.next/
+out/
+dist/
+build/
+.cache/
+.turbo/
+.vercel/
+
+# ====================
+# Environment Files
+# ====================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ====================
+# Java / Spring Boot
+# ====================
+*.class
+*.jar
+*.war
+target/
+.gradle/
+build/
+*.log
+
+# ====================
+# IntelliJ IDEA
+# ====================
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# ====================
+# Database Files
+# ====================
+*.db
+*.sqlite
+*.sqlite3
+*.h2.db
+
+# ====================
+# OS Files
+# ====================
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+*~
+
+# ====================
+# AI Tools
+# ====================
+.claude/
+.cursor/
+claude-*.json
+
+# ====================
+# Logs & Temp
+# ====================
+logs/
+tmp/
+temp/
+*.log
+
+# ====================
+# Project Specific
+# ====================
+callcat-data/
+call-recordings/
+transcript-cache/
