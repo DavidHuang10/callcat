@@ -62,7 +62,7 @@ Thumbs.db
 .claude/
 .cursor/
 claude-*.json
-
+CLAUDE.md
 # ====================
 # Logs & Temp
 # ====================
