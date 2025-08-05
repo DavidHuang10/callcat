@@ -13,6 +13,9 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+// Integration tests for JWT token service functionality
+// Tests JWT token generation, parsing, validation, and security
+// Uses Spring Boot context to properly initialize JWT service with test configuration
 @SpringBootTest
 @TestPropertySource(properties = {
         "jwt.secret=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970",
@@ -53,6 +56,8 @@ class JwtServiceTest {
         return user;
     }
 
+    // Tests JWT token generation using UserDetails object
+    // Verifies that tokens are properly created with user information embedded
     @Test
     void generateToken_WithUserDetails_ShouldReturnValidToken() {
         // Act
@@ -65,6 +70,8 @@ class JwtServiceTest {
         assertEquals("test@example.com", jwtService.extractUsername(token));
     }
 
+    // Tests JWT token generation with custom claims (userId, email, fullName)
+    // Verifies that custom user data is properly embedded in token payload
     @Test
     void generateToken_WithCustomClaims_ShouldReturnValidToken() {
         // Arrange
@@ -82,6 +89,8 @@ class JwtServiceTest {
         assertEquals(fullName, jwtService.extractFullName(token));
     }
 
+    // Tests JWT token generation with additional custom claims
+    // Verifies that extra metadata (role, department) can be added to tokens
     @Test
     void generateToken_WithExtraClaims_ShouldReturnValidToken() {
         // Arrange
@@ -97,6 +106,8 @@ class JwtServiceTest {
         assertEquals("test@example.com", jwtService.extractUsername(token));
     }
 
+    // Tests extraction of username (email) from JWT token
+    // Verifies that the subject claim can be properly parsed from tokens
     @Test
     void extractUsername_WithValidToken_ShouldReturnUsername() {
         // Arrange
@@ -109,6 +120,8 @@ class JwtServiceTest {
         assertEquals("test@example.com", username);
     }
 
+    // Tests extraction of user ID from JWT token custom claims
+    // Verifies that custom userId claim is properly stored and retrievable
     @Test
     void extractUserId_WithValidToken_ShouldReturnUserId() {
         // Arrange
@@ -121,6 +134,8 @@ class JwtServiceTest {
         assertEquals(1L, userId);
     }
 
+    // Tests extraction of full name from JWT token custom claims
+    // Verifies that user display name is properly stored and retrievable
     @Test
     void extractFullName_WithValidToken_ShouldReturnFullName() {
         // Arrange
@@ -133,6 +148,8 @@ class JwtServiceTest {
         assertEquals("John Doe", fullName);
     }
 
+    // Tests JWT token validation against specific user
+    // Verifies that tokens are valid for the user they were issued to
     @Test
     void isTokenValid_WithValidTokenAndUser_ShouldReturnTrue() {
         // Arrange
@@ -145,6 +162,8 @@ class JwtServiceTest {
         assertTrue(isValid);
     }
 
+    // Tests JWT token signature and expiration validation
+    // Verifies that tokens are structurally valid and not expired
     @Test
     void isTokenValid_WithValidTokenOnly_ShouldReturnTrue() {
         // Arrange
@@ -157,6 +176,8 @@ class JwtServiceTest {
         assertTrue(isValid);
     }
 
+    // Tests JWT validation with malformed or corrupted tokens
+    // Ensures that invalid token formats are properly rejected
     @Test
     void isTokenValid_WithInvalidToken_ShouldReturnFalse() {
         // Arrange
@@ -169,6 +190,8 @@ class JwtServiceTest {
         assertFalse(isValid);
     }
 
+    // Tests JWT token validation against wrong user
+    // Ensures that tokens cannot be used by users they weren't issued to
     @Test
     void isTokenValid_WithWrongUser_ShouldReturnFalse() {
         // Arrange
@@ -188,6 +211,8 @@ class JwtServiceTest {
         assertFalse(isValid);
     }
 
+    // Tests JWT validation with null token input
+    // Ensures that null safety is properly handled in token validation
     @Test
     void isTokenValid_WithNullToken_ShouldReturnFalse() {
         // Act
@@ -197,6 +222,8 @@ class JwtServiceTest {
         assertFalse(isValid);
     }
 
+    // Tests JWT validation with empty string token
+    // Ensures that empty tokens are properly rejected
     @Test
     void isTokenValid_WithEmptyToken_ShouldReturnFalse() {
         // Act
@@ -206,6 +233,8 @@ class JwtServiceTest {
         assertFalse(isValid);
     }
 
+    // Tests generic claim extraction from JWT tokens
+    // Verifies that any claim can be extracted using custom claim resolver
     @Test
     void extractClaim_WithValidToken_ShouldReturnClaim() {
         // Arrange
@@ -218,6 +247,8 @@ class JwtServiceTest {
         assertEquals("test@example.com", subject);
     }
 
+    // Tests error handling for claim extraction from invalid tokens
+    // Ensures that malformed tokens throw proper JWT exceptions
     @Test
     void extractClaim_WithInvalidToken_ShouldThrowException() {
         // Arrange
@@ -229,6 +260,8 @@ class JwtServiceTest {
         });
     }
 
+    // Tests JWT expiration time configuration
+    // Verifies that the configured token lifetime is properly returned
     @Test
     void getExpirationTime_ShouldReturnConfiguredValue() {
         // Act
@@ -238,6 +271,8 @@ class JwtServiceTest {
         assertEquals(86400000L, expirationTime);
     }
 
+    // Tests that newly generated tokens are immediately valid
+    // Ensures that tokens don't expire instantly due to timing issues
     @Test
     void token_ShouldNotBeExpiredImmediately() {
         // Arrange

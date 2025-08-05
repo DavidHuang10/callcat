@@ -4,6 +4,7 @@ import com.callcat.backend.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Repository
@@ -14,4 +15,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Boolean existsByEmail(String email);
     
     Optional<User> findByEmailAndIsActive(String email, Boolean isActive);
+    
+    Optional<User> findByVerificationToken(String verificationToken);
+    
+    Optional<User> findByPasswordResetToken(String passwordResetToken);
+    
+    Optional<User> findByEmailAndEmailVerified(String email, Boolean emailVerified);
 }

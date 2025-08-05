@@ -49,6 +49,21 @@ public class User implements UserDetails {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
     
+    @Column(name = "email_verified", nullable = false)
+    private Boolean emailVerified = false;
+    
+    @Column(name = "verification_token")
+    private String verificationToken;
+    
+    @Column(name = "verification_expires")
+    private LocalDateTime verificationExpires;
+    
+    @Column(name = "password_reset_token")
+    private String passwordResetToken;
+    
+    @Column(name = "reset_token_expires")
+    private LocalDateTime resetTokenExpires;
+    
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -142,6 +157,46 @@ public class User implements UserDetails {
     
     public String getFullName() {
         return firstName + " " + lastName;
+    }
+    
+    public Boolean getEmailVerified() {
+        return emailVerified;
+    }
+    
+    public void setEmailVerified(Boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
+    
+    public String getVerificationToken() {
+        return verificationToken;
+    }
+    
+    public void setVerificationToken(String verificationToken) {
+        this.verificationToken = verificationToken;
+    }
+    
+    public LocalDateTime getVerificationExpires() {
+        return verificationExpires;
+    }
+    
+    public void setVerificationExpires(LocalDateTime verificationExpires) {
+        this.verificationExpires = verificationExpires;
+    }
+    
+    public String getPasswordResetToken() {
+        return passwordResetToken;
+    }
+    
+    public void setPasswordResetToken(String passwordResetToken) {
+        this.passwordResetToken = passwordResetToken;
+    }
+    
+    public LocalDateTime getResetTokenExpires() {
+        return resetTokenExpires;
+    }
+    
+    public void setResetTokenExpires(LocalDateTime resetTokenExpires) {
+        this.resetTokenExpires = resetTokenExpires;
     }
     
     // UserDetails interface methods

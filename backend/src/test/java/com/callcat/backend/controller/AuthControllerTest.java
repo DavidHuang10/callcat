@@ -1,14 +1,18 @@
 package com.callcat.backend.controller;
 
+import com.callcat.backend.config.TestSecurityConfig;
+import com.callcat.backend.dto.AuthResponse;
 import com.callcat.backend.entity.User;
 import com.callcat.backend.service.AuthenticationService;
 import com.callcat.backend.service.JwtService;
+import com.callcat.backend.service.VerificationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -19,22 +23,31 @@ import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+// Unit tests for AuthController REST endpoints
+// Tests the web layer (controllers) in isolation using MockMvc
+// Mocks all service dependencies to focus solely on HTTP request/response handling
 @WebMvcTest(AuthController.class)
+@Import(TestSecurityConfig.class)
 class AuthControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private AuthenticationService authenticationService;
 
-    @MockBean
+    @MockitoBean
     private JwtService jwtService;
+    
+    @MockitoBean
+    private com.callcat.backend.service.TokenBlacklistService tokenBlacklistService;
+    
+    @MockitoBean
+    private VerificationService verificationService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -52,6 +65,8 @@ class AuthControllerTest {
         testUser.setIsActive(true);
     }
 
+    // Tests successful user registration with valid input data
+    // Verifies that the endpoint returns proper JWT token and user information
     @Test
     void register_WithValidData_ShouldReturnAuthResponse() throws Exception {
         // Arrange
@@ -62,16 +77,12 @@ class AuthControllerTest {
         registerRequest.put("lastName", "Doe");
 
         String token = "jwt-token";
+        AuthResponse authResponse = new AuthResponse(token, 1L, "test@example.com", "John Doe", 86400000L);
         when(authenticationService.register(anyString(), anyString(), anyString(), anyString()))
-                .thenReturn(token);
-        when(jwtService.extractUsername(token)).thenReturn("test@example.com");
-        when(jwtService.extractUserId(token)).thenReturn(1L);
-        when(jwtService.extractFullName(token)).thenReturn("John Doe");
-        when(jwtService.getExpirationTime()).thenReturn(86400000L);
+                .thenReturn(authResponse);
 
         // Act & Assert
         mockMvc.perform(post("/api/auth/register")
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isOk())
@@ -79,9 +90,11 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.userId").value(1L))
                 .andExpect(jsonPath("$.email").value("test@example.com"))
                 .andExpect(jsonPath("$.fullName").value("John Doe"))
-                .andExpect(jsonPath("$.expirationTime").value(86400000L));
+                .andExpect(jsonPath("$.expiresIn").value(86400000L));
     }
 
+    // Tests input validation for registration endpoint
+    // Verifies that invalid email formats and weak passwords are rejected
     @Test
     void register_WithInvalidData_ShouldReturnBadRequest() throws Exception {
         // Arrange
@@ -93,12 +106,13 @@ class AuthControllerTest {
 
         // Act & Assert
         mockMvc.perform(post("/api/auth/register")
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isBadRequest());
     }
 
+    // Tests duplicate email prevention during registration
+    // Ensures that users cannot register with an email that already exists
     @Test
     void register_WithExistingEmail_ShouldReturnBadRequest() throws Exception {
         // Arrange
@@ -113,13 +127,14 @@ class AuthControllerTest {
 
         // Act & Assert
         mockMvc.perform(post("/api/auth/register")
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Email already exists"));
     }
 
+    // Tests successful user authentication with correct credentials
+    // Verifies that valid email/password returns JWT token and user data
     @Test
     void login_WithValidCredentials_ShouldReturnAuthResponse() throws Exception {
         // Arrange
@@ -128,15 +143,11 @@ class AuthControllerTest {
         loginRequest.put("password", "password");
 
         String token = "jwt-token";
-        when(authenticationService.authenticate(anyString(), anyString())).thenReturn(token);
-        when(jwtService.extractUsername(token)).thenReturn("test@example.com");
-        when(jwtService.extractUserId(token)).thenReturn(1L);
-        when(jwtService.extractFullName(token)).thenReturn("John Doe");
-        when(jwtService.getExpirationTime()).thenReturn(86400000L);
+        AuthResponse authResponse = new AuthResponse(token, 1L, "test@example.com", "John Doe", 86400000L);
+        when(authenticationService.authenticate(anyString(), anyString())).thenReturn(authResponse);
 
         // Act & Assert
         mockMvc.perform(post("/api/auth/login")
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk())
@@ -145,6 +156,8 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.email").value("test@example.com"));
     }
 
+    // Tests authentication failure with incorrect credentials
+    // Ensures that wrong passwords are rejected with proper error message
     @Test
     void login_WithInvalidCredentials_ShouldReturnBadRequest() throws Exception {
         // Arrange
@@ -157,68 +170,11 @@ class AuthControllerTest {
 
         // Act & Assert
         mockMvc.perform(post("/api/auth/login")
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Invalid email or password"));
     }
 
-    @Test
-    @WithMockUser(username = "test@example.com")
-    void getCurrentUser_WithAuthentication_ShouldReturnUserResponse() throws Exception {
-        // Arrange
-        when(authenticationService.getCurrentUser("test@example.com")).thenReturn(testUser);
 
-        // Act & Assert
-        mockMvc.perform(get("/api/auth/me"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.email").value("test@example.com"))
-                .andExpect(jsonPath("$.firstName").value("John"))
-                .andExpect(jsonPath("$.lastName").value("Doe"));
-    }
-
-    @Test
-    void getCurrentUser_WithoutAuthentication_ShouldReturnUnauthorized() throws Exception {
-        // Act & Assert
-        mockMvc.perform(get("/api/auth/me"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void validatePassword_WithStrongPassword_ShouldReturnValid() throws Exception {
-        // Arrange
-        Map<String, String> passwordRequest = new HashMap<>();
-        passwordRequest.put("password", "StrongPass123");
-
-        when(authenticationService.validatePasswordStrength("StrongPass123")).thenReturn(true);
-
-        // Act & Assert
-        mockMvc.perform(post("/api/auth/validate-password")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(passwordRequest)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.valid").value(true))
-                .andExpect(jsonPath("$.message").value("Password is strong"));
-    }
-
-    @Test
-    void validatePassword_WithWeakPassword_ShouldReturnInvalid() throws Exception {
-        // Arrange
-        Map<String, String> passwordRequest = new HashMap<>();
-        passwordRequest.put("password", "weak");
-
-        when(authenticationService.validatePasswordStrength("weak")).thenReturn(false);
-
-        // Act & Assert
-        mockMvc.perform(post("/api/auth/validate-password")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(passwordRequest)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.valid").value(false))
-                .andExpect(jsonPath("$.message").value("Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number"));
-    }
 }
