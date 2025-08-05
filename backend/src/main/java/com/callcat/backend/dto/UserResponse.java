@@ -13,6 +13,14 @@ public class UserResponse {
     
     public UserResponse() {}
     
+    public UserResponse(Long id, String email, String firstName, String lastName) {
+        this.id = id;
+        this.email = email;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.fullName = firstName + " " + lastName;
+    }
+    
     public UserResponse(Long id, String email, String firstName, String lastName, LocalDateTime createdAt) {
         this.id = id;
         this.email = email;

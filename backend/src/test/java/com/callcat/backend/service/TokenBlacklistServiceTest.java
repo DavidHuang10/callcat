@@ -1,23 +1,32 @@
 package com.callcat.backend.service;
 
+import com.callcat.backend.repository.BlacklistedTokenRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 class TokenBlacklistServiceTest {
+    
+    @Mock
+    private BlacklistedTokenRepository blacklistedTokenRepository;
     
     private TokenBlacklistService tokenBlacklistService;
     
     @BeforeEach
     void setUp() {
-        tokenBlacklistService = new TokenBlacklistService();
+        tokenBlacklistService = new TokenBlacklistService(blacklistedTokenRepository);
     }
     
     @Test
-    void blacklistToken_ShouldAddTokenToBlacklist() {
+    void blacklistToken_ShouldCallRepositorySave() {
         // Arrange
         String token = "test.jwt.token";
         
@@ -25,64 +34,34 @@ class TokenBlacklistServiceTest {
         tokenBlacklistService.blacklistToken(token);
         
         // Assert
-        assertTrue(tokenBlacklistService.isTokenBlacklisted(token));
+        verify(blacklistedTokenRepository, times(1)).save(any());
     }
     
     @Test
     void isTokenBlacklisted_WithNonBlacklistedToken_ShouldReturnFalse() {
         // Arrange
         String token = "test.jwt.token";
+        when(blacklistedTokenRepository.exists(anyString())).thenReturn(false);
         
         // Act
         boolean isBlacklisted = tokenBlacklistService.isTokenBlacklisted(token);
         
         // Assert
         assertFalse(isBlacklisted);
+        verify(blacklistedTokenRepository, times(1)).exists(token);
     }
     
     @Test
     void isTokenBlacklisted_WithBlacklistedToken_ShouldReturnTrue() {
         // Arrange
         String token = "test.jwt.token";
-        tokenBlacklistService.blacklistToken(token);
+        when(blacklistedTokenRepository.exists(anyString())).thenReturn(true);
         
         // Act
         boolean isBlacklisted = tokenBlacklistService.isTokenBlacklisted(token);
         
         // Assert
         assertTrue(isBlacklisted);
-    }
-    
-    @Test
-    void removeFromBlacklist_ShouldRemoveToken() {
-        // Arrange
-        String token = "test.jwt.token";
-        tokenBlacklistService.blacklistToken(token);
-        assertTrue(tokenBlacklistService.isTokenBlacklisted(token));
-        
-        // Act
-        tokenBlacklistService.removeFromBlacklist(token);
-        
-        // Assert
-        assertFalse(tokenBlacklistService.isTokenBlacklisted(token));
-    }
-    
-    @Test
-    void getBlacklistSize_ShouldReturnCorrectSize() {
-        // Arrange
-        String token1 = "test.jwt.token.1";
-        String token2 = "test.jwt.token.2";
-        
-        // Act
-        int initialSize = tokenBlacklistService.getBlacklistSize();
-        tokenBlacklistService.blacklistToken(token1);
-        int sizeAfterOne = tokenBlacklistService.getBlacklistSize();
-        tokenBlacklistService.blacklistToken(token2);
-        int sizeAfterTwo = tokenBlacklistService.getBlacklistSize();
-        
-        // Assert
-        assertEquals(0, initialSize);
-        assertEquals(1, sizeAfterOne);
-        assertEquals(2, sizeAfterTwo);
+        verify(blacklistedTokenRepository, times(1)).exists(token);
     }
 } 

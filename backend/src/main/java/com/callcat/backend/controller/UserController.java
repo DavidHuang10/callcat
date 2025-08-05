@@ -1,8 +1,8 @@
 package com.callcat.backend.controller;
 
-import com.callcat.backend.dto.UserResponse;
-import com.callcat.backend.entity.User;
-import com.callcat.backend.service.AuthenticationService;
+import com.callcat.backend.dto.*;
+import com.callcat.backend.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -11,47 +11,71 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/user")
 public class UserController {
     
-    private final AuthenticationService authenticationService;
+    private final UserService userService;
     
-    public UserController(AuthenticationService authenticationService) {
-        this.authenticationService = authenticationService;
+    public UserController(UserService userService) {
+        this.userService = userService;
     }
     
-    @GetMapping("/me")
-    public ResponseEntity<?> getCurrentUser(Authentication authentication) {
+    @GetMapping("/profile")
+    public ResponseEntity<?> getUserProfile(Authentication authentication) {
         try {
             String email = authentication.getName();
-            User user = authenticationService.getCurrentUser(email);
-            
-            UserResponse response = new UserResponse(
-                    user.getId(),
-                    user.getEmail(),
-                    user.getFirstName(),
-                    user.getLastName(),
-                    user.getCreatedAt()
-            );
-            
+            UserResponse response = userService.getUserProfile(email);
             return ResponseEntity.ok(response);
-            
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+            return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage(), false));
         }
     }
     
-    // Error response class
-    public static class ErrorResponse {
-        private String message;
-        
-        public ErrorResponse(String message) {
-            this.message = message;
-        }
-        
-        public String getMessage() {
-            return message;
-        }
-        
-        public void setMessage(String message) {
-            this.message = message;
+    @PutMapping("/profile")
+    public ResponseEntity<?> updateProfile(
+            Authentication authentication, 
+            @Valid @RequestBody UpdateProfileRequest request) {
+        try {
+            String email = authentication.getName();
+            UserResponse response = userService.updateProfile(email, request);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage(), false));
         }
     }
+    
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(
+            Authentication authentication,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        try {
+            String email = authentication.getName();
+            userService.changePassword(email, request.getCurrentPassword(), request.getNewPassword());
+            return ResponseEntity.ok(new ApiResponse("Password changed successfully", true));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage(), false));
+        }
+    }
+    
+    @GetMapping("/preferences")
+    public ResponseEntity<?> getUserPreferences(Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            UserPreferencesResponse response = userService.getUserPreferences(email);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage(), false));
+        }
+    }
+    
+    @PutMapping("/preferences")
+    public ResponseEntity<?> updateUserPreferences(
+            Authentication authentication,
+            @Valid @RequestBody UpdatePreferencesRequest request) {
+        try {
+            String email = authentication.getName();
+            UserPreferencesResponse response = userService.updateUserPreferences(email, request);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage(), false));
+        }
+    }
+    
 }

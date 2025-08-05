@@ -76,7 +76,6 @@ public class AuthenticationService {
         user.setPassword(passwordEncoder.encode(password));
         user.setFirstName(firstName);
         user.setLastName(lastName);
-        user.setEmailVerified(true); // Email already verified through verification service
         user.setIsActive(true); // Account is active upon registration
         
         User savedUser = userRepository.save(user);

@@ -59,7 +59,6 @@ class AuthenticationServiceTest {
         testUser.setFirstName("John");
         testUser.setLastName("Doe");
         testUser.setIsActive(true);
-        testUser.setEmailVerified(true);
     }
 
     // Tests user registration business logic with valid input
@@ -80,7 +79,6 @@ class AuthenticationServiceTest {
         savedUser.setEmail(email);
         savedUser.setFirstName(firstName);
         savedUser.setLastName(lastName);
-        savedUser.setEmailVerified(true);
         savedUser.setIsActive(true);
 
         when(verificationService.isEmailVerified(email)).thenReturn(true);
