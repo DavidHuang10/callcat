@@ -1,5 +1,6 @@
 package com.callcat.backend.controller;
 
+import com.callcat.backend.TestBackendApplication;
 import com.callcat.backend.config.TestSecurityConfig;
 import com.callcat.backend.dto.AuthResponse;
 import com.callcat.backend.entity.User;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -29,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 // Tests the web layer (controllers) in isolation using MockMvc
 // Mocks all service dependencies to focus solely on HTTP request/response handling
 @WebMvcTest(AuthController.class)
+@ActiveProfiles("test")
 @Import(TestSecurityConfig.class)
 class AuthControllerTest {
 

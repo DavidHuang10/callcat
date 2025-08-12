@@ -10,7 +10,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.ses.SesClient;
 import software.amazon.awssdk.services.ses.model.SendEmailRequest;
 import software.amazon.awssdk.services.ses.model.SendEmailResponse;
-import com.callcat.backend.model.TokenBlacklist;
+import com.callcat.backend.entity.BlacklistedToken;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -63,7 +63,7 @@ public class TestAwsConfig {
         DynamoDbEnhancedClient mockClient = mock(DynamoDbEnhancedClient.class);
         
         // Mock the table method to return a mock table
-        DynamoDbTable<TokenBlacklist> mockTable = mock(DynamoDbTable.class);
+        DynamoDbTable<BlacklistedToken> mockTable = mock(DynamoDbTable.class);
         when(mockClient.table(any(String.class), any(TableSchema.class)))
                 .thenReturn(mockTable);
         

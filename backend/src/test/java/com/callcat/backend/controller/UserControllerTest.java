@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -24,6 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 // Tests the web layer (controllers) in isolation using MockMvc
 // Focuses on user-specific operations like profile retrieval
 @WebMvcTest(UserController.class)
+@ActiveProfiles("test")
 @Import(TestSecurityConfig.class)
 class UserControllerTest {
 
