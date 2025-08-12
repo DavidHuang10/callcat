@@ -18,7 +18,8 @@
 ---
 
 ### Data Model (DynamoDB)
-Use DynamoDB for call lifecycle and transcript (high-write, timeline reads). PostgreSQL remains for users and preferences.
+## Data Model (DynamoDB)
+Use DynamoDB for call lifecycle and separate table for transcripts (high-write, timeline reads). PostgreSQL remains for users and preferences.
 
 - Table: `callcat-calls` (from `aws.dynamodb.table.calls`)
   - Keys
@@ -28,29 +29,40 @@ Use DynamoDB for call lifecycle and transcript (high-write, timeline reads). Pos
     - `calleeName` (String)
     - `phoneNumber` (String)
     - `subject` (String) quick description
-    - `status` (String enum: `SCHEDULED`, `IN_PROGRESS`, `COMPLETED`, `FAILED`)
-    - `scheduledAtEpoch` (Long)
-    - `callAt` (Long)
-    - `durationSec` (Integer, optional)
+    - `prompt` (String) detailed task description for voice agent
+    - `status` (String enum: `SCHEDULED`, `IN_PROGRESS`, `COMPLETED`)
+    - `scheduledAt` (Long epoch)
+    - `callAt` (Long epoch)
     - `aiLanguage` (String)
     - `voiceId` (String)
-    - 
-  - Post-call artifacts
-    - `summary` (String, optional)
-  - Secondary Indexes (recommended)
-    - GSI `user-scheduled-index`: PK `userId`, SK `scheduledAtEpoch` (list upcoming)
-    - GSI `user-start-index`: PK `userId`, SK `startAtEpoch` (list historical)
+    - `createdAt`(Long epoch)
+    - `updatedAt`(Long epoch)
 
-- Table: `callcat-transcripts` (from `aws.dynamodb.table.transcripts`)
+  - Fields after completion
+    - `completedAt` (Long epoch, set when status becomes COMPLETED)
+    - `summary` (String, optional)
+    - `durationSec` (Integer, optional)
+    - `outcome` (String enum: `SUCCESSFUL`, `NEEDS_ATTENTION`, `FAILED`)
+    - `transcriptUrl` (String, optional) # Link to transcript table
+    - `audioRecordingUrl` (String, optional) # S3 link
+
+  - Global Secondary Indexes
+    - GSI 1: `upcoming-calls-index`:
+      - PK: `userId` (Long)
+      - SK: `scheduledAt` (Long epoch)
+      - Purpose: Query upcoming SCHEDULED/IN_PROGRESS calls, sorted chronologically
+    - GSI 2: `completed-calls-index`:
+      - PK: `userId` (Long) 
+      - SK: `completedAt` (Long epoch)
+      - Purpose: Query recent COMPLETED calls
+      - Note: Query with ScanIndexForward=false for most recent first
+
+- Table: `callcat-transcripts` (separate table for transcript data)
   - Keys
     - Partition key: `callId` (String)
-    - Sort key: `timestampEpoch` (Long)
   - Fields
-    - `speakerType` (String enum: `USER`, `AI`)
-    - `speakerName` (String, optional)
-    - `text` (String)
-    - `confidence` (Double, optional)
-    - `language` (String, optional)
+    - `transcriptText` (String)
+
 
 Notes
 - Prefer epoch Longs for sort/range queries.
@@ -61,80 +73,67 @@ Notes
 ### Calls Controller (MVP API)
 All endpoints are user-scoped (authenticated user can only read/write own calls).
 
-- POST `/api/calls` — create/schedule a call
-  - Body: `{ subject, scheduledAtEpoch?, channel, direction, callee, notes?, tags? }`
-  - Returns: `{ callId }`
+**POST /api/calls** - Create new call
+- Request: `{ calleeName, phoneNumber, subject, prompt, scheduledAt?, aiLanguage?, voiceId? }`
+- Response: `CallResponse` with created call details
+- Auto-generates: callId (UUID), createdAt, updatedAt, status=SCHEDULED
 
-- GET `/api/calls` — list calls with filters
-  - Query params: `status?`, `fromEpoch?`, `toEpoch?`, `type?=scheduled|started|ended`, `limit?`, `cursor?`, `tags?`
-  - Behavior: uses `user-scheduled-index` when `type=scheduled`, `user-start-index` when `type=started`/historical.
+**GET /api/calls** - List user's calls
+- Query: `status?` (filter), `limit?` (default 20, max 100)
+- Response: `{ calls: [CallResponse], nextToken? }`
+- Uses appropriate GSI (upcoming-calls-index or completed-calls-index)
 
-- GET `/api/calls/{callId}` — get a single call
+**GET /api/calls/{callId}** - Get call details
+- Response: `CallResponse`
 
-- PATCH `/api/calls/{callId}` — edit mutable fields
-  - Body (all optional): `{ subject?, scheduledAtEpoch?, channel?, direction?, callee?, notes?, tags?, status?, startAtEpoch?, endAtEpoch?, durationSec?, recordingUrl? }`
-  - Validation rules apply (see below).
+**PUT /api/calls/{callId}** - Update call
+- Request: `{ calleeName?, phoneNumber?, subject?, prompt?, scheduledAt?, status? }`
+- Response: `CallResponse`
+- Auto-updates: updatedAt
 
-- DELETE `/api/calls/{callId}` — delete or cancel
-  - MVP: soft-cancel if `status=SCHEDULED`; if already started, return 409.
-  - Optionally support hard delete for testing/admin.
-
-- POST `/api/calls/{callId}/reschedule` — convenience endpoint
-  - Body: `{ scheduledAtEpoch }`
-
-- POST `/api/calls/{callId}/finalize` — compute/store post-call artifacts
-  - Body: `{ strategy?="llm"|"none" }`
-  - Effect: reads transcript, generates `summary`, `actionItems`, `sentimentScore` and updates call; sets status `COMPLETED` if `endAtEpoch` present.
-
-- POST `/api/calls/{callId}/tags` — add tags
-  - Body: `{ tags: string[] }`
-
-- DELETE `/api/calls/{callId}/tags/{tag}` — remove tag
-
-Future (v1+)
-- POST `/api/calls/{callId}/notes` — append internal note entries
-- POST `/api/calls/{callId}/invite` — send calendar invite/reminders
-- POST `/api/calls/{callId}/recording` — attach external recording metadata
-
----
+**DELETE /api/calls/{callId}** - Delete call
+- Only for SCHEDULED status
+- Response: `204 No Content`
 
 ### Transcript Controller (MVP API)
 
-- POST `/api/calls/{callId}/transcripts`
-  - Body: `{ entries: [{ timestampEpoch, speakerType, text, speakerName?, confidence?, language? }] }`
-  - Appends one or many entries.
+**GET /api/calls/{callId}/transcript** - Get transcript
+- Response: `{ callId, transcriptText }`
 
-- GET `/api/calls/{callId}/transcripts`
-  - Query: `fromTs?`, `limit?`, `cursor?`
-  - Returns ordered segments, paginated by sort key.
-
----
-
+**PUT /api/calls/{callId}/transcript** - Save transcript
+- Request: `{ transcriptText }`
+- Response: `{ callId, transcriptText }`
 ### Validation & Rules
-- `scheduledAtEpoch` must be in the future when `status=SCHEDULED`.
-- `startAtEpoch <= endAtEpoch` and `durationSec = (end-start)` if not provided.
-- Transitions allowed:
-  - `SCHEDULED -> RINGING|IN_PROGRESS|CANCELED|NO_SHOW`
-  - `RINGING -> IN_PROGRESS|FAILED`
-  - `IN_PROGRESS -> COMPLETED|FAILED`
-  - Final states: `COMPLETED|CANCELED|NO_SHOW|FAILED`
-- On cancel: allowed only from `SCHEDULED`.
+
+**Required Fields:**
+- `calleeName` (1-100 chars)
+- `phoneNumber` (valid US format)
+- `subject` (1-200 chars) 
+- `prompt` (1-5000 chars)
+
+**Business Rules:**
+- scheduledAt must be future time
+- Status transitions: SCHEDULED → IN_PROGRESS → COMPLETED
+- Only SCHEDULED calls can be deleted
+- Phone number validation (US E.164 format)
 
 ---
 
 ### Authorization & Security
-- All routes require JWT auth; limit to current user’s data (`userId` from token).
-- Input validation on size/length (subject, notes, tags, transcript text).
-- Idempotency keys for create and transcript append (optional v1+).
+
+- JWT authentication required
+- User can only access own calls (userId scoping)
+- Call ownership verified on all operations
+- Phone numbers encrypted at rest
 
 ---
 
 ### Pagination & Sorting
-- Use cursor-based pagination for list endpoints.
-- Sorting:
-  - Upcoming: ascending `scheduledAtEpoch` via `user-scheduled-index`.
-  - Historical: descending `startAtEpoch` via `user-start-index` (query reverse-order client-side if needed).
 
+- DynamoDB pagination with nextToken
+- SCHEDULED: sorted by scheduledAt (soonest first)
+- COMPLETED: sorted by completedAt (recent first via reverse scan)
+- Uses separate GSIs for efficiency
 ---
 
 ### Error Model (examples)
@@ -146,66 +145,59 @@ Future (v1+)
 
 ---
 
-### DTO Sketches (concise)
-- ScheduleCallRequest
-  - `{ subject, scheduledAtEpoch?, channel, direction, callee, notes?, tags? }`
-- CallUpdateRequest
-  - `{ subject?, scheduledAtEpoch?, channel?, direction?, callee?, notes?, tags?, status?, startAtEpoch?, endAtEpoch?, durationSec?, recordingUrl? }`
-- TranscriptAppendRequest
-  - `{ entries: [{ timestampEpoch, speakerType, text, speakerName?, confidence?, language? }] }`
+### DTO Sketches
 
----
+**CreateCallRequest:**
+```json
+{
+  "calleeName": "John Doe",
+  "phoneNumber": "+15551234567", 
+  "subject": "Project follow-up",
+  "prompt": "Call John to discuss project timeline and next steps. Be professional and take notes on any concerns.",
+  "scheduledAt": 1672531200000
+}
+```
+
+**CallResponse:**
+```json
+{
+  "callId": "abc-123",
+  "calleeName": "John Doe",
+  "subject": "Project follow-up", 
+  "prompt": "Call John to discuss...",
+  "status": "SCHEDULED",
+  "scheduledAt": 1672531200000,
+  "createdAt": 1672444800000
+}
+```
+
 
 ### UI Mapping to Mock
-- Scheduled cards → `GET /api/calls?type=scheduled`.
-- Completed cards → `GET /api/calls?status=COMPLETED` or `type=started&toEpoch=now`.
-- Transcript links → `GET /api/calls/{callId}/transcripts`.
-- Reschedule buttons → `POST /api/calls/{callId}/reschedule` or `PATCH` with `scheduledAtEpoch`.
-
+ADD HERE
 ---
 
-### Non-functional
-- Observability: log call lifecycle transitions; metric counters per status.
-- Audit trail: store `updatedBy`, `updatedAt` in call record metadata (optional).
-- Rate limiting (basic global limit per user for create/append).
-- Testing: controller unit tests + DynamoDB integration tests.
 
 ---
 
 ### Open Questions
-- Multi-participant calls now or later? If yes, add `participants` list and richer transcript speaker IDs.
-- External providers (Twilio, etc.) in v1? If yes, reserve fields for provider IDs and webhooks.
-- Do we need calendar invites/reminders in MVP?
+
 
 ---
 
-### Implementation Plan (incremental)
-1) Expand DynamoDB entities (`CallRecord`, `CallTranscript`) with fields above; add enums.
-2) Create repositories using Enhanced Client with table names from properties; define GSIs.
-3) Implement services: `CallService`, `TranscriptService` with validation and transitions.
-4) Implement controllers and DTOs for MVP endpoints.
-5) Add tests for create/edit/delete/list, transcript append/list, and invalid transitions.
-6) Add basic summary generator placeholder for `/finalize`.
+### Implementation Plan
 
----
+**✅ Phase 1: Data Model**
+- Updated CallRecord with prompt field
+- Updated CallTranscript (simplified)
+- Added GSI for efficient queries
 
-### Example Call JSON (read model)
-```json
-{
-  "callId": "cc-003",
-  "userId": 42,
-  "subject": "Sakura Sushi",
-  "status": "SCHEDULED",
-  "scheduledAtEpoch": 1737062400,
-  "channel": "PHONE",
-  "direction": "OUTBOUND",
-  "callee": "+15551234567",
-  "notes": "Reservation confirmed for 4 people at 8:00 PM tonight.",
-  "tags": ["reservation", "dinner"],
-  "summary": null,
-  "actionItems": [],
-  "sentimentScore": null
-}
-```
+**🔄 Phase 2: Controllers & DTOs**
+- Create simple request/response DTOs
+- Implement CallController (5 endpoints)
+- Implement TranscriptController (2 endpoints)
 
+**⏳ Phase 3: Services & Validation**  
+- CallService with business logic
+- Phone number validation
+- JWT user context extraction
 

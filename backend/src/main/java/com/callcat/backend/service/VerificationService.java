@@ -4,7 +4,9 @@ import com.callcat.backend.entity.EmailVerification;
 import com.callcat.backend.entity.User;
 import com.callcat.backend.repository.EmailVerificationRepository;
 import com.callcat.backend.repository.UserRepository;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -103,6 +105,20 @@ public class VerificationService {
      */
     public void cleanupExpiredVerifications() {
         emailVerificationRepository.deleteExpiredVerifications(LocalDateTime.now());
+    }
+    
+    /**
+     * Scheduled cleanup task - runs every hour to remove expired verification records
+     */
+    @Scheduled(cron = "0 0 * * * *") // Every hour at minute 0 second 0
+    @Transactional
+    public void scheduledCleanup() {
+        try {
+            emailVerificationRepository.deleteExpiredVerifications(LocalDateTime.now());
+            System.out.println("Cleaned up expired email verifications at " + LocalDateTime.now());
+        } catch (Exception e) {
+            System.err.println("Failed to cleanup expired verifications: " + e.getMessage());
+        }
     }
     
     /**
