@@ -3,8 +3,10 @@ package com.callcat.backend.service;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import software.amazon.awssdk.services.ses.SesClient;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -13,11 +15,14 @@ import static org.junit.jupiter.api.Assertions.*;
 @ExtendWith(MockitoExtension.class)
 class EmailServiceTest {
 
+    @Mock
+    private SesClient sesClient;
+    
     private EmailService emailService;
 
     @BeforeEach
     void setUp() {
-        emailService = new EmailService();
+        emailService = new EmailService(sesClient);
         // Set email disabled for testing (dev mode)
         ReflectionTestUtils.setField(emailService, "emailEnabled", false);
     }

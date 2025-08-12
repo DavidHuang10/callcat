@@ -1,5 +1,6 @@
 package com.callcat.backend.service;
 
+import com.callcat.backend.TestBackendApplication;
 import com.callcat.backend.entity.User;
 import io.jsonwebtoken.JwtException;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 // Integration tests for JWT token service functionality
 // Tests JWT token generation, parsing, validation, and security
 // Uses Spring Boot context to properly initialize JWT service with test configuration
-@SpringBootTest
+@SpringBootTest(classes = TestBackendApplication.class)
 @TestPropertySource(properties = {
         "jwt.secret=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970",
         "jwt.expiration=86400000"

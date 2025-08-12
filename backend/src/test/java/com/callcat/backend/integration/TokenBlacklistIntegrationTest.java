@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 // 1. Set environment variable: DYNAMODB_INTEGRATION_TESTS=true
 // 2. Ensure DynamoDB Local is running: docker run -p 8000:8000 amazon/dynamodb-local -jar DynamoDBLocal.jar -inMemory -sharedDb
 // 3. Run tests with: mvn test -Dtest=TokenBlacklistIntegrationTest
-@SpringBootTest
+@SpringBootTest(classes = com.callcat.backend.TestBackendApplication.class)
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
     "aws.region=us-east-1",

@@ -62,6 +62,11 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>ses</artifactId>
+			<version>2.28.29</version>
+		</dependency>
 
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
@@ -104,6 +109,12 @@
             <version>2.5.4</version>
         </dependency>
 
+        <!-- H2 Database for Testing -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!--End of dependencies-->
 	</dependencies>

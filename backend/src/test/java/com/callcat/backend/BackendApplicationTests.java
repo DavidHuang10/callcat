@@ -6,7 +6,7 @@ import org.springframework.test.context.TestPropertySource;
 
 // Integration test that verifies the Spring Boot application context loads successfully
 // Uses hardcoded test configuration to avoid .env dependency issues
-@SpringBootTest
+@SpringBootTest(classes = TestBackendApplication.class)
 @TestPropertySource(locations = "classpath:application-test.properties")
 class BackendApplicationTests {
 

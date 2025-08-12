@@ -3,12 +3,26 @@ package com.callcat.backend.service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.keygen.KeyGenerators;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.ses.SesClient;
+import software.amazon.awssdk.services.ses.model.*;
 
 @Service
 public class EmailService {
-    
+
     @Value("${app.email.enabled:false}")
     private boolean emailEnabled;
+    
+    @Value("${app.email.from}")
+    private String fromEmail;
+    
+    @Value("${app.email.from-name:CallCat}")
+    private String fromName;
+    
+    private final SesClient sesClient;
+    
+    public EmailService(SesClient sesClient) {
+        this.sesClient = sesClient;
+    }
     
     // Using Spring Security's KeyGenerators for all token generation
     
@@ -32,21 +46,52 @@ public class EmailService {
     
     /**
      * Sends email verification code to user
-     * For now, just logs to console. In production, integrate with email provider.
      */
     public void sendVerificationEmail(String email, String code) {
         if (emailEnabled) {
-            // TODO: Integrate with actual email service (SendGrid, SES, etc.)
-            System.out.println("📧 Sending verification email to: " + email);
-            System.out.println("🔢 Verification code: " + code);
+            try {
+                String subject = "Verify your CallCat account";
+                String htmlBody = """
+                    <html>
+                    <body>
+                        <h2>Welcome to CallCat!</h2>
+                        <p>Please verify your email address using the code below:</p>
+                        <div style="background-color: #f0f0f0; padding: 20px; text-align: center; margin: 20px 0;">
+                            <h1 style="color: #333; font-family: monospace; letter-spacing: 3px;">%s</h1>
+                        </div>
+                        <p>This code expires in 15 minutes.</p>
+                        <p>If you didn't create a CallCat account, please ignore this email.</p>
+                        <br>
+                        <p>Best regards,<br>The CallCat Team</p>
+                    </body>
+                    </html>
+                    """.formatted(code);
+                
+                String textBody = """
+                    Welcome to CallCat!
+                    
+                    Please verify your email address using this code: %s
+                    
+                    This code expires in 15 minutes.
+                    
+                    If you didn't create a CallCat account, please ignore this email.
+                    
+                    Best regards,
+                    The CallCat Team
+                    """.formatted(code);
+                
+                sendEmail(email, subject, htmlBody, textBody);
+                System.out.println("✅ Verification email sent successfully to: " + email);
+                
+            } catch (Exception e) {
+                System.err.println("❌ Failed to send verification email to: " + email);
+                System.err.println("Error: " + e.getMessage());
+                // Fallback to console logging
+                logEmailToConsole(email, "Verify your CallCat account", "Your verification code is: " + code);
+            }
         } else {
             // Development mode - log to console
-            System.out.println("=== EMAIL VERIFICATION (DEV MODE) ===");
-            System.out.println("To: " + email);
-            System.out.println("Subject: Verify your CallCat account");
-            System.out.println("Your verification code is: " + code);
-            System.out.println("This code expires in 15 minutes.");
-            System.out.println("=====================================");
+            logEmailToConsole(email, "Verify your CallCat account", "Your verification code is: " + code + "\nThis code expires in 15 minutes.");
         }
     }
     
@@ -55,28 +100,101 @@ public class EmailService {
      */
     public void sendPasswordResetEmail(String email, String token) {
         if (emailEnabled) {
-            // TODO: Integrate with actual email service
-            System.out.println("📧 Sending password reset email to: " + email);
-            System.out.println("🔑 Reset token: " + token);
+            try {
+                String subject = "Reset your CallCat password";
+                String htmlBody = """
+                    <html>
+                    <body>
+                        <h2>Password Reset Request</h2>
+                        <p>We received a request to reset your CallCat account password.</p>
+                        <p>Use the following token to reset your password:</p>
+                        <div style="background-color: #f0f0f0; padding: 15px; text-align: center; margin: 20px 0; word-break: break-all;">
+                            <code style="color: #333; font-size: 14px;">%s</code>
+                        </div>
+                        <p><strong>This token expires in 1 hour.</strong></p>
+                        <p>If you didn't request a password reset, please ignore this email. Your password will remain unchanged.</p>
+                        <br>
+                        <p>Best regards,<br>The CallCat Team</p>
+                    </body>
+                    </html>
+                    """.formatted(token);
+                
+                String textBody = """
+                    Password Reset Request
+                    
+                    We received a request to reset your CallCat account password.
+                    
+                    Use the following token to reset your password:
+                    %s
+                    
+                    This token expires in 1 hour.
+                    
+                    If you didn't request a password reset, please ignore this email.
+                    
+                    Best regards,
+                    The CallCat Team
+                    """.formatted(token);
+                
+                sendEmail(email, subject, htmlBody, textBody);
+                System.out.println("✅ Password reset email sent successfully to: " + email);
+                
+            } catch (Exception e) {
+                System.err.println("❌ Failed to send password reset email to: " + email);
+                System.err.println("Error: " + e.getMessage());
+                // Fallback to console logging
+                logEmailToConsole(email, "Reset your CallCat password", "Your password reset token is: " + token);
+            }
         } else {
             // Development mode - log to console
-            System.out.println("=== PASSWORD RESET (DEV MODE) ===");
-            System.out.println("To: " + email);
-            System.out.println("Subject: Reset your CallCat password");
-            System.out.println("Your password reset token is: " + token);
-            System.out.println("This token expires in 1 hour.");
-            System.out.println("Use this token to reset your password.");
-            System.out.println("=================================");
+            logEmailToConsole(email, "Reset your CallCat password", "Your password reset token is: " + token + "\nThis token expires in 1 hour.");
         }
     }
     
     /**
-     * In production, you would integrate with email services like:
-     * - SendGrid: https://sendgrid.com/
-     * - Amazon SES: https://aws.amazon.com/ses/
-     * - Mailgun: https://www.mailgun.com/
-     * - Postmark: https://postmarkapp.com/
-     * 
-     * For now, this service logs to console for development.
+     * Sends an email using AWS SES
      */
+    private void sendEmail(String toEmail, String subject, String htmlBody, String textBody) {
+        try {
+            SendEmailRequest request = SendEmailRequest.builder()
+                .source(fromName + " <" + fromEmail + ">")
+                .destination(Destination.builder()
+                    .toAddresses(toEmail)
+                    .build())
+                .message(Message.builder()
+                    .subject(Content.builder()
+                        .charset("UTF-8")
+                        .data(subject)
+                        .build())
+                    .body(Body.builder()
+                        .html(Content.builder()
+                            .charset("UTF-8")
+                            .data(htmlBody)
+                            .build())
+                        .text(Content.builder()
+                            .charset("UTF-8")
+                            .data(textBody)
+                            .build())
+                        .build())
+                    .build())
+                .build();
+            
+            SendEmailResponse response = sesClient.sendEmail(request);
+            System.out.println("Email sent successfully. Message ID: " + response.messageId());
+            
+        } catch (Exception e) {
+            System.err.println("Failed to send email via SES: " + e.getMessage());
+            throw e;
+        }
+    }
+    
+    /**
+     * Fallback method to log email to console
+     */
+    private void logEmailToConsole(String email, String subject, String body) {
+        System.out.println("=== EMAIL (DEV MODE) ===");
+        System.out.println("To: " + email);
+        System.out.println("Subject: " + subject);
+        System.out.println("Body: " + body);
+        System.out.println("========================");
+    }
 }

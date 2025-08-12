@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
 // Tests actual DynamoDB operations with TokenBlacklistService and repository
 // NOTE: These tests require DynamoDB Local or LocalStack to be running
 // Run: docker run -p 8000:8000 amazon/dynamodb-local -jar DynamoDBLocal.jar -inMemory -sharedDb
-@SpringBootTest
+@SpringBootTest(classes = com.callcat.backend.TestBackendApplication.class)
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
     "aws.region=us-east-1",
