@@ -10,7 +10,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -70,7 +69,7 @@ class PasswordResetServiceTest {
         
         assertEquals(resetToken, testUser.getPasswordResetToken());
         assertNotNull(testUser.getResetTokenExpires());
-        assertTrue(testUser.getResetTokenExpires().isAfter(LocalDateTime.now()));
+        assertTrue(testUser.getResetTokenExpires() > System.currentTimeMillis() / 1000);
     }
 
     // Tests forgot password with non-existent email
@@ -116,7 +115,7 @@ class PasswordResetServiceTest {
         String encodedNewPassword = "encodedNewPassword";
         
         testUser.setPasswordResetToken(resetToken);
-        testUser.setResetTokenExpires(LocalDateTime.now().plusHours(1));
+        testUser.setResetTokenExpires(System.currentTimeMillis() / 1000 + 3600);
         
         when(userRepository.findByPasswordResetToken(resetToken)).thenReturn(Optional.of(testUser));
         when(passwordEncoder.encode(newPassword)).thenReturn(encodedNewPassword);
@@ -162,7 +161,7 @@ class PasswordResetServiceTest {
         String newPassword = "NewStrongPass123";
         
         testUser.setPasswordResetToken(expiredToken);
-        testUser.setResetTokenExpires(LocalDateTime.now().minusHours(1)); // Expired 1 hour ago
+        testUser.setResetTokenExpires(System.currentTimeMillis() / 1000 - 3600); // Expired 1 hour ago
         
         when(userRepository.findByPasswordResetToken(expiredToken)).thenReturn(Optional.of(testUser));
 
@@ -212,7 +211,7 @@ class PasswordResetServiceTest {
         String weakPassword = "weak"; // Doesn't meet strength requirements
         
         testUser.setPasswordResetToken(resetToken);
-        testUser.setResetTokenExpires(LocalDateTime.now().plusHours(1));
+        testUser.setResetTokenExpires(System.currentTimeMillis() / 1000 + 3600);
         
         // Act & Assert - No stubbing needed since validation fails before repository lookup
         RuntimeException exception = assertThrows(RuntimeException.class,
@@ -233,7 +232,7 @@ class PasswordResetServiceTest {
         // Arrange
         String resetToken = "valid-reset-token";
         testUser.setPasswordResetToken(resetToken);
-        testUser.setResetTokenExpires(LocalDateTime.now().plusHours(1));
+        testUser.setResetTokenExpires(System.currentTimeMillis() / 1000 + 3600);
 
         // Test various invalid passwords
         String[] invalidPasswords = {
@@ -262,7 +261,7 @@ class PasswordResetServiceTest {
         // Arrange
         String email = "test@example.com";
         String resetToken = "test-token";
-        LocalDateTime beforeCall = LocalDateTime.now();
+        long beforeCall = System.currentTimeMillis() / 1000;
         
         when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(testUser));
         when(emailService.generateResetToken()).thenReturn(resetToken);
@@ -271,12 +270,12 @@ class PasswordResetServiceTest {
         authenticationService.forgotPassword(email);
 
         // Assert
-        LocalDateTime afterCall = LocalDateTime.now();
-        LocalDateTime expectedExpiry = beforeCall.plusHours(1);
-        LocalDateTime actualExpiry = testUser.getResetTokenExpires();
+        long afterCall = System.currentTimeMillis() / 1000;
+        long expectedExpiry = beforeCall + 3600; // 1 hour
+        Long actualExpiry = testUser.getResetTokenExpires();
         
         assertNotNull(actualExpiry);
-        assertTrue(actualExpiry.isAfter(expectedExpiry.minusSeconds(5))); // Allow 5 second buffer
-        assertTrue(actualExpiry.isBefore(afterCall.plusHours(1).plusSeconds(5)));
+        assertTrue(actualExpiry >= expectedExpiry - 5); // Allow 5 second buffer
+        assertTrue(actualExpiry <= afterCall + 3600 + 5);
     }
 }

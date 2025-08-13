@@ -56,7 +56,7 @@ public class User implements UserDetails {
     private String passwordResetToken;
     
     @Column(name = "reset_token_expires")
-    private LocalDateTime resetTokenExpires;
+    private Long resetTokenExpires;
     
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -164,11 +164,11 @@ public class User implements UserDetails {
         this.passwordResetToken = passwordResetToken;
     }
     
-    public LocalDateTime getResetTokenExpires() {
+    public Long getResetTokenExpires() {
         return resetTokenExpires;
     }
     
-    public void setResetTokenExpires(LocalDateTime resetTokenExpires) {
+    public void setResetTokenExpires(Long resetTokenExpires) {
         this.resetTokenExpires = resetTokenExpires;
     }
     

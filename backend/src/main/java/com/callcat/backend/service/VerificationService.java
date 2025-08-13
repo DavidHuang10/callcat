@@ -8,7 +8,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -41,7 +40,7 @@ public class VerificationService {
         
         // Generate verification code and expiration (15 minutes)
         String code = emailService.generateVerificationCode();
-        LocalDateTime expires = LocalDateTime.now().plusMinutes(15);
+        Long expires = System.currentTimeMillis() / 1000 + (15 * 60);
         
         // Create or update email verification record
         Optional<EmailVerification> existingVerification = emailVerificationRepository.findByEmail(email);
@@ -104,7 +103,7 @@ public class VerificationService {
      * Clean up expired verification records (should be called periodically)
      */
     public void cleanupExpiredVerifications() {
-        emailVerificationRepository.deleteExpiredVerifications(LocalDateTime.now());
+        emailVerificationRepository.deleteExpiredVerifications(System.currentTimeMillis() / 1000);
     }
     
     /**
@@ -114,8 +113,8 @@ public class VerificationService {
     @Transactional
     public void scheduledCleanup() {
         try {
-            emailVerificationRepository.deleteExpiredVerifications(LocalDateTime.now());
-            System.out.println("Cleaned up expired email verifications at " + LocalDateTime.now());
+            emailVerificationRepository.deleteExpiredVerifications(System.currentTimeMillis() / 1000);
+            System.out.println("Cleaned up expired email verifications at " + System.currentTimeMillis() / 1000);
         } catch (Exception e) {
             System.err.println("Failed to cleanup expired verifications: " + e.getMessage());
         }

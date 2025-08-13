@@ -11,7 +11,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -49,7 +48,7 @@ class VerificationServiceTest {
         testVerification = new EmailVerification();
         testVerification.setEmail("test@example.com");
         testVerification.setVerificationCode("123456");
-        testVerification.setExpiresAt(LocalDateTime.now().plusMinutes(15));
+        testVerification.setExpiresAt(System.currentTimeMillis() / 1000 + (15 * 60));
         testVerification.setVerified(false);
     }
 
@@ -173,7 +172,7 @@ class VerificationServiceTest {
         // Arrange
         String email = "test@example.com";
         String code = "123456";
-        testVerification.setExpiresAt(LocalDateTime.now().minusMinutes(1)); // Expired 1 minute ago
+        testVerification.setExpiresAt(System.currentTimeMillis() / 1000 - 60); // Expired 1 minute ago
         
         when(emailVerificationRepository.findByEmail(email)).thenReturn(Optional.of(testVerification));
 
@@ -242,7 +241,7 @@ class VerificationServiceTest {
         // Arrange
         String email = "test@example.com";
         testVerification.setVerified(true);
-        testVerification.setExpiresAt(LocalDateTime.now().minusMinutes(1)); // Expired
+        testVerification.setExpiresAt(System.currentTimeMillis() / 1000 - 60); // Expired
         
         when(emailVerificationRepository.findVerifiedByEmail(email)).thenReturn(Optional.of(testVerification));
 
@@ -261,6 +260,6 @@ class VerificationServiceTest {
         verificationService.cleanupExpiredVerifications();
 
         // Assert
-        verify(emailVerificationRepository).deleteExpiredVerifications(any(LocalDateTime.class));
+        verify(emailVerificationRepository).deleteExpiredVerifications(any(Long.class));
     }
 }

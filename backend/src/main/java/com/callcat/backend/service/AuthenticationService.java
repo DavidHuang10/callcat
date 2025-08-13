@@ -9,7 +9,6 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.regex.Pattern;
 
 @Service
@@ -152,7 +151,7 @@ public class AuthenticationService {
         
         // Generate secure reset token and expiration (1 hour)
         String resetToken = emailService.generateResetToken();
-        LocalDateTime expires = LocalDateTime.now().plusHours(1);
+        Long expires = System.currentTimeMillis() / 1000 + 3600;
         
         // Save reset token to user
         user.setPasswordResetToken(resetToken);
@@ -178,7 +177,7 @@ public class AuthenticationService {
                 .orElseThrow(() -> new RuntimeException("Invalid reset token"));
         
         // Check if token hasn't expired
-        if (user.getResetTokenExpires() == null || user.getResetTokenExpires().isBefore(LocalDateTime.now())) {
+        if (user.getResetTokenExpires() == null || user.getResetTokenExpires() < System.currentTimeMillis() / 1000) {
             // Clear expired token
             user.setPasswordResetToken(null);
             user.setResetTokenExpires(null);

@@ -1,7 +1,6 @@
 package com.callcat.backend.entity;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "email_verifications")
@@ -14,23 +13,23 @@ public class EmailVerification {
     private String verificationCode;
     
     @Column(name = "expires_at", nullable = false)
-    private LocalDateTime expiresAt;
+    private Long expiresAt;
     
     @Column(name = "verified", nullable = false)
     private Boolean verified = false;
     
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private Long createdAt = System.currentTimeMillis() / 1000;
     
     // Constructors
     public EmailVerification() {}
     
-    public EmailVerification(String email, String verificationCode, LocalDateTime expiresAt) {
+    public EmailVerification(String email, String verificationCode, Long expiresAt) {
         this.email = email;
         this.verificationCode = verificationCode;
         this.expiresAt = expiresAt;
         this.verified = false;
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = System.currentTimeMillis() / 1000;
     }
     
     // Getters and Setters
@@ -50,11 +49,11 @@ public class EmailVerification {
         this.verificationCode = verificationCode;
     }
     
-    public LocalDateTime getExpiresAt() {
+    public Long getExpiresAt() {
         return expiresAt;
     }
     
-    public void setExpiresAt(LocalDateTime expiresAt) {
+    public void setExpiresAt(Long expiresAt) {
         this.expiresAt = expiresAt;
     }
     
@@ -66,11 +65,11 @@ public class EmailVerification {
         this.verified = verified;
     }
     
-    public LocalDateTime getCreatedAt() {
+    public Long getCreatedAt() {
         return createdAt;
     }
     
-    public void setCreatedAt(LocalDateTime createdAt) {
+    public void setCreatedAt(Long createdAt) {
         this.createdAt = createdAt;
     }
     
@@ -78,6 +77,6 @@ public class EmailVerification {
      * Check if the verification code has expired
      */
     public boolean isExpired() {
-        return LocalDateTime.now().isAfter(expiresAt);
+        return System.currentTimeMillis() / 1000 > expiresAt;
     }
 }
