@@ -1,14 +1,7 @@
-package com.callcat.backend.entity;
+package com.callcat.backend.dto;
 
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondarySortKey;
+public class CallResponse {
 
-@DynamoDbBean
-public class CallRecord {
-    private Long userId;
     private String callId;
     private String calleeName;
     private String phoneNumber;
@@ -18,38 +11,20 @@ public class CallRecord {
     private String status;
     private Long scheduledAt;
     private Long callAt;
-    
-    // During-call fields
     private String providerId;
     private String aiLanguage;
     private String voiceId;
     private Long createdAt;
     private Long updatedAt;
-    
-    // Optional fields after completion
     private String summary;
     private Integer durationSec;
     private String outcome;
     private String transcriptUrl;
     private String audioRecordingUrl;
     private Long completedAt;
-    
-    // Retell-specific data storage (as JSON string for DynamoDB compatibility)
-    private String retellCallData;
 
-    public CallRecord() {}
+    public CallResponse() {}
 
-    @DynamoDbPartitionKey
-    @DynamoDbSecondaryPartitionKey(indexNames = {"upcoming-calls-index", "completed-calls-index"})
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    @DynamoDbSortKey
     public String getCallId() {
         return callId;
     }
@@ -106,7 +81,6 @@ public class CallRecord {
         this.status = status;
     }
 
-    @DynamoDbSecondarySortKey(indexNames = "upcoming-calls-index")
     public Long getScheduledAt() {
         return scheduledAt;
     }
@@ -203,7 +177,6 @@ public class CallRecord {
         this.audioRecordingUrl = audioRecordingUrl;
     }
 
-    @DynamoDbSecondarySortKey(indexNames = "completed-calls-index")
     public Long getCompletedAt() {
         return completedAt;
     }
@@ -211,13 +184,4 @@ public class CallRecord {
     public void setCompletedAt(Long completedAt) {
         this.completedAt = completedAt;
     }
-
-    public String getRetellCallData() {
-        return retellCallData;
-    }
-
-    public void setRetellCallData(String retellCallData) {
-        this.retellCallData = retellCallData;
-    }
-
 }
