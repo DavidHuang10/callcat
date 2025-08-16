@@ -51,9 +51,10 @@ public class AuthController {
     }
     
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(@Valid @RequestBody LogoutRequest request) {
+    public ResponseEntity<?> logout(@RequestHeader("Authorization") String authHeader) {
         try {
-            tokenBlacklistService.blacklistToken(request.getToken());
+            String token = authHeader.substring(7); // Remove "Bearer " prefix
+            tokenBlacklistService.blacklistToken(token);
             return ResponseEntity.ok(ApiResponse.success("Successfully logged out"));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));

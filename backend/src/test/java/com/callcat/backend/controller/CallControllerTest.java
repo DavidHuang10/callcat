@@ -44,26 +44,25 @@ class CallControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private CreateCallRequest createRequest;
-    private UpdateCallRequest updateRequest;
+    private CallRequest createRequest;
+    private CallRequest updateRequest;
     private CallResponse callResponse;
     private CallListResponse callListResponse;
 
     @BeforeEach
     void setUp() {
-        createRequest = new CreateCallRequest();
+        createRequest = new CallRequest();
         createRequest.setCalleeName("John Doe");
         createRequest.setPhoneNumber("+15551234567");
         createRequest.setSubject("Test Call");
         createRequest.setPrompt("Test prompt for AI");
-        createRequest.setScheduledAt(System.currentTimeMillis() + 3600000);
+        createRequest.setScheduledFor(System.currentTimeMillis() + 3600000);
         createRequest.setAiLanguage("en");
         createRequest.setVoiceId("voice123");
 
-        updateRequest = new UpdateCallRequest();
+        updateRequest = new CallRequest();
         updateRequest.setCalleeName("Jane Doe");
         updateRequest.setSubject("Updated Call");
-        updateRequest.setStatus("IN_PROGRESS");
 
         callResponse = new CallResponse();
         callResponse.setCallId("test-call-id");
@@ -85,7 +84,7 @@ class CallControllerTest {
     @WithMockUser(username = "test@example.com")
     void createCall_WithValidRequest_ShouldReturnCreatedCall() throws Exception {
         // Arrange
-        when(callService.createCall(eq("test@example.com"), any(CreateCallRequest.class)))
+        when(callService.createCall(eq("test@example.com"), any(CallRequest.class)))
                 .thenReturn(callResponse);
 
         // Act & Assert
@@ -100,7 +99,7 @@ class CallControllerTest {
                 .andExpect(jsonPath("$.status").value("SCHEDULED"))
                 .andExpect(jsonPath("$.aiLanguage").value("en"));
 
-        verify(callService).createCall(eq("test@example.com"), any(CreateCallRequest.class));
+        verify(callService).createCall(eq("test@example.com"), any(CallRequest.class));
     }
 
     @Test
@@ -108,7 +107,7 @@ class CallControllerTest {
     void createCall_WithInvalidPhoneNumber_ShouldReturnBadRequest() throws Exception {
         // Arrange
         createRequest.setPhoneNumber("invalid-phone");
-        when(callService.createCall(eq("test@example.com"), any(CreateCallRequest.class)))
+        when(callService.createCall(eq("test@example.com"), any(CallRequest.class)))
                 .thenThrow(new IllegalArgumentException("Phone number must be in E.164 format (+1XXXXXXXXXX)"));
 
         // Act & Assert
@@ -141,7 +140,7 @@ class CallControllerTest {
                 .content(objectMapper.writeValueAsString(createRequest)))
                 .andExpect(status().isUnauthorized());
 
-        verify(callService, never()).createCall(anyString(), any(CreateCallRequest.class));
+        verify(callService, never()).createCall(anyString(), any(CallRequest.class));
     }
 
     @Test
@@ -244,9 +243,9 @@ class CallControllerTest {
         updatedResponse.setCallId("test-call-id");
         updatedResponse.setCalleeName("Jane Doe");
         updatedResponse.setSubject("Updated Call");
-        updatedResponse.setStatus("IN_PROGRESS");
+        updatedResponse.setStatus("SCHEDULED");
 
-        when(callService.updateCall(eq("test@example.com"), eq("test-call-id"), any(UpdateCallRequest.class)))
+        when(callService.updateCall(eq("test@example.com"), eq("test-call-id"), any(CallRequest.class)))
                 .thenReturn(updatedResponse);
 
         // Act & Assert
@@ -257,26 +256,11 @@ class CallControllerTest {
                 .andExpect(jsonPath("$.callId").value("test-call-id"))
                 .andExpect(jsonPath("$.calleeName").value("Jane Doe"))
                 .andExpect(jsonPath("$.subject").value("Updated Call"))
-                .andExpect(jsonPath("$.status").value("IN_PROGRESS"));
+                .andExpect(jsonPath("$.status").value("SCHEDULED"));
 
-        verify(callService).updateCall(eq("test@example.com"), eq("test-call-id"), any(UpdateCallRequest.class));
+        verify(callService).updateCall(eq("test@example.com"), eq("test-call-id"), any(CallRequest.class));
     }
 
-    @Test
-    @WithMockUser(username = "test@example.com")
-    void updateCall_WithInvalidStatusTransition_ShouldReturnBadRequest() throws Exception {
-        // Arrange
-        when(callService.updateCall(eq("test@example.com"), eq("test-call-id"), any(UpdateCallRequest.class)))
-                .thenThrow(new IllegalArgumentException("Cannot change status of a finalized call"));
-
-        // Act & Assert
-        mockMvc.perform(put("/api/calls/test-call-id")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(updateRequest)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Cannot change status of a finalized call"))
-                .andExpect(jsonPath("$.success").value(false));
-    }
 
     @Test
     @WithMockUser(username = "test@example.com")
@@ -342,7 +326,7 @@ class CallControllerTest {
     @WithMockUser(username = "test@example.com")
     void createCall_WithServiceException_ShouldReturnBadRequest() throws Exception {
         // Arrange
-        when(callService.createCall(eq("test@example.com"), any(CreateCallRequest.class)))
+        when(callService.createCall(eq("test@example.com"), any(CallRequest.class)))
                 .thenThrow(new RuntimeException("Database connection failed"));
 
         // Act & Assert

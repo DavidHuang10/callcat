@@ -20,7 +20,7 @@ public class CallController {
     @PostMapping
     public ResponseEntity<?> createCall(
             Authentication authentication,
-            @Valid @RequestBody CreateCallRequest request) {
+            @Valid @RequestBody CallRequest request) {
         try {
             String email = authentication.getName();
             CallResponse response = callService.createCall(email, request);
@@ -68,7 +68,7 @@ public class CallController {
     public ResponseEntity<?> updateCall(
             Authentication authentication,
             @PathVariable String callId,
-            @Valid @RequestBody UpdateCallRequest request) {
+            @Valid @RequestBody CallRequest request) {
         try {
             String email = authentication.getName();
             CallResponse response = callService.updateCall(email, callId, request);

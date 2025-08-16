@@ -9,18 +9,13 @@ public class CallResponse {
     private String subject;
     private String prompt;
     private String status;
-    private Long scheduledAt;
-    private Long callAt;
+    private Long scheduledFor;
+    private Long callStartedAt;
     private String providerId;
     private String aiLanguage;
     private String voiceId;
     private Long createdAt;
     private Long updatedAt;
-    private String summary;
-    private Integer durationSec;
-    private String outcome;
-    private String transcriptUrl;
-    private String audioRecordingUrl;
     private Long completedAt;
 
     public CallResponse() {}
@@ -81,20 +76,20 @@ public class CallResponse {
         this.status = status;
     }
 
-    public Long getScheduledAt() {
-        return scheduledAt;
+    public Long getScheduledFor() {
+        return scheduledFor;
     }
 
-    public void setScheduledAt(Long scheduledAt) {
-        this.scheduledAt = scheduledAt;
+    public void setScheduledFor(Long scheduledFor) {
+        this.scheduledFor = scheduledFor;
     }
 
-    public Long getCallAt() {
-        return callAt;
+    public Long getCallStartedAt() {
+        return callStartedAt;
     }
 
-    public void setCallAt(Long callAt) {
-        this.callAt = callAt;
+    public void setCallStartedAt(Long callStartedAt) {
+        this.callStartedAt = callStartedAt;
     }
 
     public String getProviderId() {
@@ -137,45 +132,6 @@ public class CallResponse {
         this.updatedAt = updatedAt;
     }
 
-    public String getSummary() {
-        return summary;
-    }
-
-    public void setSummary(String summary) {
-        this.summary = summary;
-    }
-
-    public Integer getDurationSec() {
-        return durationSec;
-    }
-
-    public void setDurationSec(Integer durationSec) {
-        this.durationSec = durationSec;
-    }
-
-    public String getOutcome() {
-        return outcome;
-    }
-
-    public void setOutcome(String outcome) {
-        this.outcome = outcome;
-    }
-
-    public String getTranscriptUrl() {
-        return transcriptUrl;
-    }
-
-    public void setTranscriptUrl(String transcriptUrl) {
-        this.transcriptUrl = transcriptUrl;
-    }
-
-    public String getAudioRecordingUrl() {
-        return audioRecordingUrl;
-    }
-
-    public void setAudioRecordingUrl(String audioRecordingUrl) {
-        this.audioRecordingUrl = audioRecordingUrl;
-    }
 
     public Long getCompletedAt() {
         return completedAt;

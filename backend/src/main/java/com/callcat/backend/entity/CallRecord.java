@@ -16,22 +16,18 @@ public class CallRecord {
     private String subject;
     private String prompt;
     private String status;
-    private Long scheduledAt;
-    private Long callAt;
+    private Long scheduledFor;
+    private Long callStartedAt;
     
-    // During-call fields
-    private String providerId;
     private String aiLanguage;
     private String voiceId;
     private Long createdAt;
     private Long updatedAt;
     
-    // Optional fields after completion
-    private String summary;
-    private Integer durationSec;
-    private String outcome;
-    private String transcriptUrl;
-    private String audioRecordingUrl;
+    // During-call fields
+    private String providerId;
+    
+    // Post-call fields
     private Long completedAt;
     
     // Retell-specific data storage (as JSON string for DynamoDB compatibility)
@@ -107,20 +103,20 @@ public class CallRecord {
     }
 
     @DynamoDbSecondarySortKey(indexNames = "upcoming-calls-index")
-    public Long getScheduledAt() {
-        return scheduledAt;
+    public Long getScheduledFor() {
+        return scheduledFor;
     }
 
-    public void setScheduledAt(Long scheduledAt) {
-        this.scheduledAt = scheduledAt;
+    public void setScheduledFor(Long scheduledFor) {
+        this.scheduledFor = scheduledFor;
     }
 
-    public Long getCallAt() {
-        return callAt;
+    public Long getCallStartedAt() {
+        return callStartedAt;
     }
 
-    public void setCallAt(Long callAt) {
-        this.callAt = callAt;
+    public void setCallStartedAt(Long callStartedAt) {
+        this.callStartedAt = callStartedAt;
     }
 
     public String getProviderId() {
@@ -163,45 +159,6 @@ public class CallRecord {
         this.updatedAt = updatedAt;
     }
 
-    public String getSummary() {
-        return summary;
-    }
-
-    public void setSummary(String summary) {
-        this.summary = summary;
-    }
-
-    public Integer getDurationSec() {
-        return durationSec;
-    }
-
-    public void setDurationSec(Integer durationSec) {
-        this.durationSec = durationSec;
-    }
-
-    public String getOutcome() {
-        return outcome;
-    }
-
-    public void setOutcome(String outcome) {
-        this.outcome = outcome;
-    }
-
-    public String getTranscriptUrl() {
-        return transcriptUrl;
-    }
-
-    public void setTranscriptUrl(String transcriptUrl) {
-        this.transcriptUrl = transcriptUrl;
-    }
-
-    public String getAudioRecordingUrl() {
-        return audioRecordingUrl;
-    }
-
-    public void setAudioRecordingUrl(String audioRecordingUrl) {
-        this.audioRecordingUrl = audioRecordingUrl;
-    }
 
     @DynamoDbSecondarySortKey(indexNames = "completed-calls-index")
     public Long getCompletedAt() {

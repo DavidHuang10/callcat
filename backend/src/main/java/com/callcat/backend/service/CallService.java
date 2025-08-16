@@ -2,13 +2,15 @@ package com.callcat.backend.service;
 
 import com.callcat.backend.dto.CallListResponse;
 import com.callcat.backend.dto.CallResponse;
-import com.callcat.backend.dto.CreateCallRequest;
-import com.callcat.backend.dto.UpdateCallRequest;
+import com.callcat.backend.dto.CallRequest;
 import com.callcat.backend.entity.CallRecord;
 import com.callcat.backend.entity.User;
 import com.callcat.backend.repository.CallRecordRepository;
 import com.callcat.backend.repository.UserRepository;
 import com.callcat.backend.util.PhoneNumberValidator;
+import com.callcat.backend.util.BeanUpdateUtils;
+import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -28,13 +30,13 @@ public class CallService {
         this.userRepository = userRepository;
     }
 
-    public CallResponse createCall(String userEmail, CreateCallRequest request) {
+    public CallResponse createCall(String userEmail, CallRequest request) {
         User user = userRepository.findByEmailAndIsActive(userEmail, true)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         PhoneNumberValidator.validatePhoneNumber(request.getPhoneNumber());
 
-        if (request.getScheduledAt() != null && request.getScheduledAt() <= System.currentTimeMillis()) {
+        if (request.getScheduledFor() != null && request.getScheduledFor() <= System.currentTimeMillis()) {
             throw new IllegalArgumentException("Scheduled time must be in the future");
         }
 
@@ -46,7 +48,7 @@ public class CallService {
         callRecord.setSubject(request.getSubject());
         callRecord.setPrompt(request.getPrompt());
         callRecord.setStatus("SCHEDULED");
-        callRecord.setScheduledAt(request.getScheduledAt() != null ? request.getScheduledAt() : System.currentTimeMillis());
+        callRecord.setScheduledFor(request.getScheduledFor() != null ? request.getScheduledFor() : System.currentTimeMillis());
         callRecord.setAiLanguage(request.getAiLanguage() != null ? request.getAiLanguage() : "en");
         callRecord.setVoiceId(request.getVoiceId());
         callRecord.setCreatedAt(System.currentTimeMillis());
@@ -87,7 +89,7 @@ public class CallService {
         return mapToCallResponse(callRecord);
     }
 
-    public CallResponse updateCall(String userEmail, String callId, UpdateCallRequest request) {
+    public CallResponse updateCall(String userEmail, String callId, CallRequest request) {
         User user = userRepository.findByEmailAndIsActive(userEmail, true)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -98,15 +100,12 @@ public class CallService {
             PhoneNumberValidator.validatePhoneNumber(request.getPhoneNumber());
         }
 
-        if (request.getStatus() != null) {
-            validateStatusTransition(callRecord.getStatus(), request.getStatus());
-        }
 
-        if (request.getScheduledAt() != null && request.getScheduledAt() <= System.currentTimeMillis()) {
+        if (request.getScheduledFor() != null && request.getScheduledFor() <= System.currentTimeMillis()) {
             throw new IllegalArgumentException("Scheduled time must be in the future");
         }
 
-        updateCallFields(callRecord, request);
+        BeanUpdateUtils.copyNonNullProperties(request, callRecord);
         callRecord.setUpdatedAt(System.currentTimeMillis());
 
         CallRecord updatedCall = callRecordRepository.save(callRecord);
@@ -139,55 +138,50 @@ public class CallService {
         }
     }
 
-    private void updateCallFields(CallRecord callRecord, UpdateCallRequest request) {
-        if (request.getCalleeName() != null) {
-            callRecord.setCalleeName(request.getCalleeName());
-        }
-        if (request.getPhoneNumber() != null) {
-            callRecord.setPhoneNumber(request.getPhoneNumber());
-        }
-        if (request.getSubject() != null) {
-            callRecord.setSubject(request.getSubject());
-        }
-        if (request.getPrompt() != null) {
-            callRecord.setPrompt(request.getPrompt());
-        }
-        if (request.getScheduledAt() != null) {
-            callRecord.setScheduledAt(request.getScheduledAt());
-        }
-        if (request.getStatus() != null) {
-            callRecord.setStatus(request.getStatus());
-        }
-        if (request.getAiLanguage() != null) {
-            callRecord.setAiLanguage(request.getAiLanguage());
-        }
-        if (request.getVoiceId() != null) {
-            callRecord.setVoiceId(request.getVoiceId());
-        }
-    }
 
     private CallResponse mapToCallResponse(CallRecord callRecord) {
         CallResponse response = new CallResponse();
-        response.setCallId(callRecord.getCallId());
-        response.setCalleeName(callRecord.getCalleeName());
-        response.setPhoneNumber(callRecord.getPhoneNumber());
-        response.setCallerNumber(callRecord.getCallerNumber());
-        response.setSubject(callRecord.getSubject());
-        response.setPrompt(callRecord.getPrompt());
-        response.setStatus(callRecord.getStatus());
-        response.setScheduledAt(callRecord.getScheduledAt());
-        response.setCallAt(callRecord.getCallAt());
-        response.setProviderId(callRecord.getProviderId());
-        response.setAiLanguage(callRecord.getAiLanguage());
-        response.setVoiceId(callRecord.getVoiceId());
-        response.setCreatedAt(callRecord.getCreatedAt());
-        response.setUpdatedAt(callRecord.getUpdatedAt());
-        response.setSummary(callRecord.getSummary());
-        response.setDurationSec(callRecord.getDurationSec());
-        response.setOutcome(callRecord.getOutcome());
-        response.setTranscriptUrl(callRecord.getTranscriptUrl());
-        response.setAudioRecordingUrl(callRecord.getAudioRecordingUrl());
-        response.setCompletedAt(callRecord.getCompletedAt());
+        BeanUtils.copyProperties(callRecord, response);
         return response;
+    }
+
+    public void updateCallStatusWithRetellData(String callId, String status, Long callStartedAt, Long completedAt, String retellCallId) {
+        // Extract userId from callId to make efficient lookup (we need to parse callId or get from user context)
+        // For now, we'll need to find by scanning, but this is much more targeted
+        CallRecord callRecord = findCallByCallId(callId);
+        
+        validateStatusTransition(callRecord.getStatus(), status);
+        
+        callRecord.setStatus(status);
+        callRecord.setProviderId(retellCallId); // Store Retell's ID for future reference
+        
+        if (callStartedAt != null) {
+            callRecord.setCallStartedAt(callStartedAt);
+        }
+        if (completedAt != null) {
+            callRecord.setCompletedAt(completedAt);
+        }
+        callRecord.setUpdatedAt(System.currentTimeMillis());
+        
+        callRecordRepository.save(callRecord);
+    }
+
+    public void updateRetellCallData(String callId, JsonNode retellData) {
+        CallRecord callRecord = findCallByCallId(callId);
+        
+        
+        callRecord.setRetellCallData(retellData.toString());
+        callRecord.setUpdatedAt(System.currentTimeMillis());
+        
+        callRecordRepository.save(callRecord);
+    }
+    
+    private CallRecord findCallByCallId(String callId) {
+        // This is still not ideal - we need userId to make it efficient
+        // Option 1: Scan for callId (better than scanning for providerId since callId is shorter/more unique)
+        // Option 2: Add GSI on callId (recommended for production)
+        // For now, let's implement a targeted scan
+        return callRecordRepository.findByCallId(callId)
+                .orElseThrow(() -> new RuntimeException("Call not found with ID: " + callId));
     }
 }

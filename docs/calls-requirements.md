@@ -33,7 +33,7 @@ Attributes:
 - subject: String              # Quick description
 - prompt: String               # Detailed instructions for AI
 - status: String               # SCHEDULED|IN_PROGRESS|COMPLETED|FAILED
-- scheduledAt: Number          # Epoch time when call should happen
+- scheduledFor: Number          # Epoch time when call should happen
 - aiLanguage: String           # Language for AI to speak
 - voiceId: String              # Retell voice selection
 - createdAt: Number            # Epoch time when created
@@ -41,11 +41,11 @@ Attributes:
 
     # During-call fields (populated when call starts)
     - providerId: String        # Retell's call ID
-    - callAt: Number               # Epoch time when call actually started
+    - callStartedAt: Number               # Epoch time when call actually started
     # Post-call fields (optional, populated after completion)
     - completedAt: Number          # Epoch time when ended
     # Retell-specific data storage
-    - retellCallData: Map          # Full Retell webhook response
+    - retellCallData: String          # Full Retell webhook response
 
   - Global Secondary Indexes
     - GSI 1: `upcoming-calls-index`:

@@ -10,6 +10,7 @@ import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.List;
 import java.util.Optional;
@@ -82,5 +83,19 @@ public class CallRecordRepository {
                 .partitionValue(callRecord.getUserId())
                 .sortValue(callRecord.getCallId())
                 .build());
+    }
+
+    public Optional<CallRecord> findByCallId(String callId) {
+        ScanEnhancedRequest scanRequest = ScanEnhancedRequest.builder()
+                .filterExpression(software.amazon.awssdk.enhanced.dynamodb.Expression.builder()
+                        .expression("callId = :callId")
+                        .putExpressionValue(":callId", AttributeValue.builder().s(callId).build())
+                        .build())
+                .build();
+
+        return table.scan(scanRequest)
+                .stream()
+                .flatMap(page -> page.items().stream())
+                .findFirst();
     }
 }

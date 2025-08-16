@@ -1,27 +1,29 @@
 package com.callcat.backend.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-public class UpdateCallRequest {
+public class CallRequest {
 
+    @NotBlank(message = "Callee name is required")
     @Size(max = 100, message = "Callee name must be less than 100 characters")
     private String calleeName;
 
+    @NotBlank(message = "Phone number is required")
     @Pattern(regexp = "^\\+1[0-9]{10}$", message = "Phone number must be in E.164 format (+1XXXXXXXXXX)")
     private String phoneNumber;
 
+    @NotBlank(message = "Subject is required")
     @Size(max = 200, message = "Subject must be less than 200 characters")
     private String subject;
 
+    @NotBlank(message = "Prompt is required")
     @Size(max = 5000, message = "Prompt must be less than 5000 characters")
     private String prompt;
 
-    private Long scheduledAt;
-
-    @Pattern(regexp = "^(SCHEDULED|IN_PROGRESS|COMPLETED|FAILED|CANCELED)$", 
-             message = "Status must be one of: SCHEDULED, IN_PROGRESS, COMPLETED, FAILED, CANCELED")
-    private String status;
+    private Long scheduledFor;
 
     @Size(max = 10, message = "AI language code must be less than 10 characters")
     private String aiLanguage;
@@ -29,7 +31,7 @@ public class UpdateCallRequest {
     @Size(max = 100, message = "Voice ID must be less than 100 characters")
     private String voiceId;
 
-    public UpdateCallRequest() {}
+    public CallRequest() {}
 
     public String getCalleeName() {
         return calleeName;
@@ -63,20 +65,12 @@ public class UpdateCallRequest {
         this.prompt = prompt;
     }
 
-    public Long getScheduledAt() {
-        return scheduledAt;
+    public Long getScheduledFor() {
+        return scheduledFor;
     }
 
-    public void setScheduledAt(Long scheduledAt) {
-        this.scheduledAt = scheduledAt;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
+    public void setScheduledFor(Long scheduledFor) {
+        this.scheduledFor = scheduledFor;
     }
 
     public String getAiLanguage() {

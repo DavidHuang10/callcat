@@ -37,8 +37,8 @@ class CallServiceTest {
 
     private User testUser;
     private CallRecord testCall;
-    private CreateCallRequest createRequest;
-    private UpdateCallRequest updateRequest;
+    private CallRequest createRequest;
+    private CallRequest updateRequest;
 
     @BeforeEach
     void setUp() {
@@ -55,22 +55,22 @@ class CallServiceTest {
         testCall.setSubject("Test Call");
         testCall.setPrompt("Test prompt for AI");
         testCall.setStatus("SCHEDULED");
-        testCall.setScheduledAt(System.currentTimeMillis() + 3600000); // 1 hour from now
+        testCall.setScheduledFor(System.currentTimeMillis() + 3600000); // 1 hour from now
         testCall.setAiLanguage("en");
         testCall.setVoiceId("voice123");
         testCall.setCreatedAt(System.currentTimeMillis());
         testCall.setUpdatedAt(System.currentTimeMillis());
 
-        createRequest = new CreateCallRequest();
+        createRequest = new CallRequest();
         createRequest.setCalleeName("John Doe");
         createRequest.setPhoneNumber("+15551234567");
         createRequest.setSubject("Test Call");
         createRequest.setPrompt("Test prompt for AI");
-        createRequest.setScheduledAt(System.currentTimeMillis() + 3600000);
+        createRequest.setScheduledFor(System.currentTimeMillis() + 3600000);
         createRequest.setAiLanguage("en");
         createRequest.setVoiceId("voice123");
 
-        updateRequest = new UpdateCallRequest();
+        updateRequest = new CallRequest();
         updateRequest.setCalleeName("Jane Doe");
         updateRequest.setSubject("Updated Call");
     }
@@ -131,7 +131,7 @@ class CallServiceTest {
     @Test
     void createCall_WithPastScheduledTime_ShouldThrowException() {
         // Arrange
-        createRequest.setScheduledAt(System.currentTimeMillis() - 3600000); // 1 hour ago
+        createRequest.setScheduledFor(System.currentTimeMillis() - 3600000); // 1 hour ago
         when(userRepository.findByEmailAndIsActive("test@example.com", true))
                 .thenReturn(Optional.of(testUser));
 
@@ -146,7 +146,7 @@ class CallServiceTest {
     @Test
     void createCall_WithNullScheduledTime_ShouldUseCurrentTime() {
         // Arrange
-        createRequest.setScheduledAt(null);
+        createRequest.setScheduledFor(null);
         when(userRepository.findByEmailAndIsActive("test@example.com", true))
                 .thenReturn(Optional.of(testUser));
         when(callRecordRepository.save(any(CallRecord.class)))
@@ -297,50 +297,11 @@ class CallServiceTest {
         verify(callRecordRepository, never()).save(any(CallRecord.class));
     }
 
-    @Test
-    void updateCall_WithInvalidStatusTransition_ShouldThrowException() {
-        // Arrange
-        testCall.setStatus("COMPLETED");
-        updateRequest.setStatus("SCHEDULED");
-        
-        when(userRepository.findByEmailAndIsActive("test@example.com", true))
-                .thenReturn(Optional.of(testUser));
-        when(callRecordRepository.findByUserIdAndCallId(1L, "test-call-id"))
-                .thenReturn(Optional.of(testCall));
-
-        // Act & Assert
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> callService.updateCall("test@example.com", "test-call-id", updateRequest));
-
-        assertTrue(exception.getMessage().contains("Cannot change status of a finalized call"));
-    }
-
-    @Test
-    void updateCall_WithValidStatusTransition_ShouldSucceed() {
-        // Arrange
-        testCall.setStatus("SCHEDULED");
-        updateRequest.setStatus("IN_PROGRESS");
-        
-        when(userRepository.findByEmailAndIsActive("test@example.com", true))
-                .thenReturn(Optional.of(testUser));
-        when(callRecordRepository.findByUserIdAndCallId(1L, "test-call-id"))
-                .thenReturn(Optional.of(testCall));
-        when(callRecordRepository.save(any(CallRecord.class)))
-                .thenReturn(testCall);
-
-        // Act
-        CallResponse result = callService.updateCall("test@example.com", "test-call-id", updateRequest);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals("IN_PROGRESS", testCall.getStatus());
-        verify(callRecordRepository).save(testCall);
-    }
 
     @Test
     void updateCall_WithPastScheduledTime_ShouldThrowException() {
         // Arrange
-        updateRequest.setScheduledAt(System.currentTimeMillis() - 3600000); // 1 hour ago
+        updateRequest.setScheduledFor(System.currentTimeMillis() - 3600000); // 1 hour ago
         when(userRepository.findByEmailAndIsActive("test@example.com", true))
                 .thenReturn(Optional.of(testUser));
         when(callRecordRepository.findByUserIdAndCallId(1L, "test-call-id"))
@@ -402,42 +363,4 @@ class CallServiceTest {
         verify(callRecordRepository, never()).delete(any(CallRecord.class));
     }
 
-    @Test
-    void statusTransitionValidation_ShouldEnforceProperFlow() {
-        // Arrange
-        when(userRepository.findByEmailAndIsActive("test@example.com", true))
-                .thenReturn(Optional.of(testUser));
-        when(callRecordRepository.findByUserIdAndCallId(1L, "test-call-id"))
-                .thenReturn(Optional.of(testCall));
-        when(callRecordRepository.save(any(CallRecord.class)))
-                .thenReturn(testCall);
-
-        // Test valid transitions from SCHEDULED
-        testCall.setStatus("SCHEDULED");
-        updateRequest.setStatus("IN_PROGRESS");
-        assertDoesNotThrow(() -> callService.updateCall("test@example.com", "test-call-id", updateRequest));
-
-        testCall.setStatus("SCHEDULED"); // Reset for next test
-        updateRequest.setStatus("CANCELED");
-        assertDoesNotThrow(() -> callService.updateCall("test@example.com", "test-call-id", updateRequest));
-
-        // Test invalid transition from SCHEDULED
-        updateRequest.setStatus("COMPLETED");
-        assertThrows(IllegalArgumentException.class,
-                () -> callService.updateCall("test@example.com", "test-call-id", updateRequest));
-
-        // Test valid transitions from IN_PROGRESS
-        testCall.setStatus("IN_PROGRESS");
-        updateRequest.setStatus("COMPLETED");
-        assertDoesNotThrow(() -> callService.updateCall("test@example.com", "test-call-id", updateRequest));
-
-        testCall.setStatus("IN_PROGRESS"); // Reset for next test
-        updateRequest.setStatus("FAILED");
-        assertDoesNotThrow(() -> callService.updateCall("test@example.com", "test-call-id", updateRequest));
-
-        // Test invalid transition from IN_PROGRESS
-        updateRequest.setStatus("SCHEDULED");
-        assertThrows(IllegalArgumentException.class,
-                () -> callService.updateCall("test@example.com", "test-call-id", updateRequest));
-    }
 }
