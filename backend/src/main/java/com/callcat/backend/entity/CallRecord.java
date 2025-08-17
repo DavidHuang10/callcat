@@ -8,7 +8,8 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecon
 
 @DynamoDbBean
 public class CallRecord {
-    private Long userId;
+    private String userId;
+    private String sk; // Composite sort key: scheduledForMs#callId
     private String callId;
     private String calleeName;
     private String phoneNumber;
@@ -29,6 +30,7 @@ public class CallRecord {
     
     // Post-call fields
     private Long completedAt;
+    private Boolean isSuccessful;
     
     // Retell-specific data storage (as JSON string for DynamoDB compatibility)
     private String retellCallData;
@@ -36,16 +38,27 @@ public class CallRecord {
     public CallRecord() {}
 
     @DynamoDbPartitionKey
-    @DynamoDbSecondaryPartitionKey(indexNames = {"upcoming-calls-index", "completed-calls-index"})
-    public Long getUserId() {
+    public String getUserId() {
         return userId;
     }
 
-    public void setUserId(Long userId) {
+    public void setUserId(String userId) {
         this.userId = userId;
     }
 
     @DynamoDbSortKey
+    public String getSk() {
+        if (sk == null && scheduledFor != null && callId != null) {
+            return String.format("%013d#%s", scheduledFor, callId);
+        }
+        return sk;
+    }
+
+    public void setSk(String sk) {
+        this.sk = sk;
+    }
+
+    @DynamoDbSecondaryPartitionKey(indexNames = "byCallId")
     public String getCallId() {
         return callId;
     }
@@ -99,16 +112,21 @@ public class CallRecord {
     }
 
     public void setStatus(String status) {
+        // Validate status
+        if (status != null && !"SCHEDULED".equals(status) && !"COMPLETED".equals(status)) {
+            throw new IllegalArgumentException("Status must be SCHEDULED or COMPLETED, got: " + status);
+        }
         this.status = status;
     }
 
-    @DynamoDbSecondarySortKey(indexNames = "upcoming-calls-index")
     public Long getScheduledFor() {
         return scheduledFor;
     }
 
     public void setScheduledFor(Long scheduledFor) {
         this.scheduledFor = scheduledFor;
+        // Recompute SK when scheduledFor changes
+        this.sk = null;
     }
 
     public Long getCallStartedAt() {
@@ -119,13 +137,23 @@ public class CallRecord {
         this.callStartedAt = callStartedAt;
     }
 
-    @DynamoDbSecondaryPartitionKey(indexNames = "provider-calls-index")
+    @DynamoDbSecondaryPartitionKey(indexNames = "byProvider")
+    @DynamoDbSecondarySortKey(indexNames = "byProvider")
     public String getProviderId() {
         return providerId;
     }
 
     public void setProviderId(String providerId) {
         this.providerId = providerId;
+    }
+
+    @DynamoDbSecondarySortKey(indexNames = "byProvider")
+    public String getProviderSk() {
+        return getSk(); // Use same SK for provider index
+    }
+
+    public void setProviderSk(String providerSk) {
+        // No-op setter for DynamoDB Enhanced Client
     }
 
     public String getAiLanguage() {
@@ -161,7 +189,6 @@ public class CallRecord {
     }
 
 
-    @DynamoDbSecondarySortKey(indexNames = "completed-calls-index")
     public Long getCompletedAt() {
         return completedAt;
     }
@@ -178,4 +205,33 @@ public class CallRecord {
         this.retellCallData = retellCallData;
     }
 
+    // Single elegant GSI partition key for status-based queries
+    @DynamoDbSecondaryPartitionKey(indexNames = "byUserStatus")
+    public String getUserStatus() {
+        if (userId != null && status != null) {
+            return userId + "#" + status;
+        }
+        return null;
+    }
+
+    public void setUserStatus(String userStatus) {
+        // No-op setter required by DynamoDB Enhanced Client
+    }
+
+    @DynamoDbSecondarySortKey(indexNames = "byUserStatus")
+    public String getUserStatusSk() {
+        return getSk(); // Use same SK for user status index
+    }
+
+    public void setUserStatusSk(String userStatusSk) {
+        // No-op setter for DynamoDB Enhanced Client
+    }
+
+    public Boolean getSuccessful() {
+        return isSuccessful;
+    }
+
+    public void setSuccessful(Boolean successful) {
+        isSuccessful = successful;
+    }
 }

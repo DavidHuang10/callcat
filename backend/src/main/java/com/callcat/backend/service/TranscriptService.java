@@ -34,7 +34,7 @@ public class TranscriptService {
         User user = userRepository.findByEmailAndIsActive(userEmail, true)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        CallRecord callRecord = callRecordRepository.findByUserIdAndCallId(user.getId(), callId)
+        CallRecord callRecord = callRecordRepository.findByUserIdAndCallId(user.getId().toString(), callId)
                 .orElseThrow(() -> new RuntimeException("Call not found"));
 
         if (callRecord.getProviderId() == null) {

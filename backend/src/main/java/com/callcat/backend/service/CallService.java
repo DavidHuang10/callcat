@@ -45,7 +45,7 @@ public class CallService {
         CallRecord callRecord = new CallRecord();
         BeanUpdateUtils.copyNonNullProperties(request, callRecord);
         
-        callRecord.setUserId(user.getId());
+        callRecord.setUserId(user.getId().toString());
         callRecord.setCallId(UUID.randomUUID().toString());
         callRecord.setStatus("SCHEDULED");
         callRecord.setCreatedAt(currentTime);
@@ -61,10 +61,11 @@ public class CallService {
 
         List<CallRecord> calls;
         if (status != null) {
-            calls = callRecordRepository.findByUserIdAndStatus(user.getId(), status, limit);
+            calls = callRecordRepository.findByUserIdAndStatus(user.getId().toString(), status, limit);
         } else {
-            List<CallRecord> upcoming = callRecordRepository.findUpcomingCallsByUserId(user.getId(), limit / 2);
-            List<CallRecord> completed = callRecordRepository.findCompletedCallsByUserId(user.getId(), limit / 2);
+            Integer halfLimit = limit != null ? limit / 2 : 10;
+            List<CallRecord> upcoming = callRecordRepository.findUpcomingCallsByUserId(user.getId().toString(), halfLimit);
+            List<CallRecord> completed = callRecordRepository.findCompletedCallsByUserId(user.getId().toString(), halfLimit);
             calls = upcoming;
             calls.addAll(completed);
         }
@@ -80,7 +81,7 @@ public class CallService {
         User user = userRepository.findByEmailAndIsActive(userEmail, true)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        CallRecord callRecord = callRecordRepository.findByUserIdAndCallId(user.getId(), callId)
+        CallRecord callRecord = callRecordRepository.findByUserIdAndCallId(user.getId().toString(), callId)
                 .orElseThrow(() -> new RuntimeException("Call not found"));
 
         return mapToCallResponse(callRecord);
@@ -90,7 +91,7 @@ public class CallService {
         User user = userRepository.findByEmailAndIsActive(userEmail, true)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        CallRecord callRecord = callRecordRepository.findByUserIdAndCallId(user.getId(), callId)
+        CallRecord callRecord = callRecordRepository.findByUserIdAndCallId(user.getId().toString(), callId)
                 .orElseThrow(() -> new RuntimeException("Call not found"));
 
         if (request.getPhoneNumber() != null) {
@@ -113,7 +114,7 @@ public class CallService {
         User user = userRepository.findByEmailAndIsActive(userEmail, true)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        CallRecord callRecord = callRecordRepository.findByUserIdAndCallId(user.getId(), callId)
+        CallRecord callRecord = callRecordRepository.findByUserIdAndCallId(user.getId().toString(), callId)
                 .orElseThrow(() -> new RuntimeException("Call not found"));
 
         if (!"SCHEDULED".equals(callRecord.getStatus())) {

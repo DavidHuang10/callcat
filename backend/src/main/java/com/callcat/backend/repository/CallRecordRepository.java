@@ -9,8 +9,6 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
-import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,16 +18,16 @@ import java.util.stream.Collectors;
 public class CallRecordRepository {
 
     private final DynamoDbTable<CallRecord> table;
-    private final DynamoDbIndex<CallRecord> upcomingCallsIndex;
-    private final DynamoDbIndex<CallRecord> completedCallsIndex;
-    private final DynamoDbIndex<CallRecord> providerCallsIndex;
+    private final DynamoDbIndex<CallRecord> byCallIdIndex;
+    private final DynamoDbIndex<CallRecord> byProviderIndex;
+    private final DynamoDbIndex<CallRecord> byUserStatusIndex;
 
     @Autowired
     public CallRecordRepository(DynamoDbEnhancedClient dynamoDb) {
         this.table = dynamoDb.table("callcat-calls", TableSchema.fromBean(CallRecord.class));
-        this.upcomingCallsIndex = table.index("upcoming-calls-index");
-        this.completedCallsIndex = table.index("completed-calls-index");
-        this.providerCallsIndex = table.index("provider-calls-index");
+        this.byCallIdIndex = table.index("byCallId");
+        this.byProviderIndex = table.index("byProvider");
+        this.byUserStatusIndex = table.index("byUserStatus");
     }
 
     public CallRecord save(CallRecord callRecord) {
@@ -37,42 +35,41 @@ public class CallRecordRepository {
         return callRecord;
     }
 
-    public Optional<CallRecord> findByUserIdAndCallId(Long userId, String callId) {
+    public Optional<CallRecord> findByUserIdAndSk(String userId, String sk) {
         CallRecord result = table.getItem(Key.builder()
                 .partitionValue(userId)
-                .sortValue(callId)
+                .sortValue(sk)
                 .build());
         return Optional.ofNullable(result);
     }
 
-    public List<CallRecord> findUpcomingCallsByUserId(Long userId, Integer limit) {
+    public List<CallRecord> findScheduledCallsByUserId(String userId, Integer limit) {
         QueryConditional queryConditional = QueryConditional.keyEqualTo(
-                Key.builder().partitionValue(userId).build());
+                Key.builder().partitionValue(userId + "#SCHEDULED").build());
         
-        return upcomingCallsIndex.query(r -> r.queryConditional(queryConditional)
+        return byUserStatusIndex.query(r -> r.queryConditional(queryConditional)
+                .scanIndexForward(true) // Ascending order - soonest first
                 .limit(limit != null ? limit : 20))
                 .stream()
                 .flatMap(page -> page.items().stream())
                 .collect(Collectors.toList());
     }
 
-    public List<CallRecord> findCompletedCallsByUserId(Long userId, Integer limit) {
+    public List<CallRecord> findCompletedCallsByUserId(String userId, Integer limit) {
         QueryConditional queryConditional = QueryConditional.keyEqualTo(
-                Key.builder().partitionValue(userId).build());
+                Key.builder().partitionValue(userId + "#COMPLETED").build());
         
-        return completedCallsIndex.query(r -> r.queryConditional(queryConditional)
-                .scanIndexForward(false)
+        return byUserStatusIndex.query(r -> r.queryConditional(queryConditional)
+                .scanIndexForward(false) // Descending order - most recent first
                 .limit(limit != null ? limit : 20))
                 .stream()
                 .flatMap(page -> page.items().stream())
                 .collect(Collectors.toList());
     }
 
-    public List<CallRecord> findByUserIdAndStatus(Long userId, String status, Integer limit) {
-        if ("SCHEDULED".equals(status) || "IN_PROGRESS".equals(status)) {
-            return findUpcomingCallsByUserId(userId, limit).stream()
-                    .filter(call -> status.equals(call.getStatus()))
-                    .collect(Collectors.toList());
+    public List<CallRecord> findByUserIdAndStatus(String userId, String status, Integer limit) {
+        if ("SCHEDULED".equals(status)) {
+            return findScheduledCallsByUserId(userId, limit);
         } else if ("COMPLETED".equals(status)) {
             return findCompletedCallsByUserId(userId, limit);
         } else {
@@ -83,19 +80,15 @@ public class CallRecordRepository {
     public void delete(CallRecord callRecord) {
         table.deleteItem(Key.builder()
                 .partitionValue(callRecord.getUserId())
-                .sortValue(callRecord.getCallId())
+                .sortValue(callRecord.getSk())
                 .build());
     }
 
     public Optional<CallRecord> findByCallId(String callId) {
-        ScanEnhancedRequest scanRequest = ScanEnhancedRequest.builder()
-                .filterExpression(software.amazon.awssdk.enhanced.dynamodb.Expression.builder()
-                        .expression("callId = :callId")
-                        .putExpressionValue(":callId", AttributeValue.builder().s(callId).build())
-                        .build())
-                .build();
-
-        return table.scan(scanRequest)
+        QueryConditional queryConditional = QueryConditional.keyEqualTo(
+                Key.builder().partitionValue(callId).build());
+        
+        return byCallIdIndex.query(r -> r.queryConditional(queryConditional))
                 .stream()
                 .flatMap(page -> page.items().stream())
                 .findFirst();
@@ -105,9 +98,19 @@ public class CallRecordRepository {
         QueryConditional queryConditional = QueryConditional.keyEqualTo(
                 Key.builder().partitionValue(providerId).build());
         
-        return providerCallsIndex.query(r -> r.queryConditional(queryConditional))
+        return byProviderIndex.query(r -> r.queryConditional(queryConditional))
                 .stream()
                 .flatMap(page -> page.items().stream())
                 .findFirst();
+    }
+    
+    public Optional<CallRecord> findByUserIdAndCallId(String userId, String callId) {
+        // First find by callId to get the record, then verify userId matches
+        Optional<CallRecord> record = findByCallId(callId);
+        return record.filter(r -> userId.equals(r.getUserId()));
+    }
+
+    public List<CallRecord> findUpcomingCallsByUserId(String userId, Integer limit) {
+        return findScheduledCallsByUserId(userId, limit);
     }
 }

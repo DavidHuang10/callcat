@@ -1,2 +1,3 @@
-need to setup call id things/ think about design cuz we cant make one for the future call with retell
-only get retell id when making the call.
+fixed the dynamodb setup hooray
+
+need to work on making usre all call stuff is workign correctly with new setup.
