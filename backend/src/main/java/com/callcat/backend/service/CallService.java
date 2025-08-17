@@ -40,22 +40,19 @@ public class CallService {
             throw new IllegalArgumentException("Scheduled time must be in the future");
         }
 
+        long currentTime = System.currentTimeMillis();
+        
         CallRecord callRecord = new CallRecord();
+        BeanUpdateUtils.copyNonNullProperties(request, callRecord);
+        
         callRecord.setUserId(user.getId());
         callRecord.setCallId(UUID.randomUUID().toString());
-        callRecord.setCalleeName(request.getCalleeName());
-        callRecord.setPhoneNumber(request.getPhoneNumber());
-        callRecord.setSubject(request.getSubject());
-        callRecord.setPrompt(request.getPrompt());
         callRecord.setStatus("SCHEDULED");
-        callRecord.setScheduledFor(request.getScheduledFor() != null ? request.getScheduledFor() : System.currentTimeMillis());
-        callRecord.setAiLanguage(request.getAiLanguage() != null ? request.getAiLanguage() : "en");
-        callRecord.setVoiceId(request.getVoiceId());
-        callRecord.setCreatedAt(System.currentTimeMillis());
-        callRecord.setUpdatedAt(System.currentTimeMillis());
+        callRecord.setCreatedAt(currentTime);
+        callRecord.setUpdatedAt(currentTime);
 
-        CallRecord savedCall = callRecordRepository.save(callRecord);
-        return mapToCallResponse(savedCall);
+        callRecordRepository.save(callRecord);
+        return mapToCallResponse(callRecord);
     }
 
     public CallListResponse getCalls(String userEmail, String status, Integer limit) {
@@ -108,8 +105,8 @@ public class CallService {
         BeanUpdateUtils.copyNonNullProperties(request, callRecord);
         callRecord.setUpdatedAt(System.currentTimeMillis());
 
-        CallRecord updatedCall = callRecordRepository.save(callRecord);
-        return mapToCallResponse(updatedCall);
+        callRecordRepository.save(callRecord);
+        return mapToCallResponse(callRecord);
     }
 
     public void deleteCall(String userEmail, String callId) {
@@ -177,11 +174,12 @@ public class CallService {
     }
     
     private CallRecord findCallByCallId(String callId) {
-        // This is still not ideal - we need userId to make it efficient
-        // Option 1: Scan for callId (better than scanning for providerId since callId is shorter/more unique)
-        // Option 2: Add GSI on callId (recommended for production)
-        // For now, let's implement a targeted scan
         return callRecordRepository.findByCallId(callId)
                 .orElseThrow(() -> new RuntimeException("Call not found with ID: " + callId));
+    }
+
+    public CallRecord findCallByProviderId(String providerId) {
+        return callRecordRepository.findByProviderId(providerId)
+                .orElseThrow(() -> new RuntimeException("Call not found with provider ID: " + providerId));
     }
 }

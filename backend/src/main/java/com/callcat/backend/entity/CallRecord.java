@@ -119,6 +119,7 @@ public class CallRecord {
         this.callStartedAt = callStartedAt;
     }
 
+    @DynamoDbSecondaryPartitionKey(indexNames = "provider-calls-index")
     public String getProviderId() {
         return providerId;
     }

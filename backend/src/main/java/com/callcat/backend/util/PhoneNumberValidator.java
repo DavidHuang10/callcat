@@ -12,7 +12,7 @@ public class PhoneNumberValidator {
         }
         return E164_PATTERN.matcher(phoneNumber.trim()).matches();
     }
-    
+    //lowk get rid of normalizePhoneNumber
     public static String normalizePhoneNumber(String phoneNumber) {
         if (phoneNumber == null) {
             return null;

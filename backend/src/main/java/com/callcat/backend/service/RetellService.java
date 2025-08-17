@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,86 +20,72 @@ public class RetellService {
     @Value("${retell.api.key:}")
     private String retellApiKey;
     
-    @Value("${retell.api.url:https://api.retellai.com}")
-    private String retellApiUrl;
+    @Value("${retell.base.url}")
+    private String retellBaseUrl;
     
-    @Value("${retell.agent.id:}")
-    private String defaultAgentId;
+    @Value("${retell.phone.number}")
+    private String retellPhoneNumber;
     
-    private final RestTemplate restTemplate;
+    private final RestClient restClient;
     private final ObjectMapper objectMapper;
     
-    public RetellService() {
-        this.restTemplate = new RestTemplate();
+    public RetellService(RestClient.Builder restClientBuilder) {
         this.objectMapper = new ObjectMapper();
+        this.restClient = restClientBuilder
+            .baseUrl(retellBaseUrl)
+            .defaultHeader("Authorization", "Bearer " + retellApiKey)
+            .defaultHeader("Content-Type", "application/json")
+            .build();
     }
     
-    public String startPhoneCall(String callId, String phoneNumber, String callerNumber, String prompt, Map<String, Object> metadata) {
+    public JsonNode createCall(String phoneNumber, String systemPrompt, String taskPrompt) {
         try {
-            String url = retellApiUrl + "/create-phone-call";
-            
             Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("from_number", callerNumber);
+            requestBody.put("from_number", retellPhoneNumber);
             requestBody.put("to_number", phoneNumber);
-            requestBody.put("agent_id", defaultAgentId);
             
-            // Add our callId to metadata so Retell sends it back in webhooks
-            Map<String, Object> callMetadata = new HashMap<>();
-            callMetadata.put("callId", callId);
-            if (metadata != null) {
-                callMetadata.putAll(metadata);
+            // Create retell_llm_dynamic_variables with system_prompt and task_prompt
+            Map<String, Object> dynamicVariables = new HashMap<>();
+            if (systemPrompt != null && !systemPrompt.trim().isEmpty()) {
+                dynamicVariables.put("system_prompt", systemPrompt);
             }
-            requestBody.put("metadata", callMetadata);
+            if (taskPrompt != null && !taskPrompt.trim().isEmpty()) {
+                dynamicVariables.put("task_prompt", taskPrompt);
+            }
             
-            // Add custom prompt if provided
-            if (prompt != null && !prompt.trim().isEmpty()) {
-                Map<String, Object> dynamicVariables = new HashMap<>();
-                dynamicVariables.put("custom_prompt", prompt);
+            if (!dynamicVariables.isEmpty()) {
                 requestBody.put("retell_llm_dynamic_variables", dynamicVariables);
             }
             
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(retellApiKey);
+            logger.info("Creating call via Retell API to number: {}", phoneNumber);
             
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+            String responseBody = restClient.post()
+                .uri("/call")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(requestBody)
+                .retrieve()
+                .body(String.class);
             
-            logger.info("Starting phone call via Retell for callId: {}", callId);
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
-            
-            if (response.getStatusCode().is2xxSuccessful()) {
-                JsonNode responseJson = objectMapper.readTree(response.getBody());
-                String retellCallId = responseJson.get("call_id").asText();
-                
-                logger.info("Successfully started Retell call {} for callId {}", retellCallId, callId);
-                return retellCallId;
-            } else {
-                throw new RuntimeException("Failed to start call via Retell: " + response.getStatusCode());
-            }
+            JsonNode responseJson = objectMapper.readTree(responseBody);
+            logger.info("Successfully created Retell call with ID: {}", responseJson.get("call_id").asText());
+            return responseJson;
             
         } catch (Exception e) {
-            logger.error("Error starting phone call via Retell for callId: {}", callId, e);
-            throw new RuntimeException("Failed to start phone call: " + e.getMessage(), e);
+            logger.error("Error creating call via Retell to number: {}", phoneNumber, e);
+            throw new RuntimeException("Failed to create call: " + e.getMessage(), e);
         }
     }
     
     public void cancelCall(String retellCallId) {
         try {
-            String url = retellApiUrl + "/cancel-call/" + retellCallId;
-            
-            HttpHeaders headers = new HttpHeaders();
-            headers.setBearerAuth(retellApiKey);
-            
-            HttpEntity<Void> entity = new HttpEntity<>(headers);
-            
             logger.info("Cancelling Retell call: {}", retellCallId);
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
             
-            if (response.getStatusCode().is2xxSuccessful()) {
-                logger.info("Successfully cancelled Retell call: {}", retellCallId);
-            } else {
-                logger.warn("Failed to cancel Retell call {}: {}", retellCallId, response.getStatusCode());
-            }
+            restClient.post()
+                .uri("/cancel-call/" + retellCallId)
+                .retrieve()
+                .toBodilessEntity();
+            
+            logger.info("Successfully cancelled Retell call: {}", retellCallId);
             
         } catch (Exception e) {
             logger.error("Error cancelling Retell call: {}", retellCallId, e);
@@ -108,6 +94,7 @@ public class RetellService {
     
     public boolean isConfigured() {
         return retellApiKey != null && !retellApiKey.trim().isEmpty() 
-               && defaultAgentId != null && !defaultAgentId.trim().isEmpty();
+               && retellPhoneNumber != null && !retellPhoneNumber.trim().isEmpty()
+               && retellBaseUrl != null && !retellBaseUrl.trim().isEmpty();
     }
 }

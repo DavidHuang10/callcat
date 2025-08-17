@@ -22,12 +22,14 @@ public class CallRecordRepository {
     private final DynamoDbTable<CallRecord> table;
     private final DynamoDbIndex<CallRecord> upcomingCallsIndex;
     private final DynamoDbIndex<CallRecord> completedCallsIndex;
+    private final DynamoDbIndex<CallRecord> providerCallsIndex;
 
     @Autowired
     public CallRecordRepository(DynamoDbEnhancedClient dynamoDb) {
         this.table = dynamoDb.table("callcat-calls", TableSchema.fromBean(CallRecord.class));
         this.upcomingCallsIndex = table.index("upcoming-calls-index");
         this.completedCallsIndex = table.index("completed-calls-index");
+        this.providerCallsIndex = table.index("provider-calls-index");
     }
 
     public CallRecord save(CallRecord callRecord) {
@@ -94,6 +96,16 @@ public class CallRecordRepository {
                 .build();
 
         return table.scan(scanRequest)
+                .stream()
+                .flatMap(page -> page.items().stream())
+                .findFirst();
+    }
+
+    public Optional<CallRecord> findByProviderId(String providerId) {
+        QueryConditional queryConditional = QueryConditional.keyEqualTo(
+                Key.builder().partitionValue(providerId).build());
+        
+        return providerCallsIndex.query(r -> r.queryConditional(queryConditional))
                 .stream()
                 .flatMap(page -> page.items().stream())
                 .findFirst();

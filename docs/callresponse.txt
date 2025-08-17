@@ -1,0 +1,35 @@
+The following is what a response from the api
+
+{
+    "call_id": "call_6f036563c7725baaf83680780b8",
+    "call_type": "phone_call",
+    "agent_id": "agent_63cbfc51dc5411750baa26b0da",
+    "agent_version": 0,
+    "agent_name": "Single-Prompt Agent",
+    "call_status": "registered",
+    "latency": {},
+    "call_cost": {
+        "product_costs": [],
+        "total_duration_seconds": 0,
+        "total_duration_unit_price": 0,
+        "combined_cost": 0
+    },
+    "opt_out_sensitive_data_storage": false,
+    "opt_in_signed_url": false,
+    "from_number": "+19174733799",
+    "to_number": "+19144919901",
+    "direction": "outbound"
+}
+
+We should therefore not use our own uuid system, but whenever we receieve a call request, we post to
+retell's api and get this information and sub in call id.
+
+We need 2 headers.
+Authorization --> bearer api key
+Content type --> application/json
+
+Body needs:
+from_number: in env call
+to_number: from request
+retell_llm_dynamic_variables: object which contains two fields. system_prompt with the user's system prompt from their preferences
+as well as task_prompt which is the user's task for the agent to complete.
