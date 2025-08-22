@@ -35,14 +35,6 @@ public class CallRecordRepository {
         return callRecord;
     }
 
-    public Optional<CallRecord> findByUserIdAndSk(String userId, String sk) {
-        CallRecord result = table.getItem(Key.builder()
-                .partitionValue(userId)
-                .sortValue(sk)
-                .build());
-        return Optional.ofNullable(result);
-    }
-
     public List<CallRecord> findScheduledCallsByUserId(String userId, Integer limit) {
         QueryConditional queryConditional = QueryConditional.keyEqualTo(
                 Key.builder().partitionValue(userId + "#SCHEDULED").build());

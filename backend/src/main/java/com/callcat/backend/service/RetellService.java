@@ -1,100 +1,130 @@
 package com.callcat.backend.service;
 
+import com.callcat.backend.dto.CallRequest;
+import com.callcat.backend.dto.CallResponse;
+import com.callcat.backend.util.BeanUpdateUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import jakarta.annotation.PostConstruct;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Boilerplate template for API service classes
+ * This shows the standard pattern for making HTTP requests in Spring Boot
+ */
 @Service
 public class RetellService {
     
     private static final Logger logger = LoggerFactory.getLogger(RetellService.class);
     
-    @Value("${retell.api.key:}")
-    private String retellApiKey;
+    // Configuration from application.properties
+    @Value("${retell.api.key}")
+    private String apiKey;
     
     @Value("${retell.base.url}")
-    private String retellBaseUrl;
-    
+    private String baseUrl;
+
     @Value("${retell.phone.number}")
-    private String retellPhoneNumber;
-    
-    private final RestClient restClient;
+    private String phoneNumber;
+
+    // Spring beans for HTTP calls and JSON processing
+    private RestClient restClient;
     private final ObjectMapper objectMapper;
+    private final UserService userService;
     
-    public RetellService(RestClient.Builder restClientBuilder) {
+    public RetellService(UserService userService) {
         this.objectMapper = new ObjectMapper();
-        this.restClient = restClientBuilder
-            .baseUrl(retellBaseUrl)
-            .defaultHeader("Authorization", "Bearer " + retellApiKey)
+        this.userService = userService;
+    }
+    
+    @PostConstruct
+    private void initializeRestClient() {
+        this.restClient = RestClient.builder()
+            .baseUrl(baseUrl)
+            .defaultHeader("Authorization", "Bearer " + apiKey)
             .defaultHeader("Content-Type", "application/json")
             .build();
     }
-    
-    public JsonNode createCall(String phoneNumber, String systemPrompt, String taskPrompt) {
+
+    /**
+     * Generic POST request method
+     * Takes a Map as request body, converts to JSON automatically
+     */
+    public CallResponse makeCall(String email, CallRequest callRequest) {
         try {
-            Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("from_number", retellPhoneNumber);
-            requestBody.put("to_number", phoneNumber);
+            // Get user preferences to fetch system prompt
+            String systemPrompt = userService.getUserPreferences(email).getSystemPrompt();
             
-            // Create retell_llm_dynamic_variables with system_prompt and task_prompt
+            // Build request body for Retell API
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("from_number", phoneNumber);
+            requestBody.put("to_number", callRequest.getPhoneNumber());
+            
+            // Add dynamic variables for LLM
             Map<String, Object> dynamicVariables = new HashMap<>();
             if (systemPrompt != null && !systemPrompt.trim().isEmpty()) {
                 dynamicVariables.put("system_prompt", systemPrompt);
             }
-            if (taskPrompt != null && !taskPrompt.trim().isEmpty()) {
-                dynamicVariables.put("task_prompt", taskPrompt);
+            if (callRequest.getPrompt() != null && !callRequest.getPrompt().trim().isEmpty()) {
+                dynamicVariables.put("task_prompt", callRequest.getPrompt());
             }
-            
-            if (!dynamicVariables.isEmpty()) {
-                requestBody.put("retell_llm_dynamic_variables", dynamicVariables);
-            }
-            
-            logger.info("Creating call via Retell API to number: {}", phoneNumber);
+
+            String timeInfo = "The current date is: " + LocalDate.now().toString();
+            dynamicVariables.put("time_info", timeInfo);
+
+            requestBody.put("retell_llm_dynamic_variables", dynamicVariables);
+
+            logger.info("Making POST request to Retell API for phone: {}", callRequest.getPhoneNumber());
             
             String responseBody = restClient.post()
-                .uri("/call")
-                .contentType(MediaType.APPLICATION_JSON)
+                .uri("/create-phone-call")
                 .body(requestBody)
                 .retrieve()
                 .body(String.class);
             
-            JsonNode responseJson = objectMapper.readTree(responseBody);
-            logger.info("Successfully created Retell call with ID: {}", responseJson.get("call_id").asText());
-            return responseJson;
+            logger.info("Retell API call successful");
+            
+            // Parse Retell response
+            JsonNode retellResponse = objectMapper.readTree(responseBody);
+            
+            // Convert to CallResponse DTO
+            return convertToCallResponse(callRequest, retellResponse);
             
         } catch (Exception e) {
-            logger.error("Error creating call via Retell to number: {}", phoneNumber, e);
-            throw new RuntimeException("Failed to create call: " + e.getMessage(), e);
+            logger.error("Retell API call failed for phone {}: {}", callRequest.getPhoneNumber(), e.getMessage());
+            throw new RuntimeException("Failed to create call", e);
         }
     }
     
-    public void cancelCall(String retellCallId) {
-        try {
-            logger.info("Cancelling Retell call: {}", retellCallId);
-            
-            restClient.post()
-                .uri("/cancel-call/" + retellCallId)
-                .retrieve()
-                .toBodilessEntity();
-            
-            logger.info("Successfully cancelled Retell call: {}", retellCallId);
-            
-        } catch (Exception e) {
-            logger.error("Error cancelling Retell call: {}", retellCallId, e);
+    /**
+     * Convert Retell API response and CallRequest to CallResponse DTO
+     */
+    private CallResponse convertToCallResponse(CallRequest callRequest, JsonNode retellResponse) {
+        CallResponse response = new CallResponse();
+        
+        // Copy all matching fields from CallRequest to CallResponse using BeanUpdateUtils
+        BeanUpdateUtils.copyNonNullProperties(callRequest, response);
+        
+        // Extract call_id from Retell response (becomes our callId)
+        if (retellResponse.has("call_id")) {
+            response.setProviderId(retellResponse.get("call_id").asText());
         }
-    }
-    
-    public boolean isConfigured() {
-        return retellApiKey != null && !retellApiKey.trim().isEmpty() 
-               && retellPhoneNumber != null && !retellPhoneNumber.trim().isEmpty()
-               && retellBaseUrl != null && !retellBaseUrl.trim().isEmpty();
+        
+        // Set additional fields
+        response.setCallerNumber(phoneNumber); // Our configured phone number
+        response.setStatus("SCHEDULED");
+        long currentTime = System.currentTimeMillis();
+        response.setCreatedAt(currentTime);
+        response.setUpdatedAt(currentTime);
+        
+        return response;
     }
 }
