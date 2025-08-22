@@ -2,22 +2,22 @@ package com.callcat.backend.dto;
 
 public class TranscriptResponse {
     
-    private String callId;
+    private String providerId;
     private String transcriptText;
 
     public TranscriptResponse() {}
 
-    public TranscriptResponse(String callId, String transcriptText) {
-        this.callId = callId;
+    public TranscriptResponse(String providerId, String transcriptText) {
+        this.providerId = providerId;
         this.transcriptText = transcriptText;
     }
 
-    public String getCallId() {
-        return callId;
+    public String getProviderId() {
+        return providerId;
     }
 
-    public void setCallId(String callId) {
-        this.callId = callId;
+    public void setProviderId(String providerId) {
+        this.providerId = providerId;
     }
 
     public String getTranscriptText() {

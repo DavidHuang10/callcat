@@ -1,6 +1,9 @@
 package com.callcat.backend.controller;
 
 import com.callcat.backend.dto.*;
+import com.callcat.backend.entity.CallRecord;
+import com.callcat.backend.entity.User;
+import com.callcat.backend.repository.UserRepository;
 import com.callcat.backend.service.CallService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -12,9 +15,11 @@ import org.springframework.web.bind.annotation.*;
 public class CallController {
     
     private final CallService callService;
+    private final UserRepository userRepository;
     
-    public CallController(CallService callService) {
+    public CallController(CallService callService, UserRepository userRepository) {
         this.callService = callService;
+        this.userRepository = userRepository;
     }
     
     @PostMapping
@@ -57,7 +62,14 @@ public class CallController {
             @PathVariable String callId) {
         try {
             String email = authentication.getName();
-            CallResponse response = callService.getCall(email, callId);
+            User user = userRepository.findByEmailAndIsActive(email, true)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            if (!callService.isCallOwner(user.getId().toString(), callId)) {
+                throw new RuntimeException("Access denied");
+            }
+            
+            CallResponse response = callService.getCall(callId);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage(), false));
@@ -71,7 +83,14 @@ public class CallController {
             @Valid @RequestBody CallRequest request) {
         try {
             String email = authentication.getName();
-            CallResponse response = callService.updateCall(email, callId, request);
+            User user = userRepository.findByEmailAndIsActive(email, true)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            if (!callService.isCallOwner(user.getId().toString(), callId)) {
+                throw new RuntimeException("Access denied");
+            }
+            
+            CallResponse response = callService.updateCall(callId, request);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage(), false));
@@ -86,7 +105,14 @@ public class CallController {
             @PathVariable String callId) {
         try {
             String email = authentication.getName();
-            callService.deleteCall(email, callId);
+            User user = userRepository.findByEmailAndIsActive(email, true)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            if (!callService.isCallOwner(user.getId().toString(), callId)) {
+                throw new RuntimeException("Access denied");
+            }
+            
+            callService.deleteCall(callId);
             return ResponseEntity.ok(new ApiResponse("Call deleted successfully", true));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage(), false));

@@ -17,6 +17,7 @@ public class CallResponse {
     private Long createdAt;
     private Long updatedAt;
     private Long completedAt;
+    private Boolean isSuccessful;
 
     public CallResponse() {}
 
@@ -139,5 +140,13 @@ public class CallResponse {
 
     public void setCompletedAt(Long completedAt) {
         this.completedAt = completedAt;
+    }
+
+    public Boolean getSuccessful() {
+        return isSuccessful;
+    }
+
+    public void setSuccessful(Boolean successful) {
+        isSuccessful = successful;
     }
 }

@@ -17,53 +17,57 @@
 
 ---
 
-### Data Model (DynamoDB)
-## Data Model (DynamoDB)
+### Data Model (DynamoDB) - Current Implementation
 Use DynamoDB for call lifecycle and separate table for transcripts (high-write, timeline reads). PostgreSQL remains for users and preferences.
 
-Table: callcat-calls
-Partition Key: userId (Number)  # Associates calls with users
-Sort Key: callId (String)       # callcat-ID (cc-0001, 0002, etc.)
+**Table: callcat-calls**
+- **Partition Key**: userId (String) - Associates calls with users  
+- **Sort Key**: sk (String) - Composite key: `"scheduledForMs#callId"` (e.g., "0001734567890123#uuid-123")
 
-# Pre-call fields (always present)
-Attributes:
+**Attributes:**
+- callId: String (UUID)        # Our internal call identifier
 - calleeName: String           # Who we're calling
-- phoneNumber: String          # E.164 format
-- callerNumber: String
+- phoneNumber: String          # E.164 format  
+- callerNumber: String         # Number to call from
 - subject: String              # Quick description
 - prompt: String               # Detailed instructions for AI
-- status: String               # SCHEDULED|IN_PROGRESS|COMPLETED|FAILED
-- scheduledFor: Number          # Epoch time when call should happen
+- status: String               # SCHEDULED | COMPLETED (simplified 2-state flow)
+- scheduledFor: Number         # Epoch time (ms) when call should happen
 - aiLanguage: String           # Language for AI to speak
 - voiceId: String              # Retell voice selection
-- createdAt: Number            # Epoch time when created
-- updatedAt: Number            # Epoch time last modified
+- createdAt: Number            # Epoch time (ms) when created
+- updatedAt: Number            # Epoch time (ms) last modified
 
-    # During-call fields (populated when call starts)
-    - providerId: String        # Retell's call ID
-    - callStartedAt: Number               # Epoch time when call actually started
-    # Post-call fields (optional, populated after completion)
-    - completedAt: Number          # Epoch time when ended
-    # Retell-specific data storage
-    - retellCallData: String          # Full Retell webhook response
+**During-call fields:**
+- providerId: String           # Retell's call ID (for integration)
+- callStartedAt: Number        # Epoch time (ms) when call actually started
 
-  - Global Secondary Indexes
-    - GSI 1: `upcoming-calls-index`:
-      - PK: `userId` (Long)
-      - SK: `scheduledAt` (Long epoch)
-      - Purpose: Query upcoming SCHEDULED/IN_PROGRESS calls, sorted chronologically
-    - GSI 2: `completed-calls-index`:
-      - PK: `userId` (Long) 
-      - SK: `completedAt` (Long epoch)
-      - Purpose: Query recent COMPLETED calls
-      - Note: Query with ScanIndexForward=false for most recent first
+**Post-call fields:**
+- completedAt: Number          # Epoch time (ms) when ended
+- isSuccessful: Boolean        # Whether call completed successfully
+- retellCallData: String       # Full Retell webhook response (JSON)
 
-- Table: `callcat-transcripts` (separate table for transcript data)
-  - Keys
-    - Partition key: `callId` (String) (THIS IS THE RETELL CALL ID)
-  - Fields
-    - `transcriptText` (String)
- - TTL: 90 days. use ExpiresAt, its already set up.
+**Global Secondary Indexes:**
+- **GSI 1: byCallId**
+  - PK: callId (String)
+  - Purpose: Direct lookup by call ID
+- **GSI 2: byProvider** 
+  - PK: providerId (String)
+  - SK: sk (String)
+  - Purpose: Provider's calls sorted by time
+- **GSI 3: byUserStatus** ✨ **THE MAGIC ONE**
+  - PK: userStatus (String) - Composite: `"userId#status"`
+  - SK: sk (String) 
+  - Purpose: Efficient user timeline queries with status filtering
+  - Query patterns:
+    - `userStatus = "userId#SCHEDULED"` + `scanIndexForward=true` → Upcoming calls
+    - `userStatus = "userId#COMPLETED"` + `scanIndexForward=false` → Recent calls
+
+**Table: callcat-transcripts**
+- **Partition Key**: providerId (String) - Retell's call ID
+- **Attributes:**
+  - transcriptText: String     # Full transcript text
+  - expiresAt: Number         # TTL field (90 days auto-cleanup)
 
 Notes
 - Prefer epoch Longs for sort/range queries.
@@ -75,7 +79,7 @@ Notes
 All endpoints are user-scoped (authenticated user can only read/write own calls).
 
 **POST /api/calls** - Create new call
-- Request: `{ calleeName, phoneNumber, subject, prompt, scheduledAt?, aiLanguage?, voiceId? }`
+- Request: `{ calleeName, phoneNumber, subject, prompt, scheduledFor?, aiLanguage?, voiceId? }`
 - Response: `CallResponse` with created call details
 - Auto-generates: callId (UUID), createdAt, updatedAt, status=SCHEDULED
 
@@ -88,7 +92,7 @@ All endpoints are user-scoped (authenticated user can only read/write own calls)
 - Response: `CallResponse`
 
 **PUT /api/calls/{callId}** - Update call
-- Request: `{ calleeName?, phoneNumber?, subject?, prompt?, scheduledAt?, status? }`
+- Request: `{ calleeName?, phoneNumber?, subject?, prompt?, scheduledFor?, status? }`
 - Response: `CallResponse`
 - Auto-updates: updatedAt
 
@@ -108,8 +112,8 @@ All endpoints are user-scoped (authenticated user can only read/write own calls)
 
 
 **Business Rules:**
-- scheduledAt must be future time
-- Status transitions: SCHEDULED → IN_PROGRESS → COMPLETED
+- scheduledFor must be future time (epoch ms)
+- Status transitions: SCHEDULED → COMPLETED (simplified 2-state flow)
 - Only SCHEDULED calls can be deleted
 - Phone number validation (US E.164 format)
 
@@ -127,9 +131,9 @@ All endpoints are user-scoped (authenticated user can only read/write own calls)
 ### Pagination & Sorting
 
 - DynamoDB pagination with nextToken
-- SCHEDULED: sorted by scheduledAt (soonest first)
-- COMPLETED: sorted by completedAt (recent first via reverse scan)
-- Uses separate GSIs for efficiency
+- SCHEDULED: sorted by scheduledFor (soonest first) via byUserStatus GSI with scanIndexForward=true
+- COMPLETED: sorted by completedAt (recent first) via byUserStatus GSI with scanIndexForward=false  
+- Single elegant GSI (byUserStatus) handles both scenarios efficiently
 ---
 
 ### Error Model (examples)
@@ -150,7 +154,7 @@ All endpoints are user-scoped (authenticated user can only read/write own calls)
   "phoneNumber": "+15551234567", 
   "subject": "Project follow-up",
   "prompt": "Call John to discuss project timeline and next steps. Be professional and take notes on any concerns.",
-  "scheduledAt": 1672531200000
+  "scheduledFor": 1672531200000
 }
 ```
 
@@ -162,7 +166,7 @@ All endpoints are user-scoped (authenticated user can only read/write own calls)
   "subject": "Project follow-up", 
   "prompt": "Call John to discuss...",
   "status": "SCHEDULED",
-  "scheduledAt": 1672531200000,
+  "scheduledFor": 1672531200000,
   "createdAt": 1672444800000
 }
 ```

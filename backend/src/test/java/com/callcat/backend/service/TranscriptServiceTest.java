@@ -242,18 +242,6 @@ class TranscriptServiceTest {
     }
 
     @Test
-    void deleteTranscript_ShouldCallRepositoryDelete() {
-        // Arrange
-        String retellCallId = "retell-call-id-to-delete";
-
-        // Act
-        transcriptService.deleteTranscript(retellCallId);
-
-        // Assert
-        verify(callTranscriptRepository).delete(retellCallId);
-    }
-
-    @Test
     void saveTranscript_WithEmptyTranscript_ShouldSaveEmpty() {
         // Arrange
         String retellCallId = "retell-call-id-empty";

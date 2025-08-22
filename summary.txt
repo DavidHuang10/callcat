@@ -1,0 +1,37 @@
+CallCat - AI Call Scheduling Platform
+
+CallCat is a full-stack web application that enables users to schedule and manage AI-powered phone calls. The platform combines modern web technologies with cloud infrastructure to deliver a seamless call management experience.
+
+ARCHITECTURE:
+- Backend: Spring Boot 3.5.4 with Java 22, providing RESTful APIs and business logic
+- Frontend: Next.js 15 with React 19, TypeScript, and Tailwind CSS for responsive UI
+- Database: Dual-database architecture using PostgreSQL RDS for relational data and DynamoDB for high-performance call management
+- Authentication: JWT-based security with email verification and password reset workflows
+- Cloud: AWS services including RDS, DynamoDB, and SES for production deployment
+
+KEY FEATURES:
+- User registration and authentication with email verification
+- Secure JWT token management with automatic blacklisting and cleanup
+- Call scheduling and lifecycle management (scheduled → completed)
+- Real-time call status tracking and transcript storage
+- User preferences management (timezone, notifications, AI voice selection)
+- Comprehensive API with 15+ endpoints supporting full CRUD operations
+- Responsive web interface with modern component library (Radix UI)
+
+TECHNICAL HIGHLIGHTS:
+- Elegant DynamoDB design with composite keys and GSI indexes for optimal query performance
+- Pay-per-request billing model ensuring cost-effective scaling
+- Comprehensive test suite with 14+ unit tests ensuring backend reliability
+- Security-hardened authentication preventing unauthorized access
+- Automated database schema management and relationship handling
+- Modern React frontend with TypeScript for type safety and developer experience
+
+FRONTEND STACK:
+- Next.js 15 with App Router for server-side rendering and routing
+- React 19 with modern hooks and component patterns
+- TypeScript for enhanced development experience and type safety
+- Tailwind CSS for utility-first styling and responsive design
+- Radix UI components for accessible, customizable interface elements
+- Lucide React icons for consistent visual design
+
+The application demonstrates full-stack development skills, cloud architecture knowledge, and modern web development best practices while solving a real-world problem of AI call scheduling and management.

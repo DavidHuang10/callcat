@@ -6,19 +6,19 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttri
 
 @DynamoDbBean
 public class CallTranscript {
-    private String callId; //USE RETELL'S CALL ID
+    private String providerId; // Retell's call ID (partition key)
     private String transcriptText;
     private Long expiresAt;
 
     public CallTranscript() {}
 
     @DynamoDbPartitionKey
-    public String getCallId() {
-        return callId;
+    public String getProviderId() {
+        return providerId;
     }
 
-    public void setCallId(String callId) {
-        this.callId = callId;
+    public void setProviderId(String providerId) {
+        this.providerId = providerId;
     }
 
     public String getTranscriptText() {

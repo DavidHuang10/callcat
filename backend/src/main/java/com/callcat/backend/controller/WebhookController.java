@@ -63,7 +63,7 @@ public class WebhookController {
         try {
             String callId = extractCallIdFromMetadata(payload);
             if (callId != null) {
-                callService.updateCallStatusWithRetellData(callId, "IN_PROGRESS", startTimestamp, null, retellCallId);
+                callService.updateCallStatusWithRetellData(callId, "SCHEDULED", startTimestamp, null, retellCallId, null);
                 logger.info("Updated call {} (Retell: {}) to IN_PROGRESS", callId, retellCallId);
             } else {
                 logger.warn("No callId found in metadata for Retell call {}", retellCallId);
@@ -80,7 +80,7 @@ public class WebhookController {
         try {
             String callId = extractCallIdFromMetadata(payload);
             if (callId != null) {
-                callService.updateCallStatusWithRetellData(callId, "COMPLETED", null, endTimestamp, retellCallId);
+                callService.updateCallStatusWithRetellData(callId, "COMPLETED", null, endTimestamp, retellCallId, true);
                 
                 // Store transcript if available
                 if (payload.has("transcript") && !payload.get("transcript").isNull()) {

@@ -52,52 +52,47 @@ public class CallService {
         callRecord.setUpdatedAt(currentTime);
 
         callRecordRepository.save(callRecord);
-        return mapToCallResponse(callRecord);
+        
+        CallResponse response = new CallResponse();
+        BeanUtils.copyProperties(callRecord, response);
+        return response;
     }
 
     public CallListResponse getCalls(String userEmail, String status, Integer limit) {
         User user = userRepository.findByEmailAndIsActive(userEmail, true)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<CallRecord> calls;
-        if (status != null) {
-            calls = callRecordRepository.findByUserIdAndStatus(user.getId().toString(), status, limit);
-        } else {
-            Integer halfLimit = limit != null ? limit / 2 : 10;
-            List<CallRecord> upcoming = callRecordRepository.findUpcomingCallsByUserId(user.getId().toString(), halfLimit);
-            List<CallRecord> completed = callRecordRepository.findCompletedCallsByUserId(user.getId().toString(), halfLimit);
-            calls = upcoming;
-            calls.addAll(completed);
+        if (status == null) {
+            throw new IllegalArgumentException("Status parameter is required");
         }
 
+        List<CallRecord> calls = callRecordRepository.findByUserIdAndStatus(user.getId().toString(), status, limit);
+
         List<CallResponse> callResponses = calls.stream()
-                .map(this::mapToCallResponse)
+                .map(callRecord -> {
+                    CallResponse response = new CallResponse();
+                    BeanUtils.copyProperties(callRecord, response);
+                    return response;
+                })
                 .collect(Collectors.toList());
 
-        return new CallListResponse(callResponses, null);
+        return new CallListResponse(callResponses);
     }
 
-    public CallResponse getCall(String userEmail, String callId) {
-        User user = userRepository.findByEmailAndIsActive(userEmail, true)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public CallResponse getCall(String callId) {
+        CallRecord callRecord = findCallByCallId(callId);
 
-        CallRecord callRecord = callRecordRepository.findByUserIdAndCallId(user.getId().toString(), callId)
-                .orElseThrow(() -> new RuntimeException("Call not found"));
-
-        return mapToCallResponse(callRecord);
+        CallResponse response = new CallResponse();
+        BeanUtils.copyProperties(callRecord, response);
+        return response;
     }
 
-    public CallResponse updateCall(String userEmail, String callId, CallRequest request) {
-        User user = userRepository.findByEmailAndIsActive(userEmail, true)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        CallRecord callRecord = callRecordRepository.findByUserIdAndCallId(user.getId().toString(), callId)
-                .orElseThrow(() -> new RuntimeException("Call not found"));
+    public CallResponse updateCall(String callId, CallRequest request) {
+        CallRecord callRecord = findCallByCallId(callId);
 
         if (request.getPhoneNumber() != null) {
             PhoneNumberValidator.validatePhoneNumber(request.getPhoneNumber());
         }
-
 
         if (request.getScheduledFor() != null && request.getScheduledFor() <= System.currentTimeMillis()) {
             throw new IllegalArgumentException("Scheduled time must be in the future");
@@ -107,15 +102,14 @@ public class CallService {
         callRecord.setUpdatedAt(System.currentTimeMillis());
 
         callRecordRepository.save(callRecord);
-        return mapToCallResponse(callRecord);
+        
+        CallResponse response = new CallResponse();
+        BeanUtils.copyProperties(callRecord, response);
+        return response;
     }
 
-    public void deleteCall(String userEmail, String callId) {
-        User user = userRepository.findByEmailAndIsActive(userEmail, true)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        CallRecord callRecord = callRecordRepository.findByUserIdAndCallId(user.getId().toString(), callId)
-                .orElseThrow(() -> new RuntimeException("Call not found"));
+    public void deleteCall(String callId) {
+        CallRecord callRecord = findCallByCallId(callId);
 
         if (!"SCHEDULED".equals(callRecord.getStatus())) {
             throw new IllegalArgumentException("Only scheduled calls can be deleted");
@@ -124,33 +118,13 @@ public class CallService {
         callRecordRepository.delete(callRecord);
     }
 
-    private void validateStatusTransition(String currentStatus, String newStatus) {
-        if ("SCHEDULED".equals(currentStatus) && !"IN_PROGRESS".equals(newStatus) && !"CANCELED".equals(newStatus)) {
-            throw new IllegalArgumentException("SCHEDULED calls can only transition to IN_PROGRESS or CANCELED");
-        }
-        if ("IN_PROGRESS".equals(currentStatus) && !"COMPLETED".equals(newStatus) && !"FAILED".equals(newStatus)) {
-            throw new IllegalArgumentException("IN_PROGRESS calls can only transition to COMPLETED or FAILED");
-        }
-        if ("COMPLETED".equals(currentStatus) || "FAILED".equals(currentStatus) || "CANCELED".equals(currentStatus)) {
-            throw new IllegalArgumentException("Cannot change status of a finalized call");
-        }
-    }
 
 
-    private CallResponse mapToCallResponse(CallRecord callRecord) {
-        CallResponse response = new CallResponse();
-        BeanUtils.copyProperties(callRecord, response);
-        return response;
-    }
 
-    public void updateCallStatusWithRetellData(String callId, String status, Long callStartedAt, Long completedAt, String retellCallId) {
-        // Extract userId from callId to make efficient lookup (we need to parse callId or get from user context)
-        // For now, we'll need to find by scanning, but this is much more targeted
+    public void updateCallStatusWithRetellData(String callId, String status, Long callStartedAt, Long completedAt, String retellCallId, Boolean isSuccessful) {
         CallRecord callRecord = findCallByCallId(callId);
         
-        validateStatusTransition(callRecord.getStatus(), status);
-        
-        callRecord.setStatus(status);
+        callRecord.setStatus(status); // CallRecord.setStatus() handles validation
         callRecord.setProviderId(retellCallId); // Store Retell's ID for future reference
         
         if (callStartedAt != null) {
@@ -158,6 +132,9 @@ public class CallService {
         }
         if (completedAt != null) {
             callRecord.setCompletedAt(completedAt);
+        }
+        if (isSuccessful != null) {
+            callRecord.setSuccessful(isSuccessful);
         }
         callRecord.setUpdatedAt(System.currentTimeMillis());
         
@@ -174,13 +151,13 @@ public class CallService {
         callRecordRepository.save(callRecord);
     }
     
+    public boolean isCallOwner(String userId, String callId) {
+        CallRecord callRecord = findCallByCallId(callId);
+        return userId.equals(callRecord.getUserId());
+    }
+
     private CallRecord findCallByCallId(String callId) {
         return callRecordRepository.findByCallId(callId)
                 .orElseThrow(() -> new RuntimeException("Call not found with ID: " + callId));
-    }
-
-    public CallRecord findCallByProviderId(String providerId) {
-        return callRecordRepository.findByProviderId(providerId)
-                .orElseThrow(() -> new RuntimeException("Call not found with provider ID: " + providerId));
     }
 }

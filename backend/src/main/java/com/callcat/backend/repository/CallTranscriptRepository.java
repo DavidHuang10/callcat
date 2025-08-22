@@ -25,16 +25,16 @@ public class CallTranscriptRepository {
         return transcript;
     }
 
-    public Optional<CallTranscript> findByCallId(String callId) {
+    public Optional<CallTranscript> findByProviderId(String providerId) {
         CallTranscript result = table.getItem(Key.builder()
-                .partitionValue(callId)
+                .partitionValue(providerId)
                 .build());
         return Optional.ofNullable(result);
     }
 
-    public void delete(String callId) {
+    public void deleteByProviderId(String providerId) {
         table.deleteItem(Key.builder()
-                .partitionValue(callId)
+                .partitionValue(providerId)
                 .build());
     }
 }

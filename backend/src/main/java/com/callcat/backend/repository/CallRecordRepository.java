@@ -104,13 +104,5 @@ public class CallRecordRepository {
                 .findFirst();
     }
     
-    public Optional<CallRecord> findByUserIdAndCallId(String userId, String callId) {
-        // First find by callId to get the record, then verify userId matches
-        Optional<CallRecord> record = findByCallId(callId);
-        return record.filter(r -> userId.equals(r.getUserId()));
-    }
 
-    public List<CallRecord> findUpcomingCallsByUserId(String userId, Integer limit) {
-        return findScheduledCallsByUserId(userId, limit);
-    }
 }
