@@ -138,7 +138,6 @@ public class CallRecord {
     }
 
     @DynamoDbSecondaryPartitionKey(indexNames = "byProvider")
-    @DynamoDbSecondarySortKey(indexNames = "byProvider")
     public String getProviderId() {
         return providerId;
     }

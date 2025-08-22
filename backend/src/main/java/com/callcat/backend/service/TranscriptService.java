@@ -26,7 +26,7 @@ public class TranscriptService {
     }
 
     public TranscriptResponse getTranscript(String callId) {
-        CallRecord callRecord = callRecordRepository.findByCallId(callId)
+    CallRecord callRecord = callRecordRepository.findByCallId(callId)
                 .orElseThrow(() -> new RuntimeException("Call not found"));
 
         if (callRecord.getProviderId() == null) {

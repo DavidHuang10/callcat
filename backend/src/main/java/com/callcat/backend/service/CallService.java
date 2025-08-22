@@ -3,6 +3,7 @@ package com.callcat.backend.service;
 import com.callcat.backend.dto.CallListResponse;
 import com.callcat.backend.dto.CallResponse;
 import com.callcat.backend.dto.CallRequest;
+import com.callcat.backend.dto.UpdateCallRequest;
 import com.callcat.backend.entity.CallRecord;
 import com.callcat.backend.entity.User;
 import com.callcat.backend.repository.CallRecordRepository;
@@ -44,6 +45,11 @@ public class CallService {
         
         CallRecord callRecord = new CallRecord();
         BeanUpdateUtils.copyNonNullProperties(request, callRecord);
+        
+        // Default AI language to English if not provided
+        if (callRecord.getAiLanguage() == null) {
+            callRecord.setAiLanguage("en");
+        }
         
         callRecord.setUserId(user.getId().toString());
         callRecord.setCallId(UUID.randomUUID().toString());
@@ -87,7 +93,7 @@ public class CallService {
         return response;
     }
 
-    public CallResponse updateCall(String callId, CallRequest request) {
+    public CallResponse updateCall(String callId, UpdateCallRequest request) {
         CallRecord callRecord = findCallByCallId(callId);
 
         if (request.getPhoneNumber() != null) {
@@ -151,11 +157,6 @@ public class CallService {
         callRecordRepository.save(callRecord);
     }
     
-    public boolean isCallOwner(String userId, String callId) {
-        CallRecord callRecord = findCallByCallId(callId);
-        return userId.equals(callRecord.getUserId());
-    }
-
     private CallRecord findCallByCallId(String callId) {
         return callRecordRepository.findByCallId(callId)
                 .orElseThrow(() -> new RuntimeException("Call not found with ID: " + callId));

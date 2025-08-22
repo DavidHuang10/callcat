@@ -25,8 +25,9 @@ public class TestSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/user/**").authenticated()
+                        .requestMatchers("/api/calls/**").authenticated()
                         .requestMatchers("/error").permitAll()
-                        .anyRequest().permitAll()
+                        .anyRequest().denyAll()
                 )
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()));
         

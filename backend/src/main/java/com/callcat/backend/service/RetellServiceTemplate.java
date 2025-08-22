@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import jakarta.annotation.PostConstruct;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,7 +36,7 @@ public class RetellServiceTemplate {
 
     @Value("${retell.phone.number}")
     private String phoneNumber;
-    
+
     // Spring beans for HTTP calls and JSON processing
     private RestClient restClient;
     private final ObjectMapper objectMapper;
@@ -77,10 +78,12 @@ public class RetellServiceTemplate {
             if (callRequest.getPrompt() != null && !callRequest.getPrompt().trim().isEmpty()) {
                 dynamicVariables.put("task_prompt", callRequest.getPrompt());
             }
-            if (!dynamicVariables.isEmpty()) {
-                requestBody.put("retell_llm_dynamic_variables", dynamicVariables);
-            }
-            
+
+            String timeInfo = "The current date is: " + LocalDate.now().toString();
+            dynamicVariables.put("time_info", timeInfo);
+
+            requestBody.put("retell_llm_dynamic_variables", dynamicVariables);
+
             logger.info("Making POST request to Retell API for phone: {}", callRequest.getPhoneNumber());
             
             String responseBody = restClient.post()

@@ -44,7 +44,7 @@ class TranscriptControllerTest {
     @BeforeEach
     void setUp() {
         transcriptResponse = new TranscriptResponse();
-        transcriptResponse.setCallId("test-call-id");
+        transcriptResponse.setProviderId("test-call-id");
         transcriptResponse.setTranscriptText("Agent: Hello! How can I help you today?\nUser: I'd like to schedule an appointment.\nAgent: I'd be happy to help you with that.");
     }
 
@@ -52,16 +52,16 @@ class TranscriptControllerTest {
     @WithMockUser(username = "test@example.com")
     void getTranscript_WithExistingTranscript_ShouldReturnTranscript() throws Exception {
         // Arrange
-        when(transcriptService.getTranscript("test@example.com", "test-call-id"))
+        when(transcriptService.getTranscript("test-call-id"))
                 .thenReturn(transcriptResponse);
 
         // Act & Assert
         mockMvc.perform(get("/api/calls/test-call-id/transcript"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.callId").value("test-call-id"))
+                .andExpect(jsonPath("$.providerId").value("test-call-id"))
                 .andExpect(jsonPath("$.transcriptText").value("Agent: Hello! How can I help you today?\nUser: I'd like to schedule an appointment.\nAgent: I'd be happy to help you with that."));
 
-        verify(transcriptService).getTranscript("test@example.com", "test-call-id");
+        verify(transcriptService).getTranscript("test-call-id");
     }
 
     @Test
@@ -69,23 +69,23 @@ class TranscriptControllerTest {
     void getTranscript_WithEmptyTranscript_ShouldReturnEmptyTranscript() throws Exception {
         // Arrange
         TranscriptResponse emptyResponse = new TranscriptResponse("test-call-id", "");
-        when(transcriptService.getTranscript("test@example.com", "test-call-id"))
+        when(transcriptService.getTranscript("test-call-id"))
                 .thenReturn(emptyResponse);
 
         // Act & Assert
         mockMvc.perform(get("/api/calls/test-call-id/transcript"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.callId").value("test-call-id"))
+                .andExpect(jsonPath("$.providerId").value("test-call-id"))
                 .andExpect(jsonPath("$.transcriptText").value(""));
 
-        verify(transcriptService).getTranscript("test@example.com", "test-call-id");
+        verify(transcriptService).getTranscript("test-call-id");
     }
 
     @Test
     @WithMockUser(username = "test@example.com")
     void getTranscript_WithNonExistentCall_ShouldReturnBadRequest() throws Exception {
         // Arrange
-        when(transcriptService.getTranscript("test@example.com", "nonexistent-call"))
+        when(transcriptService.getTranscript("nonexistent-call"))
                 .thenThrow(new RuntimeException("Call not found"));
 
         // Act & Assert
@@ -94,14 +94,14 @@ class TranscriptControllerTest {
                 .andExpect(jsonPath("$.message").value("Call not found"))
                 .andExpect(jsonPath("$.success").value(false));
 
-        verify(transcriptService).getTranscript("test@example.com", "nonexistent-call");
+        verify(transcriptService).getTranscript("nonexistent-call");
     }
 
     @Test
     @WithMockUser(username = "test@example.com")
     void getTranscript_WithCallNotStarted_ShouldReturnBadRequest() throws Exception {
         // Arrange
-        when(transcriptService.getTranscript("test@example.com", "scheduled-call"))
+        when(transcriptService.getTranscript("scheduled-call"))
                 .thenThrow(new RuntimeException("Call has not started yet - no transcript available"));
 
         // Act & Assert
@@ -110,7 +110,7 @@ class TranscriptControllerTest {
                 .andExpect(jsonPath("$.message").value("Call has not started yet - no transcript available"))
                 .andExpect(jsonPath("$.success").value(false));
 
-        verify(transcriptService).getTranscript("test@example.com", "scheduled-call");
+        verify(transcriptService).getTranscript("scheduled-call");
     }
 
     @Test
@@ -131,16 +131,16 @@ class TranscriptControllerTest {
         String longTranscriptText = longTranscript.toString();
 
         TranscriptResponse longResponse = new TranscriptResponse("test-call-id", longTranscriptText);
-        when(transcriptService.getTranscript("test@example.com", "test-call-id"))
+        when(transcriptService.getTranscript("test-call-id"))
                 .thenReturn(longResponse);
 
         // Act & Assert
         mockMvc.perform(get("/api/calls/test-call-id/transcript"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.callId").value("test-call-id"))
+                .andExpect(jsonPath("$.providerId").value("test-call-id"))
                 .andExpect(jsonPath("$.transcriptText").value(longTranscriptText));
 
-        verify(transcriptService).getTranscript("test@example.com", "test-call-id");
+        verify(transcriptService).getTranscript("test-call-id");
     }
 
     @Test
@@ -153,13 +153,13 @@ class TranscriptControllerTest {
                 "User: That's perfect! My email is user@example.com & phone is (555) 123-4567.";
         
         TranscriptResponse specialResponse = new TranscriptResponse("test-call-id", specialCharTranscript);
-        when(transcriptService.getTranscript("test@example.com", "test-call-id"))
+        when(transcriptService.getTranscript("test-call-id"))
                 .thenReturn(specialResponse);
 
         // Act & Assert
         mockMvc.perform(get("/api/calls/test-call-id/transcript"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.callId").value("test-call-id"))
+                .andExpect(jsonPath("$.providerId").value("test-call-id"))
                 .andExpect(jsonPath("$.transcriptText").value(specialCharTranscript));
     }
 
@@ -167,7 +167,7 @@ class TranscriptControllerTest {
     @WithMockUser(username = "test@example.com")
     void getTranscript_WithUserNotFound_ShouldReturnBadRequest() throws Exception {
         // Arrange
-        when(transcriptService.getTranscript("test@example.com", "test-call-id"))
+        when(transcriptService.getTranscript("test-call-id"))
                 .thenThrow(new RuntimeException("User not found"));
 
         // Act & Assert
@@ -181,9 +181,9 @@ class TranscriptControllerTest {
     void getTranscript_WithoutAuthentication_ShouldReturnUnauthorized() throws Exception {
         // Act & Assert
         mockMvc.perform(get("/api/calls/test-call-id/transcript"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
 
-        verify(transcriptService, never()).getTranscript(anyString(), anyString());
+        verify(transcriptService, never()).getTranscript(anyString());
     }
 
     @Test
@@ -194,16 +194,16 @@ class TranscriptControllerTest {
         
         for (String callId : callIds) {
             TranscriptResponse response = new TranscriptResponse(callId, "Sample transcript for " + callId);
-            when(transcriptService.getTranscript("test@example.com", callId))
+            when(transcriptService.getTranscript(callId))
                     .thenReturn(response);
 
             // Act & Assert
             mockMvc.perform(get("/api/calls/" + callId + "/transcript"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.callId").value(callId))
+                    .andExpect(jsonPath("$.providerId").value(callId))
                     .andExpect(jsonPath("$.transcriptText").value("Sample transcript for " + callId));
 
-            verify(transcriptService).getTranscript("test@example.com", callId);
+            verify(transcriptService).getTranscript(callId);
         }
     }
 
@@ -211,7 +211,7 @@ class TranscriptControllerTest {
     @WithMockUser(username = "test@example.com")
     void getTranscript_WithServiceException_ShouldReturnBadRequest() throws Exception {
         // Arrange
-        when(transcriptService.getTranscript("test@example.com", "test-call-id"))
+        when(transcriptService.getTranscript("test-call-id"))
                 .thenThrow(new RuntimeException("Database connection failed"));
 
         // Act & Assert
@@ -226,7 +226,7 @@ class TranscriptControllerTest {
     void getTranscript_WithDifferentUser_ShouldCallServiceWithCorrectUser() throws Exception {
         // Arrange
         TranscriptResponse response = new TranscriptResponse("test-call-id", "User1's transcript");
-        when(transcriptService.getTranscript("user1@example.com", "test-call-id"))
+        when(transcriptService.getTranscript("test-call-id"))
                 .thenReturn(response);
 
         // Act & Assert
@@ -234,7 +234,7 @@ class TranscriptControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.transcriptText").value("User1's transcript"));
 
-        verify(transcriptService).getTranscript("user1@example.com", "test-call-id");
+        verify(transcriptService).getTranscript("test-call-id");
     }
 
     @Test
@@ -243,13 +243,13 @@ class TranscriptControllerTest {
         // Arrange
         String partialTranscript = "Agent: Hello! How can I help you today?\nUser: I'd like to schedule an appointment.\nAgent: I'd be happy to help...";
         TranscriptResponse response = new TranscriptResponse("test-call-id", partialTranscript);
-        when(transcriptService.getTranscript("test@example.com", "test-call-id"))
+        when(transcriptService.getTranscript("test-call-id"))
                 .thenReturn(response);
 
         // Act & Assert
         mockMvc.perform(get("/api/calls/test-call-id/transcript"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.callId").value("test-call-id"))
+                .andExpect(jsonPath("$.providerId").value("test-call-id"))
                 .andExpect(jsonPath("$.transcriptText").value(partialTranscript));
     }
 
@@ -257,16 +257,16 @@ class TranscriptControllerTest {
     @WithMockUser(username = "test@example.com")
     void getTranscript_ResponseStructure_ShouldMatchExpectedFormat() throws Exception {
         // Arrange
-        when(transcriptService.getTranscript("test@example.com", "test-call-id"))
+        when(transcriptService.getTranscript("test-call-id"))
                 .thenReturn(transcriptResponse);
 
         // Act & Assert
         mockMvc.perform(get("/api/calls/test-call-id/transcript"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").exists())
-                .andExpect(jsonPath("$.callId").exists())
+                .andExpect(jsonPath("$.providerId").exists())
                 .andExpect(jsonPath("$.transcriptText").exists())
-                .andExpect(jsonPath("$.callId").isString())
+                .andExpect(jsonPath("$.providerId").isString())
                 .andExpect(jsonPath("$.transcriptText").isString());
     }
 }

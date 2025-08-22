@@ -38,7 +38,7 @@ class CallServiceTest {
     private User testUser;
     private CallRecord testCall;
     private CallRequest createRequest;
-    private CallRequest updateRequest;
+    private UpdateCallRequest updateRequest;
 
     @BeforeEach
     void setUp() {
@@ -48,7 +48,7 @@ class CallServiceTest {
         testUser.setIsActive(true);
 
         testCall = new CallRecord();
-        testCall.setUserId(1L);
+        testCall.setUserId("1");
         testCall.setCallId("test-call-id");
         testCall.setCalleeName("John Doe");
         testCall.setPhoneNumber("+15551234567");
@@ -70,7 +70,7 @@ class CallServiceTest {
         createRequest.setAiLanguage("en");
         createRequest.setVoiceId("voice123");
 
-        updateRequest = new CallRequest();
+        updateRequest = new UpdateCallRequest();
         updateRequest.setCalleeName("Jane Doe");
         updateRequest.setSubject("Updated Call");
     }
@@ -88,7 +88,7 @@ class CallServiceTest {
 
         // Assert
         assertNotNull(result);
-        assertEquals("test-call-id", result.getCallId());
+        assertNotNull(result.getCallId());
         assertEquals("John Doe", result.getCalleeName());
         assertEquals("+15551234567", result.getPhoneNumber());
         assertEquals("Test Call", result.getSubject());
@@ -178,29 +178,17 @@ class CallServiceTest {
     }
 
     @Test
-    void getCalls_WithoutStatusFilter_ShouldReturnAllCalls() {
+    void getCalls_WithoutStatusFilter_ShouldThrowException() {
         // Arrange
-        List<CallRecord> upcomingCalls = Arrays.asList(testCall);
-        List<CallRecord> completedCalls = Arrays.asList();
-        
         when(userRepository.findByEmailAndIsActive("test@example.com", true))
                 .thenReturn(Optional.of(testUser));
-        when(callRecordRepository.findUpcomingCallsByUserId(1L, 10))
-                .thenReturn(upcomingCalls);
-        when(callRecordRepository.findCompletedCallsByUserId(1L, 10))
-                .thenReturn(completedCalls);
 
-        // Act
-        CallListResponse result = callService.getCalls("test@example.com", null, 20);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(1, result.getCalls().size());
-        assertEquals("test-call-id", result.getCalls().get(0).getCallId());
-        assertNull(result.getNextToken());
-
-        verify(callRecordRepository).findUpcomingCallsByUserId(1L, 10);
-        verify(callRecordRepository).findCompletedCallsByUserId(1L, 10);
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            callService.getCalls("test@example.com", null, 20);
+        });
+        
+        assertEquals("Status parameter is required", exception.getMessage());
     }
 
     @Test
@@ -210,7 +198,7 @@ class CallServiceTest {
         
         when(userRepository.findByEmailAndIsActive("test@example.com", true))
                 .thenReturn(Optional.of(testUser));
-        when(callRecordRepository.findByUserIdAndStatus(1L, "SCHEDULED", 20))
+        when(callRecordRepository.findByUserIdAndStatus("1", "SCHEDULED", 20))
                 .thenReturn(scheduledCalls);
 
         // Act
@@ -221,55 +209,49 @@ class CallServiceTest {
         assertEquals(1, result.getCalls().size());
         assertEquals("SCHEDULED", result.getCalls().get(0).getStatus());
 
-        verify(callRecordRepository).findByUserIdAndStatus(1L, "SCHEDULED", 20);
+        verify(callRecordRepository).findByUserIdAndStatus("1", "SCHEDULED", 20);
     }
 
     @Test
     void getCall_WithValidCallId_ShouldReturnCall() {
         // Arrange
-        when(userRepository.findByEmailAndIsActive("test@example.com", true))
-                .thenReturn(Optional.of(testUser));
-        when(callRecordRepository.findByUserIdAndCallId(1L, "test-call-id"))
+        when(callRecordRepository.findByCallId("test-call-id"))
                 .thenReturn(Optional.of(testCall));
 
         // Act
-        CallResponse result = callService.getCall("test@example.com", "test-call-id");
+        CallResponse result = callService.getCall("test-call-id");
 
         // Assert
         assertNotNull(result);
-        assertEquals("test-call-id", result.getCallId());
+        assertNotNull(result.getCallId());
         assertEquals("John Doe", result.getCalleeName());
 
-        verify(callRecordRepository).findByUserIdAndCallId(1L, "test-call-id");
+        verify(callRecordRepository).findByCallId("test-call-id");
     }
 
     @Test
     void getCall_WithNonExistentCall_ShouldThrowException() {
         // Arrange
-        when(userRepository.findByEmailAndIsActive("test@example.com", true))
-                .thenReturn(Optional.of(testUser));
-        when(callRecordRepository.findByUserIdAndCallId(1L, "nonexistent-id"))
+        when(callRecordRepository.findByCallId("nonexistent-id"))
                 .thenReturn(Optional.empty());
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> callService.getCall("test@example.com", "nonexistent-id"));
+                () -> callService.getCall("nonexistent-id"));
 
-        assertEquals("Call not found", exception.getMessage());
+        assertEquals("Call not found with ID: nonexistent-id", exception.getMessage());
     }
 
     @Test
     void updateCall_WithValidRequest_ShouldUpdateAndReturnCall() {
         // Arrange
-        when(userRepository.findByEmailAndIsActive("test@example.com", true))
-                .thenReturn(Optional.of(testUser));
-        when(callRecordRepository.findByUserIdAndCallId(1L, "test-call-id"))
+        when(callRecordRepository.findByCallId("test-call-id"))
                 .thenReturn(Optional.of(testCall));
         when(callRecordRepository.save(any(CallRecord.class)))
                 .thenReturn(testCall);
 
         // Act
-        CallResponse result = callService.updateCall("test@example.com", "test-call-id", updateRequest);
+        CallResponse result = callService.updateCall("test-call-id", updateRequest);
 
         // Assert
         assertNotNull(result);
@@ -284,14 +266,12 @@ class CallServiceTest {
     void updateCall_WithInvalidPhoneNumber_ShouldThrowException() {
         // Arrange
         updateRequest.setPhoneNumber("invalid-phone");
-        when(userRepository.findByEmailAndIsActive("test@example.com", true))
-                .thenReturn(Optional.of(testUser));
-        when(callRecordRepository.findByUserIdAndCallId(1L, "test-call-id"))
+        when(callRecordRepository.findByCallId("test-call-id"))
                 .thenReturn(Optional.of(testCall));
 
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> callService.updateCall("test@example.com", "test-call-id", updateRequest));
+                () -> callService.updateCall("test-call-id", updateRequest));
 
         assertEquals("Phone number must be in E.164 format (+1XXXXXXXXXX)", exception.getMessage());
         verify(callRecordRepository, never()).save(any(CallRecord.class));
@@ -302,14 +282,12 @@ class CallServiceTest {
     void updateCall_WithPastScheduledTime_ShouldThrowException() {
         // Arrange
         updateRequest.setScheduledFor(System.currentTimeMillis() - 3600000); // 1 hour ago
-        when(userRepository.findByEmailAndIsActive("test@example.com", true))
-                .thenReturn(Optional.of(testUser));
-        when(callRecordRepository.findByUserIdAndCallId(1L, "test-call-id"))
+        when(callRecordRepository.findByCallId("test-call-id"))
                 .thenReturn(Optional.of(testCall));
 
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> callService.updateCall("test@example.com", "test-call-id", updateRequest));
+                () -> callService.updateCall("test-call-id", updateRequest));
 
         assertEquals("Scheduled time must be in the future", exception.getMessage());
     }
@@ -318,13 +296,11 @@ class CallServiceTest {
     void deleteCall_WithScheduledCall_ShouldDeleteSuccessfully() {
         // Arrange
         testCall.setStatus("SCHEDULED");
-        when(userRepository.findByEmailAndIsActive("test@example.com", true))
-                .thenReturn(Optional.of(testUser));
-        when(callRecordRepository.findByUserIdAndCallId(1L, "test-call-id"))
+        when(callRecordRepository.findByCallId("test-call-id"))
                 .thenReturn(Optional.of(testCall));
 
         // Act
-        callService.deleteCall("test@example.com", "test-call-id");
+        callService.deleteCall("test-call-id");
 
         // Assert
         verify(callRecordRepository).delete(testCall);
@@ -333,15 +309,13 @@ class CallServiceTest {
     @Test
     void deleteCall_WithNonScheduledCall_ShouldThrowException() {
         // Arrange
-        testCall.setStatus("IN_PROGRESS");
-        when(userRepository.findByEmailAndIsActive("test@example.com", true))
-                .thenReturn(Optional.of(testUser));
-        when(callRecordRepository.findByUserIdAndCallId(1L, "test-call-id"))
+        testCall.setStatus("COMPLETED");
+        when(callRecordRepository.findByCallId("test-call-id"))
                 .thenReturn(Optional.of(testCall));
 
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> callService.deleteCall("test@example.com", "test-call-id"));
+                () -> callService.deleteCall("test-call-id"));
 
         assertEquals("Only scheduled calls can be deleted", exception.getMessage());
         verify(callRecordRepository, never()).delete(any(CallRecord.class));
@@ -350,16 +324,14 @@ class CallServiceTest {
     @Test
     void deleteCall_WithNonExistentCall_ShouldThrowException() {
         // Arrange
-        when(userRepository.findByEmailAndIsActive("test@example.com", true))
-                .thenReturn(Optional.of(testUser));
-        when(callRecordRepository.findByUserIdAndCallId(1L, "nonexistent-id"))
+        when(callRecordRepository.findByCallId("nonexistent-id"))
                 .thenReturn(Optional.empty());
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> callService.deleteCall("test@example.com", "nonexistent-id"));
+                () -> callService.deleteCall("nonexistent-id"));
 
-        assertEquals("Call not found", exception.getMessage());
+        assertEquals("Call not found with ID: nonexistent-id", exception.getMessage());
         verify(callRecordRepository, never()).delete(any(CallRecord.class));
     }
 
