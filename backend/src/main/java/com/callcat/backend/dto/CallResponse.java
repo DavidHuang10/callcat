@@ -16,7 +16,8 @@ public class CallResponse {
     private Long createdAt;
     private Long updatedAt;
     private Long completedAt;
-    private Boolean isSuccessful;
+    private Boolean dialSuccessful;
+    private Boolean callAnalyzed;
 
     public CallResponse() {}
 
@@ -134,11 +135,19 @@ public class CallResponse {
         this.completedAt = completedAt;
     }
 
-    public Boolean getSuccessful() {
-        return isSuccessful;
+    public Boolean getDialSuccessful() {
+        return dialSuccessful;
     }
 
-    public void setSuccessful(Boolean successful) {
-        isSuccessful = successful;
+    public void setDialSuccessful(Boolean dialSuccessful) {
+        this.dialSuccessful = dialSuccessful;
+    }
+
+    public Boolean getCallAnalyzed() {
+        return callAnalyzed;
+    }
+
+    public void setCallAnalyzed(Boolean callAnalyzed) {
+        this.callAnalyzed = callAnalyzed;
     }
 }

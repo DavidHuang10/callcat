@@ -2,6 +2,7 @@ package com.callcat.backend.service;
 
 import com.callcat.backend.dto.CallRequest;
 import com.callcat.backend.dto.CallResponse;
+import com.callcat.backend.entity.CallRecord;
 import com.callcat.backend.util.BeanUpdateUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,10 +40,12 @@ public class RetellService {
     private RestClient restClient;
     private final ObjectMapper objectMapper;
     private final UserService userService;
+    private final CallService callService;
     
-    public RetellService(UserService userService) {
+    public RetellService(UserService userService, CallService callService) {
         this.objectMapper = new ObjectMapper();
         this.userService = userService;
+        this.callService = callService;
     }
     
     @PostConstruct
@@ -58,7 +61,7 @@ public class RetellService {
      * Generic POST request method
      * Takes a Map as request body, converts to JSON automatically
      */
-    public CallResponse makeCall(String email, CallRequest callRequest) {
+    public CallResponse makeCall(String email, CallRequest callRequest, String callId) {
         try {
             // Get user preferences to fetch system prompt
             String systemPrompt = userService.getUserPreferences(email).getSystemPrompt();
@@ -81,6 +84,11 @@ public class RetellService {
             dynamicVariables.put("time_info", timeInfo);
 
             requestBody.put("retell_llm_dynamic_variables", dynamicVariables);
+            
+            // Add metadata with our internal callId for webhook identification
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("callId", callId);
+            requestBody.put("metadata", metadata);
 
             logger.info("Making POST request to Retell API for phone: {}", callRequest.getPhoneNumber());
             
@@ -96,7 +104,17 @@ public class RetellService {
             JsonNode retellResponse = objectMapper.readTree(responseBody);
             
             // Convert to CallResponse DTO
-            return convertToCallResponse(callRequest, retellResponse);
+            CallResponse response = convertToCallResponse(callRequest, retellResponse);
+            
+            // Update the CallRecord with the providerId from Retell
+            if (retellResponse.has("call_id")) {
+                String providerId = retellResponse.get("call_id").asText();
+                CallRecord callRecord = callService.findCallByCallId(callId);
+                callRecord.setProviderId(providerId);
+                callService.saveCallRecord(callRecord);
+            }
+            
+            return response;
             
         } catch (Exception e) {
             logger.error("Retell API call failed for phone {}: {}", callRequest.getPhoneNumber(), e.getMessage());

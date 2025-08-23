@@ -26,11 +26,12 @@ public class CallRecord {
     
     // During-call fields
     private String providerId;
-    
+    private Boolean dialSuccessful;
+
     // Post-call fields
     private Long completedAt;
-    private Boolean isSuccessful;
-    
+    private Boolean callAnalyzed;
+
     // Retell-specific data storage (as JSON string for DynamoDB compatibility)
     private String retellCallData;
 
@@ -218,11 +219,19 @@ public class CallRecord {
         // No-op setter for DynamoDB Enhanced Client
     }
 
-    public Boolean getSuccessful() {
-        return isSuccessful;
+    public Boolean getDialSuccessful() {
+        return dialSuccessful;
     }
 
-    public void setSuccessful(Boolean successful) {
-        isSuccessful = successful;
+    public void setDialSuccessful(Boolean dialSuccessful) {
+        this.dialSuccessful = dialSuccessful;
+    }
+
+    public Boolean getCallAnalyzed() {
+        return callAnalyzed;
+    }
+
+    public void setCallAnalyzed(Boolean callAnalyzed) {
+        this.callAnalyzed = callAnalyzed;
     }
 }

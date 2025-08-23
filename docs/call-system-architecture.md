@@ -259,11 +259,10 @@ findByUserIdAndStatus(userId, status, limit)
   → COMPLETED: query completed index (no filter needed)
 ```
 
-**Inefficient Scans (Temporary):**
+**Provider-Based Queries:**
 ```java
-// These require full table scans - should be replaced with GSI in production
-findByCallId(callId)         // Used by webhooks - scans for callId
-findByProviderId(providerId) // Removed - was inefficient
+// ✅ GOOD: Uses byProvider GSI for O(1) lookup
+findByProviderId(providerId) // Used for Retell integration - efficient with GSI
 ```
 
 ---
@@ -415,8 +414,8 @@ findByUserIdAndCallId(userId, callId)
 // ✅ GOOD: Uses GSI with time-based sorting  
 findUpcomingCallsByUserId(userId, limit)
 
-// ❌ BAD: Full table scan
-findByCallId(callId)  // Currently used by webhooks - needs improvement
+// ✅ GOOD: Uses byCallId GSI for O(1) lookup
+findByCallId(callId)  // Used by webhooks - efficient with GSI
 ```
 
 ### Pagination Strategy
@@ -425,28 +424,27 @@ findByCallId(callId)  // Currently used by webhooks - needs improvement
 - Designed for future enhancement
 
 ### Indexing Strategy
-- Primary key: `userId + callId` for ownership-based access
-- GSI 1: `userId + scheduledAt` for upcoming calls
-- GSI 2: `userId + completedAt` for call history
-- Missing: GSI on `callId` for webhook efficiency (future enhancement)
+- Primary key: `userId + sk` for ownership-based access
+- GSI 1: `byCallId` on `callId` for efficient webhook lookups
+- GSI 2: `byUserStatus` on `userId#status + sk` for status-filtered queries
+- GSI 3: `byProvider` on `providerId + sk` for provider-based queries
 
 ---
 
 ## 🔧 Current Limitations & Future Enhancements
 
 ### Known Issues
-1. **Webhook Efficiency**: `findByCallId()` requires table scan
-2. **Pagination**: Not fully implemented in responses
-3. **Mapping Verbosity**: Manual field mapping is error-prone
-4. **Retell Integration**: Not yet connected to actual API calls
+1. **Pagination**: Not fully implemented in responses
+2. **Mapping Verbosity**: Manual field mapping is error-prone
+3. **Retell Integration**: Not yet connected to actual API calls
 
 ### Recommended Improvements
-1. Add GSI on `callId` for O(1) webhook lookups
-2. Implement MapStruct for clean entity mapping
-3. Add comprehensive pagination with `nextToken` support
-4. Integrate actual Retell API for call execution
-5. Add call scheduling/trigger system
-6. Implement real-time status updates via WebSocket
+1. Implement MapStruct for clean entity mapping
+2. Add comprehensive pagination with `nextToken` support
+3. Integrate actual Retell API for call execution
+4. Add call scheduling/trigger system
+5. Implement real-time status updates via WebSocket
+6. Add webhook signature validation for security
 
 ---
 

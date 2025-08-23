@@ -124,7 +124,7 @@ public class CallService {
         callRecordRepository.delete(callRecord);
     }
 
-    public void updateCallStatusWithRetellData(String callId, String status, Long completedAt, String retellCallId, Boolean isSuccessful) {
+    public void updateCallStatusWithRetellData(String callId, String status, Long completedAt, String retellCallId, Boolean dialSuccessful) {
         CallRecord callRecord = findCallByCallId(callId);
         
         callRecord.setStatus(status); // CallRecord.setStatus() handles validation
@@ -133,8 +133,8 @@ public class CallService {
         if (completedAt != null) {
             callRecord.setCompletedAt(completedAt);
         }
-        if (isSuccessful != null) {
-            callRecord.setSuccessful(isSuccessful);
+        if (dialSuccessful != null) {
+            callRecord.setDialSuccessful(dialSuccessful);
         }
         callRecord.setUpdatedAt(System.currentTimeMillis());
         
@@ -151,8 +151,17 @@ public class CallService {
         callRecordRepository.save(callRecord);
     }
     
-    private CallRecord findCallByCallId(String callId) {
+    public CallRecord findCallByCallId(String callId) {
         return callRecordRepository.findByCallId(callId)
                 .orElseThrow(() -> new RuntimeException("Call not found with ID: " + callId));
+    }
+    
+    public CallRecord findCallByProviderId(String providerId) {
+        return callRecordRepository.findByProviderId(providerId)
+                .orElseThrow(() -> new RuntimeException("Call not found with provider ID: " + providerId));
+    }
+    
+    public void saveCallRecord(CallRecord callRecord) {
+        callRecordRepository.save(callRecord);
     }
 }
