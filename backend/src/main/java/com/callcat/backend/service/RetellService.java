@@ -61,23 +61,26 @@ public class RetellService {
      * Generic POST request method
      * Takes a Map as request body, converts to JSON automatically
      */
-    public CallResponse makeCall(String email, CallRequest callRequest, String callId) {
+    public CallResponse makeCall(String callId) {
         try {
-            // Get user preferences to fetch system prompt
-            String systemPrompt = userService.getUserPreferences(email).getSystemPrompt();
+            // Get the call record from database
+            CallRecord callRecord = callService.findCallByCallId(callId);
+            
+            // Get user preferences to fetch system prompt  
+            String systemPrompt = userService.getUserPreferences(callRecord.getUserId()).getSystemPrompt();
             
             // Build request body for Retell API
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("from_number", phoneNumber);
-            requestBody.put("to_number", callRequest.getPhoneNumber());
+            requestBody.put("to_number", callRecord.getPhoneNumber());
             
             // Add dynamic variables for LLM
             Map<String, Object> dynamicVariables = new HashMap<>();
             if (systemPrompt != null && !systemPrompt.trim().isEmpty()) {
                 dynamicVariables.put("system_prompt", systemPrompt);
             }
-            if (callRequest.getPrompt() != null && !callRequest.getPrompt().trim().isEmpty()) {
-                dynamicVariables.put("task_prompt", callRequest.getPrompt());
+            if (callRecord.getPrompt() != null && !callRecord.getPrompt().trim().isEmpty()) {
+                dynamicVariables.put("task_prompt", callRecord.getPrompt());
             }
 
             String timeInfo = "The current date is: " + LocalDate.now().toString();
@@ -90,7 +93,7 @@ public class RetellService {
             metadata.put("callId", callId);
             requestBody.put("metadata", metadata);
 
-            logger.info("Making POST request to Retell API for phone: {}", callRequest.getPhoneNumber());
+            logger.info("Making POST request to Retell API for phone: {}", callRecord.getPhoneNumber());
             
             String responseBody = restClient.post()
                 .uri("/create-phone-call")
@@ -104,45 +107,33 @@ public class RetellService {
             JsonNode retellResponse = objectMapper.readTree(responseBody);
             
             // Convert to CallResponse DTO
-            CallResponse response = convertToCallResponse(callRequest, retellResponse);
+            CallResponse response = convertToCallResponse(callRecord, retellResponse);
             
             // Update the CallRecord with the providerId from Retell
-            if (retellResponse.has("call_id")) {
-                String providerId = retellResponse.get("call_id").asText();
-                CallRecord callRecord = callService.findCallByCallId(callId);
-                callRecord.setProviderId(providerId);
-                callService.saveCallRecord(callRecord);
-            }
-            
+            callRecord.setProviderId(retellResponse.get("call_id").asText());
+            callRecord.setRetellCallData(objectMapper.writeValueAsString(retellResponse));
+            callService.saveCallRecord(callRecord);
+
             return response;
             
         } catch (Exception e) {
-            logger.error("Retell API call failed for phone {}: {}", callRequest.getPhoneNumber(), e.getMessage());
+            logger.error("Retell API call failed for callId {}: {}", callId, e.getMessage());
             throw new RuntimeException("Failed to create call", e);
         }
     }
     
     /**
-     * Convert Retell API response and CallRequest to CallResponse DTO
+     * Convert Retell API response and CallRecord to CallResponse DTO
      */
-    private CallResponse convertToCallResponse(CallRequest callRequest, JsonNode retellResponse) {
+    private CallResponse convertToCallResponse(CallRecord callRecord, JsonNode retellResponse) {
         CallResponse response = new CallResponse();
         
-        // Copy all matching fields from CallRequest to CallResponse using BeanUpdateUtils
-        BeanUpdateUtils.copyNonNullProperties(callRequest, response);
+        // Copy all matching fields from CallRecord to CallResponse using BeanUpdateUtils
+        BeanUpdateUtils.copyNonNullProperties(callRecord, response);
         
-        // Extract call_id from Retell response (becomes our callId)
-        if (retellResponse.has("call_id")) {
-            response.setProviderId(retellResponse.get("call_id").asText());
-        }
-        
-        // Set additional fields
+        response.setProviderId(retellResponse.get("call_id").asText());
         response.setCallerNumber(phoneNumber); // Our configured phone number
-        response.setStatus("SCHEDULED");
-        long currentTime = System.currentTimeMillis();
-        response.setCreatedAt(currentTime);
-        response.setUpdatedAt(currentTime);
-        
+
         return response;
     }
 }
