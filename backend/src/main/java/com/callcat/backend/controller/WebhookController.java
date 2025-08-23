@@ -1,10 +1,10 @@
 package com.callcat.backend.controller;
 
-import com.callcat.backend.dto.ApiResponse;
 import com.callcat.backend.service.CallService;
 import com.callcat.backend.entity.CallRecord;
 import com.callcat.backend.service.TranscriptService;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -18,10 +18,12 @@ public class WebhookController {
 
     private final CallService callService;
     private final TranscriptService transcriptService;
+    private final ObjectMapper objectMapper;
 
-    public WebhookController(CallService callService, TranscriptService transcriptService) {
+    public WebhookController(CallService callService, TranscriptService transcriptService, ObjectMapper objectMapper) {
         this.callService = callService;
         this.transcriptService = transcriptService;
+        this.objectMapper = objectMapper;
     }
 
     @PostMapping("/retell")
@@ -61,7 +63,7 @@ public class WebhookController {
         try {
             CallRecord callRecord = callService.findCallByProviderId(providerId);
             callRecord.setDialSuccessful(true);
-            callRecord.setRetellCallData(callInfo.toString());
+            callRecord.setRetellCallData(objectMapper.writeValueAsString(callInfo));
             
             callService.saveCallRecord(callRecord);
             logger.info("Updated call {} with provider ID {}", callRecord.getCallId(), providerId);
@@ -72,15 +74,13 @@ public class WebhookController {
 
     private void handleCallEnded(JsonNode callInfo) {
         String providerId = callInfo.get("call_id").asText();
-        Long endTimestamp = callInfo.has("end_timestamp") ? callInfo.get("end_timestamp").asLong() : null;
+        Long endTimestamp = callInfo.get("end_timestamp").asLong();
 
         try {
             CallRecord callRecord = callService.findCallByProviderId(providerId);
             callRecord.setStatus("COMPLETED");
             callRecord.setCompletedAt(endTimestamp);
-            callRecord.setDialSuccessful(true);
-            callRecord.setUpdatedAt(System.currentTimeMillis());
-            callRecord.setRetellCallData(callInfo.toString());
+            callRecord.setRetellCallData(objectMapper.writeValueAsString(callInfo));
             
             callService.saveCallRecord(callRecord);
             logger.info("Updated call {} (Provider: {}) to COMPLETED", callRecord.getCallId(), providerId);
@@ -95,8 +95,7 @@ public class WebhookController {
         try {
             CallRecord callRecord = callService.findCallByProviderId(providerId);
             callRecord.setCallAnalyzed(true);
-            callRecord.setUpdatedAt(System.currentTimeMillis());
-            callRecord.setRetellCallData(callInfo.toString());
+            callRecord.setRetellCallData(objectMapper.writeValueAsString(callInfo));
             
             callService.saveCallRecord(callRecord);
             logger.info("Updated call {} (Provider: {}) with analysis data", callRecord.getCallId(), providerId);

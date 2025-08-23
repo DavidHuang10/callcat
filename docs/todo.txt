@@ -1,3 +1,3 @@
-fixed the dynamodb setup hooray
+need to think about how to trigger calls.
 
-need to work on making usre all call stuff is workign correctly with new setup.
+also need to do some testing to verify it works.
