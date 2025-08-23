@@ -40,7 +40,6 @@ Use DynamoDB for call lifecycle and separate table for transcripts (high-write, 
 
 **During-call fields:**
 - providerId: String           # Retell's call ID (for integration)
-- callStartedAt: Number        # Epoch time (ms) when call actually started
 
 **Post-call fields:**
 - completedAt: Number          # Epoch time (ms) when ended

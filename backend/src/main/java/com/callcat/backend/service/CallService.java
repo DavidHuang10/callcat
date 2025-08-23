@@ -124,18 +124,12 @@ public class CallService {
         callRecordRepository.delete(callRecord);
     }
 
-
-
-
-    public void updateCallStatusWithRetellData(String callId, String status, Long callStartedAt, Long completedAt, String retellCallId, Boolean isSuccessful) {
+    public void updateCallStatusWithRetellData(String callId, String status, Long completedAt, String retellCallId, Boolean isSuccessful) {
         CallRecord callRecord = findCallByCallId(callId);
         
         callRecord.setStatus(status); // CallRecord.setStatus() handles validation
         callRecord.setProviderId(retellCallId); // Store Retell's ID for future reference
         
-        if (callStartedAt != null) {
-            callRecord.setCallStartedAt(callStartedAt);
-        }
         if (completedAt != null) {
             callRecord.setCompletedAt(completedAt);
         }

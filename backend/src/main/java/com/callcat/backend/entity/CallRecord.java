@@ -18,8 +18,7 @@ public class CallRecord {
     private String prompt;
     private String status;
     private Long scheduledFor;
-    private Long callStartedAt;
-    
+
     private String aiLanguage;
     private String voiceId;
     private Long createdAt;
@@ -129,13 +128,6 @@ public class CallRecord {
         this.sk = null;
     }
 
-    public Long getCallStartedAt() {
-        return callStartedAt;
-    }
-
-    public void setCallStartedAt(Long callStartedAt) {
-        this.callStartedAt = callStartedAt;
-    }
 
     @DynamoDbSecondaryPartitionKey(indexNames = "byProvider")
     public String getProviderId() {

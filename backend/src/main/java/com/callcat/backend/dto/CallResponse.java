@@ -10,7 +10,6 @@ public class CallResponse {
     private String prompt;
     private String status;
     private Long scheduledFor;
-    private Long callStartedAt;
     private String providerId;
     private String aiLanguage;
     private String voiceId;
@@ -85,13 +84,6 @@ public class CallResponse {
         this.scheduledFor = scheduledFor;
     }
 
-    public Long getCallStartedAt() {
-        return callStartedAt;
-    }
-
-    public void setCallStartedAt(Long callStartedAt) {
-        this.callStartedAt = callStartedAt;
-    }
 
     public String getProviderId() {
         return providerId;
