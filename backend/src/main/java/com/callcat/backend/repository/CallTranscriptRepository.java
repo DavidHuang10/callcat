@@ -15,7 +15,6 @@ public class CallTranscriptRepository {
 
     private final DynamoDbTable<CallTranscript> table;
 
-    @Autowired
     public CallTranscriptRepository(DynamoDbEnhancedClient dynamoDb) {
         this.table = dynamoDb.table("callcat-transcripts", TableSchema.fromBean(CallTranscript.class));
     }

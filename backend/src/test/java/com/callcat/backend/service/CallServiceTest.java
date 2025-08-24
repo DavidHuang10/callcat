@@ -335,4 +335,139 @@ class CallServiceTest {
         verify(callRecordRepository, never()).delete(any(CallRecord.class));
     }
 
+    @Test
+    void updateCallStatusWithRetellData_WithValidData_ShouldUpdateCall() {
+        // Arrange
+        when(callRecordRepository.findByCallId("test-call-id"))
+                .thenReturn(Optional.of(testCall));
+        when(callRecordRepository.save(any(CallRecord.class)))
+                .thenReturn(testCall);
+
+        // Act
+        callService.updateCallStatusWithRetellData("test-call-id", "COMPLETED", 1693123456789L, "retell-123", true);
+
+        // Assert
+        verify(callRecordRepository).findByCallId("test-call-id");
+        verify(callRecordRepository).save(testCall);
+        
+        assertEquals("COMPLETED", testCall.getStatus());
+        assertEquals("retell-123", testCall.getProviderId());
+        assertEquals(1693123456789L, testCall.getCompletedAt());
+        assertTrue(testCall.getDialSuccessful());
+        assertTrue(testCall.getUpdatedAt() > 0);
+    }
+
+    @Test
+    void updateCallStatusWithRetellData_WithNullOptionalFields_ShouldUpdateOnlyRequired() {
+        // Arrange
+        when(callRecordRepository.findByCallId("test-call-id"))
+                .thenReturn(Optional.of(testCall));
+        when(callRecordRepository.save(any(CallRecord.class)))
+                .thenReturn(testCall);
+
+        // Act
+        callService.updateCallStatusWithRetellData("test-call-id", "COMPLETED", null, "retell-123", null);
+
+        // Assert
+        verify(callRecordRepository).save(testCall);
+        
+        assertEquals("COMPLETED", testCall.getStatus());
+        assertEquals("retell-123", testCall.getProviderId());
+        assertNull(testCall.getCompletedAt()); // Should remain null
+        assertNull(testCall.getDialSuccessful()); // Should remain original value (null)
+    }
+
+    @Test
+    void updateRetellCallData_WithValidData_ShouldUpdateCall() throws Exception {
+        // Arrange
+        when(callRecordRepository.findByCallId("test-call-id"))
+                .thenReturn(Optional.of(testCall));
+        when(callRecordRepository.save(any(CallRecord.class)))
+                .thenReturn(testCall);
+
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        com.fasterxml.jackson.databind.JsonNode retellData = mapper.readTree("{\"call_id\":\"retell-123\",\"status\":\"completed\"}");
+
+        // Act
+        callService.updateRetellCallData("test-call-id", retellData);
+
+        // Assert
+        verify(callRecordRepository).findByCallId("test-call-id");
+        verify(callRecordRepository).save(testCall);
+        
+        assertNotNull(testCall.getRetellCallData());
+        assertTrue(testCall.getRetellCallData().contains("retell-123"));
+        assertTrue(testCall.getUpdatedAt() > 0);
+    }
+
+    @Test
+    void findCallByCallId_WithValidId_ShouldReturnCall() {
+        // Arrange
+        when(callRecordRepository.findByCallId("test-call-id"))
+                .thenReturn(Optional.of(testCall));
+
+        // Act
+        CallRecord result = callService.findCallByCallId("test-call-id");
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("test-call-id", result.getCallId());
+        verify(callRecordRepository).findByCallId("test-call-id");
+    }
+
+    @Test
+    void findCallByCallId_WithInvalidId_ShouldThrowException() {
+        // Arrange
+        when(callRecordRepository.findByCallId("invalid-id"))
+                .thenReturn(Optional.empty());
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> callService.findCallByCallId("invalid-id"));
+
+        assertEquals("Call not found with ID: invalid-id", exception.getMessage());
+    }
+
+    @Test
+    void findCallByProviderId_WithValidId_ShouldReturnCall() {
+        // Arrange
+        testCall.setProviderId("retell-123");
+        when(callRecordRepository.findByProviderId("retell-123"))
+                .thenReturn(Optional.of(testCall));
+
+        // Act
+        CallRecord result = callService.findCallByProviderId("retell-123");
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("retell-123", result.getProviderId());
+        verify(callRecordRepository).findByProviderId("retell-123");
+    }
+
+    @Test
+    void findCallByProviderId_WithInvalidId_ShouldThrowException() {
+        // Arrange
+        when(callRecordRepository.findByProviderId("invalid-provider-id"))
+                .thenReturn(Optional.empty());
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> callService.findCallByProviderId("invalid-provider-id"));
+
+        assertEquals("Call not found with provider ID: invalid-provider-id", exception.getMessage());
+    }
+
+    @Test
+    void saveCallRecord_WithValidRecord_ShouldSaveSuccessfully() {
+        // Arrange
+        when(callRecordRepository.save(testCall))
+                .thenReturn(testCall);
+
+        // Act
+        callService.saveCallRecord(testCall);
+
+        // Assert
+        verify(callRecordRepository).save(testCall);
+    }
+
 }

@@ -1,9 +1,7 @@
 package com.callcat.backend.service;
 
 import com.callcat.backend.dto.TranscriptResponse;
-import com.callcat.backend.entity.CallRecord;
 import com.callcat.backend.entity.CallTranscript;
-import com.callcat.backend.repository.CallRecordRepository;
 import com.callcat.backend.repository.CallTranscriptRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,23 +25,14 @@ class TranscriptServiceTest {
     @Mock
     private CallTranscriptRepository callTranscriptRepository;
 
-    @Mock
-    private CallRecordRepository callRecordRepository;
 
     @InjectMocks
     private TranscriptService transcriptService;
 
-    private CallRecord testCall;
     private CallTranscript testTranscript;
 
     @BeforeEach
     void setUp() {
-        testCall = new CallRecord();
-        testCall.setUserId("1");
-        testCall.setCallId("user-call-id");
-        testCall.setProviderId("retell-call-id-123");
-        testCall.setCalleeName("John Doe");
-        testCall.setStatus("COMPLETED");
 
         testTranscript = new CallTranscript();
         testTranscript.setProviderId("retell-call-id-123");
@@ -52,15 +41,13 @@ class TranscriptServiceTest {
     }
 
     @Test
-    void getTranscript_WithExistingTranscript_ShouldReturnTranscript() {
+    void getTranscriptByProviderId_WithExistingTranscript_ShouldReturnTranscript() {
         // Arrange
-        when(callRecordRepository.findByCallId("user-call-id"))
-                .thenReturn(Optional.of(testCall));
         when(callTranscriptRepository.findByProviderId("retell-call-id-123"))
                 .thenReturn(Optional.of(testTranscript));
 
         // Act
-        TranscriptResponse result = transcriptService.getTranscript("user-call-id");
+        TranscriptResponse result = transcriptService.getTranscriptByProviderId("retell-call-id-123");
 
         // Assert
         assertNotNull(result);
@@ -68,60 +55,26 @@ class TranscriptServiceTest {
         assertEquals("Agent: Hello! How can I help you today?\nUser: I'd like to schedule an appointment.", 
                 result.getTranscriptText());
 
-        verify(callRecordRepository).findByCallId("user-call-id");
         verify(callTranscriptRepository).findByProviderId("retell-call-id-123");
     }
 
     @Test
-    void getTranscript_WithNoExistingTranscript_ShouldReturnEmptyTranscript() {
+    void getTranscriptByProviderId_WithNoExistingTranscript_ShouldReturnEmpty() {
         // Arrange
-        when(callRecordRepository.findByCallId("user-call-id"))
-                .thenReturn(Optional.of(testCall));
         when(callTranscriptRepository.findByProviderId("retell-call-id-123"))
                 .thenReturn(Optional.empty());
 
         // Act
-        TranscriptResponse result = transcriptService.getTranscript("user-call-id");
+        TranscriptResponse result = transcriptService.getTranscriptByProviderId("retell-call-id-123");
 
         // Assert
         assertNotNull(result);
         assertEquals("retell-call-id-123", result.getProviderId());
         assertEquals("", result.getTranscriptText());
 
-        verify(callRecordRepository).findByCallId("user-call-id");
         verify(callTranscriptRepository).findByProviderId("retell-call-id-123");
     }
 
-    @Test
-    void getTranscript_WithNonExistentCall_ShouldThrowException() {
-        // Arrange
-        when(callRecordRepository.findByCallId("nonexistent-call"))
-                .thenReturn(Optional.empty());
-
-        // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> transcriptService.getTranscript("nonexistent-call"));
-
-        assertEquals("Call not found", exception.getMessage());
-        verify(callRecordRepository).findByCallId("nonexistent-call");
-        verify(callTranscriptRepository, never()).findByProviderId(any());
-    }
-
-    @Test
-    void getTranscript_WithCallNotStarted_ShouldThrowException() {
-        // Arrange
-        testCall.setProviderId(null); // Call hasn't started yet
-        when(callRecordRepository.findByCallId("user-call-id"))
-                .thenReturn(Optional.of(testCall));
-
-        // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> transcriptService.getTranscript("user-call-id"));
-
-        assertEquals("Call has not started yet - no transcript available", exception.getMessage());
-        verify(callRecordRepository).findByCallId("user-call-id");
-        verify(callTranscriptRepository, never()).findByProviderId(any());
-    }
 
     @Test
     void saveTranscript_WithNewTranscript_ShouldCreateAndSave() {

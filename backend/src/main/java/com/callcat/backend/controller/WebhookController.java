@@ -31,7 +31,7 @@ public class WebhookController {
         try {
             String event = payload.get("event").asText();
             JsonNode callInfo = payload.get("call");
-            String providerId = callInfo.get("callId").asText();
+            String providerId = callInfo.get("call_id").asText();
 
             logger.info("Received Retell webhook for providerId {} with status {}", providerId, event);
 

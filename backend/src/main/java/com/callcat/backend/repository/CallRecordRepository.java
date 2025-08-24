@@ -22,7 +22,6 @@ public class CallRecordRepository {
     private final DynamoDbIndex<CallRecord> byProviderIndex;
     private final DynamoDbIndex<CallRecord> byUserStatusIndex;
 
-    @Autowired
     public CallRecordRepository(DynamoDbEnhancedClient dynamoDb) {
         this.table = dynamoDb.table("callcat-calls", TableSchema.fromBean(CallRecord.class));
         this.byCallIdIndex = table.index("byCallId");

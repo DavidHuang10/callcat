@@ -8,7 +8,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/calls")
+@RequestMapping("/api/live_transcripts")
 public class TranscriptController {
     
     private final TranscriptService transcriptService;
@@ -17,15 +17,16 @@ public class TranscriptController {
         this.transcriptService = transcriptService;
     }
     
-    @GetMapping("/{callId}/transcript")
+    @GetMapping("/{providerId}")
     public ResponseEntity<?> getTranscript(
             Authentication authentication,
-            @PathVariable String callId) {
+            @PathVariable String providerId) {
         try {
-            TranscriptResponse response = transcriptService.getTranscript(callId);
+            TranscriptResponse response = transcriptService.getTranscriptByProviderId(providerId);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage(), false));
         }
     }
+    
 }

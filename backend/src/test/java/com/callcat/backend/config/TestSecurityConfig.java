@@ -24,8 +24,10 @@ public class TestSecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/webhooks/**").permitAll()  // Webhooks are public endpoints
                         .requestMatchers("/api/user/**").authenticated()
                         .requestMatchers("/api/calls/**").authenticated()
+                        .requestMatchers("/api/live_transcripts/**").authenticated()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().denyAll()
                 )

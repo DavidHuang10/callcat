@@ -13,7 +13,6 @@ public class BlacklistedTokenRepository {
 
     private final DynamoDbTable<BlacklistedToken> table;
 
-    @Autowired
     public BlacklistedTokenRepository(DynamoDbEnhancedClient dynamoDb) {
         this.table = dynamoDb.table("callcat-blacklist", TableSchema.fromBean(BlacklistedToken.class));
     }

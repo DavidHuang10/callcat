@@ -1,6 +1,5 @@
 package com.callcat.backend.service;
 
-import com.callcat.backend.dto.CallRequest;
 import com.callcat.backend.dto.CallResponse;
 import com.callcat.backend.entity.CallRecord;
 import com.callcat.backend.util.BeanUpdateUtils;
@@ -57,44 +56,16 @@ public class RetellService {
             .build();
     }
 
-    /**
-     * Generic POST request method
-     * Takes a Map as request body, converts to JSON automatically
-     */
+
     public CallResponse makeCall(String callId) {
         try {
-            // Get the call record from database
             CallRecord callRecord = callService.findCallByCallId(callId);
-            
-            // Get user preferences to fetch system prompt  
             String systemPrompt = userService.getUserPreferences(callRecord.getUserId()).getSystemPrompt();
             
-            // Build request body for Retell API
-            Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("from_number", phoneNumber);
-            requestBody.put("to_number", callRecord.getPhoneNumber());
-            
-            // Add dynamic variables for LLM
-            Map<String, Object> dynamicVariables = new HashMap<>();
-            if (systemPrompt != null && !systemPrompt.trim().isEmpty()) {
-                dynamicVariables.put("system_prompt", systemPrompt);
-            }
-            if (callRecord.getPrompt() != null && !callRecord.getPrompt().trim().isEmpty()) {
-                dynamicVariables.put("task_prompt", callRecord.getPrompt());
-            }
-
-            String timeInfo = "The current date is: " + LocalDate.now().toString();
-            dynamicVariables.put("time_info", timeInfo);
-
-            requestBody.put("retell_llm_dynamic_variables", dynamicVariables);
-            
-            // Add metadata with our internal callId for webhook identification
-            Map<String, Object> metadata = new HashMap<>();
-            metadata.put("callId", callId);
-            requestBody.put("metadata", metadata);
-
+            Map<String, Object> requestBody = buildRetellRequestBody(callRecord, systemPrompt, callId);
             logger.info("Making POST request to Retell API for phone: {}", callRecord.getPhoneNumber());
-            
+
+
             String responseBody = restClient.post()
                 .uri("/create-phone-call")
                 .body(requestBody)
@@ -108,7 +79,7 @@ public class RetellService {
             
             // Convert to CallResponse DTO
             CallResponse response = convertToCallResponse(callRecord, retellResponse);
-            
+
             // Update the CallRecord with the providerId from Retell
             callRecord.setProviderId(retellResponse.get("call_id").asText());
             callRecord.setRetellCallData(objectMapper.writeValueAsString(retellResponse));
@@ -121,19 +92,63 @@ public class RetellService {
             throw new RuntimeException("Failed to create call", e);
         }
     }
+
+    public JsonNode getCall(String retellCallId) {
+        try {
+            logger.info("Getting call details from Retell API for call ID: {}", retellCallId);
+            
+            String responseBody = restClient.get()
+                .uri("{callId}", retellCallId)
+                .retrieve()
+                .body(String.class);
+            
+            logger.info("Retell API get call successful");
+            
+            return objectMapper.readTree(responseBody);
+            
+        } catch (Exception e) {
+            logger.error("Failed to get call from Retell API for callId {}: {}", retellCallId, e.getMessage());
+            throw new RuntimeException("Failed to get call details", e);
+        }
+    }
     
+    /**
+     * Build request body for Retell API call
+     */
+    private Map<String, Object> buildRetellRequestBody(CallRecord callRecord, String systemPrompt, String callId) {
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("from_number", phoneNumber);
+        requestBody.put("to_number", callRecord.getPhoneNumber());
+        
+        // Add dynamic variables for LLM
+        Map<String, Object> dynamicVariables = new HashMap<>();
+        if (systemPrompt != null && !systemPrompt.trim().isEmpty()) {
+            dynamicVariables.put("system_prompt", systemPrompt);
+        }
+        if (callRecord.getPrompt() != null && !callRecord.getPrompt().trim().isEmpty()) {
+            dynamicVariables.put("task_prompt", callRecord.getPrompt());
+        }
+        String timeInfo = "The current date is: " + LocalDate.now();
+        dynamicVariables.put("time_info", timeInfo);
+
+        requestBody.put("retell_llm_dynamic_variables", dynamicVariables);
+        
+        // Add metadata with our internal callId for webhook identification
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("callId", callId);
+        requestBody.put("metadata", metadata);
+        
+        return requestBody;
+    }
+
     /**
      * Convert Retell API response and CallRecord to CallResponse DTO
      */
     private CallResponse convertToCallResponse(CallRecord callRecord, JsonNode retellResponse) {
         CallResponse response = new CallResponse();
-        
-        // Copy all matching fields from CallRecord to CallResponse using BeanUpdateUtils
         BeanUpdateUtils.copyNonNullProperties(callRecord, response);
-        
         response.setProviderId(retellResponse.get("call_id").asText());
-        response.setCallerNumber(phoneNumber); // Our configured phone number
-
+        response.setCallerNumber(phoneNumber);
         return response;
     }
 }
