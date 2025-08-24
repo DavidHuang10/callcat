@@ -65,7 +65,6 @@ public class RetellService {
             Map<String, Object> requestBody = buildRetellRequestBody(callRecord, systemPrompt, callId);
             logger.info("Making POST request to Retell API for phone: {}", callRecord.getPhoneNumber());
 
-
             String responseBody = restClient.post()
                 .uri("/create-phone-call")
                 .body(requestBody)
@@ -98,7 +97,7 @@ public class RetellService {
             logger.info("Getting call details from Retell API for call ID: {}", retellCallId);
             
             String responseBody = restClient.get()
-                .uri("{callId}", retellCallId)
+                .uri("/get-call/{callId}", retellCallId)
                 .retrieve()
                 .body(String.class);
             
