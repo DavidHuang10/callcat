@@ -10,6 +10,11 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.ses.SesClient;
 import software.amazon.awssdk.services.ses.model.SendEmailRequest;
 import software.amazon.awssdk.services.ses.model.SendEmailResponse;
+import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
+import software.amazon.awssdk.services.eventbridge.model.PutRuleRequest;
+import software.amazon.awssdk.services.eventbridge.model.PutRuleResponse;
+import software.amazon.awssdk.services.eventbridge.model.PutTargetsRequest;
+import software.amazon.awssdk.services.eventbridge.model.PutTargetsResponse;
 import com.callcat.backend.entity.BlacklistedToken;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -66,6 +71,32 @@ public class TestAwsConfig {
         DynamoDbTable<BlacklistedToken> mockTable = mock(DynamoDbTable.class);
         when(mockClient.table(any(String.class), any(TableSchema.class)))
                 .thenReturn(mockTable);
+        
+        return mockClient;
+    }
+    
+    /**
+     * Provides a mock EventBridgeClient for tests.
+     * Prevents tests from connecting to real EventBridge.
+     */
+    @Bean
+    @Primary
+    public EventBridgeClient mockEventBridgeClient() {
+        EventBridgeClient mockClient = mock(EventBridgeClient.class);
+        
+        // Mock putRule method
+        PutRuleResponse mockRuleResponse = PutRuleResponse.builder()
+                .ruleArn("arn:aws:events:us-east-1:123456789012:rule/test-rule")
+                .build();
+        when(mockClient.putRule(any(PutRuleRequest.class)))
+                .thenReturn(mockRuleResponse);
+        
+        // Mock putTargets method
+        PutTargetsResponse mockTargetsResponse = PutTargetsResponse.builder()
+                .failedEntryCount(0)
+                .build();
+        when(mockClient.putTargets(any(PutTargetsRequest.class)))
+                .thenReturn(mockTargetsResponse);
         
         return mockClient;
     }

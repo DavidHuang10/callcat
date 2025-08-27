@@ -32,6 +32,9 @@ class CallServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private EventBridgeService eventBridgeService;
+
     @InjectMocks
     private CallService callService;
 

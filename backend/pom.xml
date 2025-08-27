@@ -67,6 +67,11 @@
 			<artifactId>ses</artifactId>
 			<version>2.28.29</version>
 		</dependency>
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>eventbridge</artifactId>
+			<version>2.28.29</version>
+		</dependency>
 
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>

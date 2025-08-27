@@ -24,11 +24,13 @@ public class CallService {
 
     private final CallRecordRepository callRecordRepository;
     private final UserRepository userRepository;
+    private final EventBridgeService eventBridgeService;
 
     @Autowired
-    public CallService(CallRecordRepository callRecordRepository, UserRepository userRepository) {
+    public CallService(CallRecordRepository callRecordRepository, UserRepository userRepository, EventBridgeService eventBridgeService) {
         this.callRecordRepository = callRecordRepository;
         this.userRepository = userRepository;
+        this.eventBridgeService = eventBridgeService;
     }
 
     public CallResponse createCall(String userEmail, CallRequest request) {
@@ -58,6 +60,10 @@ public class CallService {
         callRecord.setUpdatedAt(currentTime);
 
         callRecordRepository.save(callRecord);
+        
+        if (callRecord.getScheduledFor() != null) {
+            eventBridgeService.scheduleCall(callRecord.getCallId(), callRecord.getScheduledFor());
+        }
         
         CallResponse response = new CallResponse();
         BeanUtils.copyProperties(callRecord, response);

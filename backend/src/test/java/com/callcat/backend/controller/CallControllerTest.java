@@ -1,5 +1,6 @@
 package com.callcat.backend.controller;
 
+import com.callcat.backend.TestBackendApplication;
 import com.callcat.backend.config.TestSecurityConfig;
 import com.callcat.backend.dto.*;
 import com.callcat.backend.service.CallService;
@@ -40,6 +41,9 @@ class CallControllerTest {
     
     @MockitoBean
     private com.callcat.backend.service.TokenBlacklistService tokenBlacklistService;
+
+    @MockitoBean
+    private com.callcat.backend.service.RetellService retellService;
 
     @Autowired
     private ObjectMapper objectMapper;
