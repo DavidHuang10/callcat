@@ -2,7 +2,9 @@ package com.callcat.backend.controller;
 
 import com.callcat.backend.dto.*;
 import com.callcat.backend.service.CallService;
+import com.callcat.backend.service.RetellService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -12,9 +14,14 @@ import org.springframework.web.bind.annotation.*;
 public class CallController {
     
     private final CallService callService;
+    private final RetellService retellService;
     
-    public CallController(CallService callService) {
+    @Value("${lambda.api.key}")
+    private String expectedApiKey;
+    
+    public CallController(CallService callService, RetellService retellService) {
         this.callService = callService;
+        this.retellService = retellService;
     }
     
     @PostMapping
@@ -90,5 +97,30 @@ public class CallController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage(), false));
         }
+    }
+    
+    @PostMapping("/{callId}/trigger")
+    public ResponseEntity<?> triggerCall(
+            @PathVariable String callId,
+            @RequestHeader(value = "X-API-Key", required = false) String apiKey) {
+        try {
+            if (!isValidApiKey(apiKey)) {
+                return ResponseEntity.status(401).body(new ApiResponse("Unauthorized", false));
+            }
+            
+            CallResponse call = callService.getCall(callId);
+            if (!"SCHEDULED".equals(call.getStatus())) {
+                return ResponseEntity.badRequest().body(new ApiResponse("Call is not scheduled", false));
+            }
+            
+            CallResponse response = retellService.makeCall(callId);
+            return ResponseEntity.ok(new ApiResponse("Call triggered successfully", true));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage(), false));
+        }
+    }
+    
+    private boolean isValidApiKey(String providedKey) {
+        return expectedApiKey != null && expectedApiKey.equals(providedKey);
     }
 }

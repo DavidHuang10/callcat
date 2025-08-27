@@ -4,10 +4,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.ScheduledEvent;
 
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
-import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
 import software.amazon.awssdk.services.eventbridge.model.DeleteRuleRequest;
@@ -21,18 +17,14 @@ import java.util.Map;
 
 public class SchedulerLambda implements RequestHandler<ScheduledEvent, String> {
 
-    private final DynamoDbClient dynamoClient;
     private final EventBridgeClient eventBridgeClient;
     private final HttpClient httpClient;
     private final String springBootUrl;
-    private final String callsTableName;
 
     public SchedulerLambda() {
-        this.dynamoClient = DynamoDbClient.create();
         this.eventBridgeClient = EventBridgeClient.create();
         this.httpClient = HttpClient.newHttpClient();
         this.springBootUrl = System.getenv("SPRING_BOOT_BASE_URL");
-        this.callsTableName = System.getenv("DYNAMODB_CALLS_TABLE");
     }
 
     @Override
@@ -44,21 +36,14 @@ public class SchedulerLambda implements RequestHandler<ScheduledEvent, String> {
             
             context.getLogger().log("Processing scheduled call: " + callId);
 
-            // 1. Query DynamoDB to get call details
-            CallRecord callRecord = getCallFromDynamoDB(callId);
-            if (callRecord == null || !"SCHEDULED".equals(callRecord.status)) {
-                context.getLogger().log("Call not found or not scheduled: " + callId);
-                return "Call not found or not scheduled";
-            }
-
-            // 2. Trigger call via Spring Boot API
+            // 1. Trigger call via Spring Boot API (includes validation)
             boolean success = triggerCall(callId);
             if (!success) {
                 context.getLogger().log("Failed to trigger call: " + callId);
                 return "Failed to trigger call";
             }
 
-            // 3. Clean up EventBridge rule
+            // 2. Clean up EventBridge rule
             cleanupEventBridgeRule("CallCat-" + callId);
 
             context.getLogger().log("Successfully processed call: " + callId);
@@ -70,31 +55,6 @@ public class SchedulerLambda implements RequestHandler<ScheduledEvent, String> {
         }
     }
 
-    private CallRecord getCallFromDynamoDB(String callId) {
-        try {
-            QueryRequest request = QueryRequest.builder()
-                .tableName(callsTableName)
-                .indexName("byCallId")
-                .keyConditionExpression("callId = :callId")
-                .expressionAttributeValues(Map.of(":callId", AttributeValue.builder().s(callId).build()))
-                .build();
-
-            QueryResponse response = dynamoClient.query(request);
-            if (response.items().isEmpty()) {
-                return null;
-            }
-
-            Map<String, AttributeValue> item = response.items().get(0);
-            CallRecord record = new CallRecord();
-            record.callId = item.get("callId").s();
-            record.status = item.get("status").s();
-            record.userId = item.get("userId").s();
-            
-            return record;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to query DynamoDB", e);
-        }
-    }
 
     private boolean triggerCall(String callId) {
         try {
@@ -102,6 +62,7 @@ public class SchedulerLambda implements RequestHandler<ScheduledEvent, String> {
                 .uri(URI.create(springBootUrl + "/api/calls/" + callId + "/trigger"))
                 .POST(HttpRequest.BodyPublishers.noBody())
                 .header("Content-Type", "application/json")
+                .header("X-API-Key", System.getenv("LAMBDA_API_KEY"))
                 .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -131,9 +92,4 @@ public class SchedulerLambda implements RequestHandler<ScheduledEvent, String> {
         }
     }
 
-    private static class CallRecord {
-        String callId;
-        String status;
-        String userId;
-    }
 }
