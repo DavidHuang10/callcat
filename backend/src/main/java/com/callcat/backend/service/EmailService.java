@@ -1,10 +1,14 @@
 package com.callcat.backend.service;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.keygen.KeyGenerators;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.ses.SesClient;
 import software.amazon.awssdk.services.ses.model.*;
+
+import jakarta.mail.internet.MimeMessage;
 
 @Service
 public class EmailService {
@@ -12,16 +16,23 @@ public class EmailService {
     @Value("${app.email.enabled:false}")
     private boolean emailEnabled;
     
-    @Value("${app.email.from}")
-    private String fromEmail;
+    // AWS SES Configuration
+    @Value("${aws.ses.from.email}")
+    private String awsFromEmail;
     
-    @Value("${app.email.from-name:CallCat}")
-    private String fromName;
+    @Value("${aws.ses.from.name:CallCat}")
+    private String awsFromName;
+    
+    // Gmail SMTP Configuration
+    @Value("${gmail.smtp.username}")
+    private String gmailUsername;
     
     private final SesClient sesClient;
+    private final JavaMailSender gmailSender;
     
-    public EmailService(SesClient sesClient) {
+    public EmailService(SesClient sesClient, JavaMailSender gmailSender) {
         this.sesClient = sesClient;
+        this.gmailSender = gmailSender;
     }
     
     // Using Spring Security's KeyGenerators for all token generation
@@ -48,50 +59,50 @@ public class EmailService {
      * Sends email verification code to user
      */
     public void sendVerificationEmail(String email, String code) {
+        String subject = "Verify your CallCat account";
+        String htmlBody = """
+            <html>
+            <body>
+                <h2>Welcome to CallCat!</h2>
+                <p>Please verify your email address using the code below:</p>
+                <div style="background-color: #f0f0f0; padding: 20px; text-align: center; margin: 20px 0;">
+                    <h1 style="color: #333; font-family: monospace; letter-spacing: 3px;">%s</h1>
+                </div>
+                <p>This code expires in 15 minutes.</p>
+                <p>If you didn't create a CallCat account, please ignore this email.</p>
+                <br>
+                <p>Best regards,<br>The CallCat Team</p>
+            </body>
+            </html>
+            """.formatted(code);
+        
+        String textBody = """
+            Welcome to CallCat!
+            
+            Please verify your email address using this code: %s
+            
+            This code expires in 15 minutes.
+            
+            If you didn't create a CallCat account, please ignore this email.
+            
+            Best regards,
+            The CallCat Team
+            """.formatted(code);
+            
         if (emailEnabled) {
             try {
-                String subject = "Verify your CallCat account";
-                String htmlBody = """
-                    <html>
-                    <body>
-                        <h2>Welcome to CallCat!</h2>
-                        <p>Please verify your email address using the code below:</p>
-                        <div style="background-color: #f0f0f0; padding: 20px; text-align: center; margin: 20px 0;">
-                            <h1 style="color: #333; font-family: monospace; letter-spacing: 3px;">%s</h1>
-                        </div>
-                        <p>This code expires in 15 minutes.</p>
-                        <p>If you didn't create a CallCat account, please ignore this email.</p>
-                        <br>
-                        <p>Best regards,<br>The CallCat Team</p>
-                    </body>
-                    </html>
-                    """.formatted(code);
-                
-                String textBody = """
-                    Welcome to CallCat!
-                    
-                    Please verify your email address using this code: %s
-                    
-                    This code expires in 15 minutes.
-                    
-                    If you didn't create a CallCat account, please ignore this email.
-                    
-                    Best regards,
-                    The CallCat Team
-                    """.formatted(code);
-                
                 sendEmail(email, subject, htmlBody, textBody);
                 System.out.println("✅ Verification email sent successfully to: " + email);
                 
             } catch (Exception e) {
-                System.err.println("❌ Failed to send verification email to: " + email);
+                System.err.println("❌ Failed to send verification email via SES to: " + email);
                 System.err.println("Error: " + e.getMessage());
-                // Fallback to console logging
-                logEmailToConsole(email, "Verify your CallCat account", "Your verification code is: " + code);
+                // Fallback to Gmail SMTP
+                sendViaGmail(email, subject, htmlBody);
             }
         } else {
-            // Development mode - log to console
-            logEmailToConsole(email, "Verify your CallCat account", "Your verification code is: " + code + "\nThis code expires in 15 minutes.");
+            // emailEnabled=false - use Gmail SMTP instead of console
+            sendViaGmail(email, subject, htmlBody);
         }
     }
     
@@ -99,54 +110,54 @@ public class EmailService {
      * Sends password reset email to user
      */
     public void sendPasswordResetEmail(String email, String token) {
+        String subject = "Reset your CallCat password";
+        String htmlBody = """
+            <html>
+            <body>
+                <h2>Password Reset Request</h2>
+                <p>We received a request to reset your CallCat account password.</p>
+                <p>Use the following token to reset your password:</p>
+                <div style="background-color: #f0f0f0; padding: 15px; text-align: center; margin: 20px 0; word-break: break-all;">
+                    <code style="color: #333; font-size: 14px;">%s</code>
+                </div>
+                <p><strong>This token expires in 1 hour.</strong></p>
+                <p>If you didn't request a password reset, please ignore this email. Your password will remain unchanged.</p>
+                <br>
+                <p>Best regards,<br>The CallCat Team</p>
+            </body>
+            </html>
+            """.formatted(token);
+        
+        String textBody = """
+            Password Reset Request
+            
+            We received a request to reset your CallCat account password.
+            
+            Use the following token to reset your password:
+            %s
+            
+            This token expires in 1 hour.
+            
+            If you didn't request a password reset, please ignore this email.
+            
+            Best regards,
+            The CallCat Team
+            """.formatted(token);
+            
         if (emailEnabled) {
             try {
-                String subject = "Reset your CallCat password";
-                String htmlBody = """
-                    <html>
-                    <body>
-                        <h2>Password Reset Request</h2>
-                        <p>We received a request to reset your CallCat account password.</p>
-                        <p>Use the following token to reset your password:</p>
-                        <div style="background-color: #f0f0f0; padding: 15px; text-align: center; margin: 20px 0; word-break: break-all;">
-                            <code style="color: #333; font-size: 14px;">%s</code>
-                        </div>
-                        <p><strong>This token expires in 1 hour.</strong></p>
-                        <p>If you didn't request a password reset, please ignore this email. Your password will remain unchanged.</p>
-                        <br>
-                        <p>Best regards,<br>The CallCat Team</p>
-                    </body>
-                    </html>
-                    """.formatted(token);
-                
-                String textBody = """
-                    Password Reset Request
-                    
-                    We received a request to reset your CallCat account password.
-                    
-                    Use the following token to reset your password:
-                    %s
-                    
-                    This token expires in 1 hour.
-                    
-                    If you didn't request a password reset, please ignore this email.
-                    
-                    Best regards,
-                    The CallCat Team
-                    """.formatted(token);
-                
                 sendEmail(email, subject, htmlBody, textBody);
                 System.out.println("✅ Password reset email sent successfully to: " + email);
                 
             } catch (Exception e) {
-                System.err.println("❌ Failed to send password reset email to: " + email);
+                System.err.println("❌ Failed to send password reset email via SES to: " + email);
                 System.err.println("Error: " + e.getMessage());
-                // Fallback to console logging
-                logEmailToConsole(email, "Reset your CallCat password", "Your password reset token is: " + token);
+                // Fallback to Gmail SMTP
+                sendViaGmail(email, subject, htmlBody);
             }
         } else {
-            // Development mode - log to console
-            logEmailToConsole(email, "Reset your CallCat password", "Your password reset token is: " + token + "\nThis token expires in 1 hour.");
+            // emailEnabled=false - use Gmail SMTP instead of console
+            sendViaGmail(email, subject, htmlBody);
         }
     }
     
@@ -156,7 +167,7 @@ public class EmailService {
     private void sendEmail(String toEmail, String subject, String htmlBody, String textBody) {
         try {
             SendEmailRequest request = SendEmailRequest.builder()
-                .source(fromName + " <" + fromEmail + ">")
+                .source(awsFromName + " <" + awsFromEmail + ">")
                 .destination(Destination.builder()
                     .toAddresses(toEmail)
                     .build())
@@ -188,13 +199,37 @@ public class EmailService {
     }
     
     /**
-     * Fallback method to log email to console
+     * Sends email via Gmail SMTP (fallback method)
+     */
+    private void sendViaGmail(String toEmail, String subject, String body) {
+        try {
+            MimeMessage message = gmailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            
+            helper.setFrom("David Huang <" + gmailUsername + ">"); // Set display name
+            helper.setTo(toEmail);
+            helper.setSubject(subject);
+            helper.setText(body, true); // true = HTML content
+            
+            gmailSender.send(message);
+            System.out.println("✅ Email sent via Gmail SMTP to: " + toEmail);
+            
+        } catch (Exception e) {
+            System.err.println("❌ Failed to send email via Gmail SMTP to: " + toEmail);
+            System.err.println("Error: " + e.getMessage());
+            // Final fallback - log to console
+            logEmailToConsole(toEmail, subject, body);
+        }
+    }
+    
+    /**
+     * Final fallback method to log email to console
      */
     private void logEmailToConsole(String email, String subject, String body) {
-        System.out.println("=== EMAIL (DEV MODE) ===");
+        System.out.println("=== EMAIL (CONSOLE FALLBACK) ===");
         System.out.println("To: " + email);
         System.out.println("Subject: " + subject);
         System.out.println("Body: " + body);
-        System.out.println("========================");
+        System.out.println("================================");
     }
 }

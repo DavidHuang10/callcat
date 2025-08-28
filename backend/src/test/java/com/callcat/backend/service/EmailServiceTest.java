@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.util.ReflectionTestUtils;
 import software.amazon.awssdk.services.ses.SesClient;
 
@@ -18,11 +19,14 @@ class EmailServiceTest {
     @Mock
     private SesClient sesClient;
     
+    @Mock
+    private JavaMailSender gmailSender;
+    
     private EmailService emailService;
 
     @BeforeEach
     void setUp() {
-        emailService = new EmailService(sesClient);
+        emailService = new EmailService(sesClient, gmailSender);
         // Set email disabled for testing (dev mode)
         ReflectionTestUtils.setField(emailService, "emailEnabled", false);
     }
