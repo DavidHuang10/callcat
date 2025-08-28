@@ -3,6 +3,7 @@ package com.callcat.backend.controller;
 import com.callcat.backend.service.CallService;
 import com.callcat.backend.entity.CallRecord;
 import com.callcat.backend.service.TranscriptService;
+import com.callcat.backend.service.LiveTranscriptService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -18,11 +19,13 @@ public class WebhookController {
 
     private final CallService callService;
     private final TranscriptService transcriptService;
+    private final LiveTranscriptService liveTranscriptService;
     private final ObjectMapper objectMapper;
 
-    public WebhookController(CallService callService, TranscriptService transcriptService, ObjectMapper objectMapper) {
+    public WebhookController(CallService callService, TranscriptService transcriptService, LiveTranscriptService liveTranscriptService, ObjectMapper objectMapper) {
         this.callService = callService;
         this.transcriptService = transcriptService;
+        this.liveTranscriptService = liveTranscriptService;
         this.objectMapper = objectMapper;
     }
 
@@ -66,7 +69,11 @@ public class WebhookController {
             callRecord.setRetellCallData(objectMapper.writeValueAsString(callInfo));
             
             callService.saveCallRecord(callRecord);
-            logger.info("Updated call {} with provider ID {}", callRecord.getCallId(), providerId);
+            
+            // Start live transcript polling
+            liveTranscriptService.startPolling(providerId);
+            
+            logger.info("Updated call {} with provider ID {} and started live transcript polling", callRecord.getCallId(), providerId);
         } catch (Exception e) {
             logger.error("Failed to update call status for provider ID {}", providerId, e);
         }
@@ -83,7 +90,11 @@ public class WebhookController {
             callRecord.setRetellCallData(objectMapper.writeValueAsString(callInfo));
             
             callService.saveCallRecord(callRecord);
-            logger.info("Updated call {} (Provider: {}) to COMPLETED", callRecord.getCallId(), providerId);
+            
+            // Stop live transcript polling
+            liveTranscriptService.stopPolling(providerId);
+            
+            logger.info("Updated call {} (Provider: {}) to COMPLETED and stopped live transcript polling", callRecord.getCallId(), providerId);
         } catch (Exception e) {
             logger.error("Failed to process call end for provider ID {}", providerId, e);
         }

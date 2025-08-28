@@ -37,6 +37,9 @@ class WebhookControllerTest {
 
     @MockitoBean
     private TranscriptService transcriptService;
+    
+    @MockitoBean
+    private com.callcat.backend.service.LiveTranscriptService liveTranscriptService;
 
     // Mock security-related services that are autowired in the application context
     @MockitoBean
@@ -85,6 +88,7 @@ class WebhookControllerTest {
         // Verify call service interactions
         verify(callService).findCallByProviderId("retell-call-123");
         verify(callService).saveCallRecord(any(CallRecord.class));
+        verify(liveTranscriptService).startPolling("retell-call-123");
     }
 
     @Test
@@ -111,6 +115,7 @@ class WebhookControllerTest {
         // Verify call service interactions
         verify(callService).findCallByProviderId("retell-call-123");
         verify(callService).saveCallRecord(any(CallRecord.class));
+        verify(liveTranscriptService).stopPolling("retell-call-123");
     }
 
     @Test

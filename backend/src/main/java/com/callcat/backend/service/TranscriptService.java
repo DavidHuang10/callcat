@@ -44,4 +44,14 @@ public class TranscriptService {
 
         callTranscriptRepository.save(transcript);
     }
+    
+    public void updateLiveTranscript(String providerId, String transcriptText) {
+        CallTranscript existingTranscript = callTranscriptRepository.findByProviderId(providerId)
+                .orElse(null);
+        
+        // Only update if transcript has changed
+        if (existingTranscript == null || !transcriptText.equals(existingTranscript.getTranscriptText())) {
+            saveTranscript(providerId, transcriptText);
+        }
+    }
 }
