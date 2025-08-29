@@ -42,6 +42,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/webhooks/**").permitAll()
                         .requestMatchers("/api/calls/*/trigger").permitAll()
+                        .requestMatchers("/health").permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )
@@ -61,7 +62,8 @@ public class SecurityConfig {
             "http://localhost:*", 
             "https://call-cat.com", 
             "https://*.call-cat.com", 
-            "https://*.ngrok.io"
+            "https://*.ngrok.io",
+            "https://*.elasticbeanstalk.com"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With", "X-API-Key"));

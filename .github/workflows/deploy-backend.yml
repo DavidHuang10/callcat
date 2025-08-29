@@ -1,0 +1,98 @@
+name: Deploy Backend to Elastic Beanstalk
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'corretto'
+    
+    - name: Cache Maven dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+    
+    - name: Run tests
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        JWT_EXPIRATION: ${{ secrets.JWT_EXPIRATION }}
+        AWS_SES_FROM_EMAIL: ${{ secrets.AWS_SES_FROM_EMAIL }}
+        AWS_SES_FROM_NAME: ${{ secrets.AWS_SES_FROM_NAME }}
+        GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
+        GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
+        RETELL_API_KEY: ${{ secrets.RETELL_API_KEY }}
+        RETELL_PHONE_NUMBER: ${{ secrets.RETELL_PHONE_NUMBER }}
+        LAMBDA_API_KEY: ${{ secrets.LAMBDA_API_KEY }}
+        LAMBDA_FUNCTION_ARN: ${{ secrets.LAMBDA_FUNCTION_ARN }}
+        EMAIL_ENABLED: false
+      run: ./mvnw test
+    
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    defaults:
+      run:
+        working-directory: ./backend
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'corretto'
+    
+    - name: Cache Maven dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+    
+    - name: Build JAR
+      run: ./mvnw clean package -DskipTests
+    
+    - name: Generate deployment package
+      run: |
+        cp target/*.jar application.jar
+        zip -r deploy.zip application.jar .ebextensions/
+    
+    - name: Deploy to Elastic Beanstalk
+      uses: einaregilsson/beanstalk-deploy@v22
+      with:
+        aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        application_name: callcat-backend
+        environment_name: callcat-backend-production-env
+        version_label: github-v${{ github.run_number }}-${{ github.sha }}
+        region: us-east-1
+        deployment_package: backend/deploy.zip
+        wait_for_deployment: true

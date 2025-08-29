@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CallCat API Test</title>
+</head>
+<body>
+    <h1>CallCat API Test</h1>
+    <button onclick="testEmailVerification()">Test Email Verification</button>
+    <div id="result"></div>
+
+    <script>
+        async function testEmailVerification() {
+            try {
+                const response = await fetch('https://callcat-backend.us-east-1.elasticbeanstalk.com/api/auth/send-verification', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'test@example.com'
+                    })
+                });
+                
+                const data = await response.json();
+                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                console.log('Response:', data);
+            } catch (error) {
+                document.getElementById('result').innerHTML = '<pre>Error: ' + error.message + '</pre>';
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
