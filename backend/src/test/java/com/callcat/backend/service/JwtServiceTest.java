@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @ActiveProfiles("test")
 @Import(TestBackendApplication.class)
 @TestPropertySource(properties = {
-        "jwt.secret=test-jwt-secret-for-unit-tests-only",
+        "jwt.secret=NTU1NTU1NTU1NTU1NTU1NTU1NTU1NTU1NTU1NTU1NTU1NTU1NTU1NTU1NTU1NTU=",
         "jwt.expiration=86400000"
 })
 class JwtServiceTest {
@@ -38,7 +38,7 @@ class JwtServiceTest {
         try {
             var secretField = JwtService.class.getDeclaredField("secretKey");
             secretField.setAccessible(true);
-            secretField.set(jwtService, "test-jwt-secret-for-unit-tests-only");
+            secretField.set(jwtService, "NTU1NTU1NTU1NTU1NTU1NTU1NTU1NTU1NTU1NTU1NTU1NTU1NTU1NTU1NTU1NTU=");
             
             var expirationField = JwtService.class.getDeclaredField("jwtExpiration");
             expirationField.setAccessible(true);
