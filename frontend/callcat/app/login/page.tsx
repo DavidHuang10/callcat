@@ -116,7 +116,7 @@ export default function LoginPage() {
 
             <div className="mt-6 text-center">
               <button 
-                onClick={() => router.push('/auth')}
+                onClick={() => router.push('/auth?mode=reset')}
                 className="text-sm text-blue-600 hover:text-blue-800 font-medium"
               >
                 Forgot your password?
@@ -129,7 +129,7 @@ export default function LoginPage() {
                         <p className="text-sm text-gray-600">
                 Don&apos;t have an account?{' '}
             <button 
-              onClick={() => router.push('/auth')}
+              onClick={() => router.push('/auth?mode=register')}
               className="text-blue-600 hover:text-blue-800 font-medium"
             >
               Create one

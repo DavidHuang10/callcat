@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -11,7 +11,8 @@ import { Mail, Lock, User, CheckCircle, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { apiService } from '@/lib/api'
 
-type AuthStep = 'email' | 'verification' | 'registration'
+type AuthStep = 'email' | 'verification' | 'registration' | 'forgot-email' | 'reset-password'
+type AuthMode = 'register' | 'reset'
 
 interface AuthState {
   email: string
@@ -20,11 +21,14 @@ interface AuthState {
   lastName: string
   password: string
   confirmPassword: string
+  resetToken: string
 }
 
-export default function AuthPage() {
+function AuthPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { login } = useAuth()
+  const [authMode, setAuthMode] = useState<AuthMode>('register')
   const [currentStep, setCurrentStep] = useState<AuthStep>('email')
   const [authState, setAuthState] = useState<AuthState>({
     email: '',
@@ -32,11 +36,23 @@ export default function AuthPage() {
     firstName: '',
     lastName: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    resetToken: ''
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+
+  useEffect(() => {
+    const mode = searchParams.get('mode')
+    if (mode === 'reset') {
+      setAuthMode('reset')
+      setCurrentStep('forgot-email')
+    } else {
+      setAuthMode('register')
+      setCurrentStep('email')
+    }
+  }, [searchParams])
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,11 +60,51 @@ export default function AuthPage() {
     setError('')
     
     try {
-      await apiService.sendVerification(authState.email)
-      setSuccess('Verification code sent to your email!')
-      setCurrentStep('verification')
+      if (authMode === 'register') {
+        await apiService.sendVerification(authState.email)
+        setSuccess('Verification code sent to your email!')
+        setCurrentStep('verification')
+      }
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to send verification code')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    
+    try {
+      await apiService.forgotPassword(authState.email)
+      setSuccess('Password reset instructions sent to your email!')
+      setCurrentStep('reset-password')
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to send password reset email')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    
+    if (authState.password !== authState.confirmPassword) {
+      setError('Passwords do not match')
+      setLoading(false)
+      return
+    }
+    
+    try {
+      await apiService.resetPassword(authState.resetToken, authState.password)
+      setSuccess('Password reset successful! Redirecting to login...')
+      setTimeout(() => router.push('/login?message=password-reset'), 1500)
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Password reset failed')
     } finally {
       setLoading(false)
     }
@@ -106,24 +162,42 @@ export default function AuthPage() {
     setAuthState(prev => ({ ...prev, [field]: value }))
   }
 
-  const renderStepIndicator = () => (
-    <div className="flex items-center justify-center space-x-4 mb-8">
-      <div className="flex items-center space-x-2">
-        <Badge variant={currentStep === 'email' ? 'default' : 'secondary'}>1</Badge>
-        <span className="text-sm">Email Verification</span>
+  const renderStepIndicator = () => {
+    if (authMode === 'reset') {
+      return (
+        <div className="flex items-center justify-center space-x-4 mb-8">
+          <div className="flex items-center space-x-2">
+            <Badge variant={currentStep === 'forgot-email' ? 'default' : 'secondary'}>1</Badge>
+            <span className="text-sm">Enter Email</span>
+          </div>
+          <div className="w-8 h-px bg-gray-300" />
+          <div className="flex items-center space-x-2">
+            <Badge variant={currentStep === 'reset-password' ? 'default' : 'secondary'}>2</Badge>
+            <span className="text-sm">Reset Password</span>
+          </div>
+        </div>
+      )
+    }
+    
+    return (
+      <div className="flex items-center justify-center space-x-4 mb-8">
+        <div className="flex items-center space-x-2">
+          <Badge variant={currentStep === 'email' ? 'default' : 'secondary'}>1</Badge>
+          <span className="text-sm">Email Verification</span>
+        </div>
+        <div className="w-8 h-px bg-gray-300" />
+        <div className="flex items-center space-x-2">
+          <Badge variant={currentStep === 'verification' ? 'default' : 'secondary'}>2</Badge>
+          <span className="text-sm">Verify Code</span>
+        </div>
+        <div className="w-8 h-px bg-gray-300" />
+        <div className="flex items-center space-x-2">
+          <Badge variant={currentStep === 'registration' ? 'default' : 'secondary'}>3</Badge>
+          <span className="text-sm">Registration</span>
+        </div>
       </div>
-      <div className="w-8 h-px bg-gray-300" />
-      <div className="flex items-center space-x-2">
-        <Badge variant={currentStep === 'verification' ? 'default' : 'secondary'}>2</Badge>
-        <span className="text-sm">Verify Code</span>
-      </div>
-      <div className="w-8 h-px bg-gray-300" />
-      <div className="flex items-center space-x-2">
-        <Badge variant={currentStep === 'registration' ? 'default' : 'secondary'}>3</Badge>
-        <span className="text-sm">Registration</span>
-      </div>
-    </div>
-  )
+    )
+  }
 
   const renderEmailStep = () => (
     <form onSubmit={handleEmailSubmit} className="space-y-4">
@@ -144,6 +218,91 @@ export default function AuthPage() {
       </div>
       <Button type="submit" className="w-full" disabled={loading}>
         {loading ? 'Sending...' : 'Send Verification Code'}
+      </Button>
+    </form>
+  )
+
+  const renderForgotEmailStep = () => (
+    <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="email">Email Address</Label>
+        <div className="relative">
+          <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Input
+            id="email"
+            type="email"
+            placeholder="Enter your email address"
+            value={authState.email}
+            onChange={(e) => updateAuthState('email', e.target.value)}
+            className="pl-10"
+            required
+          />
+        </div>
+        <p className="text-sm text-gray-500">
+          We&apos;ll send you a password reset token
+        </p>
+      </div>
+      <Button type="submit" className="w-full" disabled={loading}>
+        {loading ? 'Sending...' : 'Send Reset Instructions'}
+      </Button>
+    </form>
+  )
+
+  const renderResetPasswordStep = () => (
+    <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="resetToken">Reset Token</Label>
+        <Input
+          id="resetToken"
+          type="text"
+          placeholder="Enter the token from your email"
+          value={authState.resetToken}
+          onChange={(e) => updateAuthState('resetToken', e.target.value)}
+          required
+        />
+        <p className="text-sm text-gray-500">
+          Check your email for the reset token
+        </p>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="password">New Password</Label>
+        <div className="relative">
+          <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Input
+            id="password"
+            type="password"
+            placeholder="Enter your new password"
+            value={authState.password}
+            onChange={(e) => updateAuthState('password', e.target.value)}
+            className="pl-10"
+            required
+          />
+        </div>
+        <p className="text-xs text-gray-500">
+          Must be at least 8 characters with uppercase, lowercase, and number
+        </p>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="confirmPassword">Confirm New Password</Label>
+        <Input
+          id="confirmPassword"
+          type="password"
+          placeholder="Confirm your new password"
+          value={authState.confirmPassword}
+          onChange={(e) => updateAuthState('confirmPassword', e.target.value)}
+          required
+        />
+      </div>
+      <Button type="submit" className="w-full" disabled={loading}>
+        {loading ? 'Resetting Password...' : 'Reset Password'}
+      </Button>
+      <Button 
+        type="button" 
+        variant="outline" 
+        className="w-full"
+        onClick={() => setCurrentStep('forgot-email')}
+      >
+        Back to Email
       </Button>
     </form>
   )
@@ -256,15 +415,24 @@ export default function AuthPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to CallCat</h1>
-          <p className="text-gray-600">Create your account to get started</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            {authMode === 'reset' ? 'Reset Your Password' : 'Welcome to CallCat'}
+          </h1>
+          <p className="text-gray-600">
+            {authMode === 'reset' ? 'Enter your email to reset your password' : 'Create your account to get started'}
+          </p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-center">Account Setup</CardTitle>
+            <CardTitle className="text-center">
+              {authMode === 'reset' ? 'Password Reset' : 'Account Setup'}
+            </CardTitle>
             <CardDescription className="text-center">
-              Follow the steps below to create your account
+              {authMode === 'reset' 
+                ? 'Follow the steps below to reset your password'
+                : 'Follow the steps below to create your account'
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -287,21 +455,45 @@ export default function AuthPage() {
             {currentStep === 'email' && renderEmailStep()}
             {currentStep === 'verification' && renderVerificationStep()}
             {currentStep === 'registration' && renderRegistrationStep()}
+            {currentStep === 'forgot-email' && renderForgotEmailStep()}
+            {currentStep === 'reset-password' && renderResetPasswordStep()}
           </CardContent>
         </Card>
 
         <div className="text-center mt-6">
           <p className="text-sm text-gray-600">
-            Already have an account?{' '}
-            <button 
-              onClick={() => router.push('/login')}
-              className="text-blue-600 hover:text-blue-800 font-medium"
-            >
-              Sign in
-            </button>
+            {authMode === 'reset' ? (
+              <>
+                Remember your password?{' '}
+                <button 
+                  onClick={() => router.push('/login')}
+                  className="text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Sign in
+                </button>
+              </>
+            ) : (
+              <>
+                Already have an account?{' '}
+                <button 
+                  onClick={() => router.push('/login')}
+                  className="text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Sign in
+                </button>
+              </>
+            )}
           </p>
         </div>
       </div>
     </div>
+  )
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>}>
+      <AuthPageContent />
+    </Suspense>
   )
 }
