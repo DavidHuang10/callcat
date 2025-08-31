@@ -28,7 +28,7 @@ export default function LoginPage() {
     
     try {
       const data = await apiService.login(formData.email, formData.password)
-      login(data.token, {
+      login({
         id: data.userId,
         email: data.email,
         fullName: data.fullName

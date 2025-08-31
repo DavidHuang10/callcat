@@ -88,7 +88,7 @@ export default function AuthPage() {
         authState.firstName,
         authState.lastName
       )
-      login(data.token, {
+      login({
         id: data.userId,
         email: data.email,
         fullName: data.fullName

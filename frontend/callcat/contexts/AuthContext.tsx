@@ -12,10 +12,9 @@ interface User {
 
 interface AuthContextType {
   user: User | null
-  token: string | null
   isAuthenticated: boolean
   isLoading: boolean
-  login: (token: string, user: User) => void
+  login: (user: User) => void
   logout: () => Promise<void>
   checkAuth: () => Promise<void>
 }
@@ -24,42 +23,32 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
-  const login = (newToken: string, userData: User) => {
-    localStorage.setItem('authToken', newToken)
-    setToken(newToken)
+  const login = (userData: User) => {
+    // httpOnly cookie is already set by server
     setUser(userData)
   }
 
   const logout = async () => {
     try {
-      // Call backend logout to blacklist token
+      // Call backend logout to clear httpOnly cookie
       await apiService.logout()
     } catch (error) {
       console.error('Logout API call failed:', error)
       // Continue with local cleanup even if API call fails
     }
     
-    localStorage.removeItem('authToken')
-    setToken(null)
+    // Clear user state - httpOnly cookie is cleared by server
     setUser(null)
     router.push('/login')
   }
 
   const checkAuth = async () => {
     try {
-      const storedToken = localStorage.getItem('authToken')
-      if (!storedToken) {
-        setIsLoading(false)
-        return
-      }
-
-      // Verify token with backend using API service
+      // Try to get user profile - if httpOnly cookie is valid, this will succeed
       const userData = await apiService.getUserProfile()
-      setToken(storedToken)
       setUser({
         id: userData.id,
         email: userData.email,
@@ -67,9 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
     } catch (error) {
       console.error('Auth check failed:', error)
-      // Token is invalid, remove it
-      localStorage.removeItem('authToken')
-      setToken(null)
+      // Cookie is invalid or expired - clear user state
       setUser(null)
     } finally {
       setIsLoading(false)
@@ -82,8 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value: AuthContextType = {
     user,
-    token,
-    isAuthenticated: !!token && !!user,
+    isAuthenticated: !!user,
     isLoading,
     login,
     logout,
