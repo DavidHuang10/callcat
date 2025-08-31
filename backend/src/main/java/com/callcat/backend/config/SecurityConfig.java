@@ -63,7 +63,9 @@ public class SecurityConfig {
             "https://call-cat.com", 
             "https://*.call-cat.com", 
             "https://*.ngrok.io",
-            "https://*.elasticbeanstalk.com"
+            "https://*.elasticbeanstalk.com",
+            "chrome-extension://*",  // For Postman Chrome extension
+            "*"  // Allow Postman native app (temporary for development)
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With", "X-API-Key"));

@@ -9,19 +9,14 @@ import MakeCallSection from "@/components/sections/MakeCallSection"
 export default function CallCatDashboard() {
   const {
     activeSection,
-    isMobile,
     sidebarOpen,
     selectedLanguage,
     expandedCall,
-    scheduledPage,
-    completedPage,
     searchQuery,
     setActiveSection,
     setSidebarOpen,
     setSelectedLanguage,
     setExpandedCall,
-    setScheduledPage,
-    setCompletedPage,
     setSearchQuery,
   } = useDashboard()
 

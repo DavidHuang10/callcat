@@ -1,0 +1,58 @@
+export type DashboardSection = 'home' | 'make-call' | 'history' | 'settings' | 'active';
+
+export type LoadingState = 'idle' | 'loading' | 'success' | 'error';
+
+export type CallStatus = "successful" | "failed" | "scheduled" | "needs_attention";
+
+export interface FormState<T = any> {
+  data: T;
+  errors: Record<string, string>;
+  isSubmitting: boolean;
+  isValid: boolean;
+}
+
+export interface CallCardProps {
+  call: import('./api').Call;
+  onEdit?: (callId: string) => void;
+  onDelete?: (callId: string) => void;
+  onView?: (callId: string) => void;
+}
+
+export interface SectionProps {
+  className?: string;
+  children?: React.ReactNode;
+}
+
+// Dashboard state management
+export interface DashboardState {
+  activeSection: string;
+  isMobile: boolean;
+  sidebarOpen: boolean;
+  selectedLanguage: string;
+  expandedCall: string | null;
+  scheduledPage: number;
+  completedPage: number;
+  searchQuery: string;
+}
+
+// Legacy interface for mock data (can be removed later)
+export interface CallRecord {
+  id: string;
+  business: string;
+  phone: string;
+  purpose: string;
+  status: CallStatus;
+  timestamp: string;
+  duration: string | null;
+  language: string;
+  transcript: import('./api').CallTranscript[];
+  result: string;
+  icon: any; // Lucide icon component
+}
+
+export interface StatusConfig {
+  label: string;
+  color: string;
+  bgGradient: string;
+  icon: any;
+}

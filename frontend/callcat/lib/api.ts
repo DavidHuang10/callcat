@@ -8,9 +8,7 @@ import {
     UpdatePreferencesRequest,
     ApiResponse,
 } from "@/types";
-
-const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_URL || "https://api.call-cat.com";
+import { API_BASE_URL } from "@/constants";
 
 class ApiService {
     private async request<T>(
