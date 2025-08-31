@@ -4,24 +4,20 @@ import {
   Phone,
   Clock,
   CheckCircle,
-  AlertCircle,
   Activity,
-  Star,
-  Sparkles,
   Coffee,
   Zap,
   Settings,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CallRecord } from "@/types"
 import { getFilteredCalls } from "@/data/calls"
 import CallCard from "@/components/CallCard"
 
 interface HomeSectionProps {
   searchQuery: string
-  expandedCall: number | null
-  setExpandedCall: (id: number | null) => void
+  expandedCall: string | null
+  setExpandedCall: (id: string | null) => void
   setActiveSection: (section: string) => void
 }
 
@@ -80,7 +76,7 @@ export default function HomeSection({
           Welcome back, Sarah! 👋
         </h1>
         <p className="text-gray-600 text-lg">
-          Here's what's happening with your calls today
+          Here&apos;s what&apos;s happening with your calls today
         </p>
       </div>
 
@@ -129,7 +125,7 @@ export default function HomeSection({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button
               onClick={() => setActiveSection("make-call")}
               className="p-4 bg-white rounded-lg border-2 border-purple-200 hover:border-purple-400 hover:shadow-md transition-all duration-200 text-left group"
@@ -145,20 +141,7 @@ export default function HomeSection({
               </div>
             </button>
 
-            <button
-              onClick={() => setActiveSection("contacts")}
-              className="p-4 bg-white rounded-lg border-2 border-purple-200 hover:border-purple-400 hover:shadow-md transition-all duration-200 text-left group"
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-pink-100 rounded-lg group-hover:bg-pink-200 transition-colors duration-200">
-                  <Star className="h-5 w-5 text-pink-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-800">Manage Contacts</h3>
-                  <p className="text-sm text-gray-600">Update your contact list</p>
-                </div>
-              </div>
-            </button>
+
 
             <button
               onClick={() => setActiveSection("settings")}

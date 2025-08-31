@@ -43,7 +43,7 @@ export function useDashboard() {
     setState(prev => ({ ...prev, selectedLanguage: language }))
   }
 
-  const setExpandedCall = (id: number | null) => {
+  const setExpandedCall = (id: string | null) => {
     setState(prev => ({ ...prev, expandedCall: id }))
   }
 

@@ -1,8 +1,6 @@
 "use client"
 
-import { useState } from "react"
 import {
-  Phone,
   Clock,
   Timer,
   Globe,
@@ -21,8 +19,8 @@ import { getStatusConfig, formatTimestamp } from "@/data/calls"
 
 interface CallCardProps {
   call: CallRecord
-  expandedCall: number | null
-  setExpandedCall: (id: number | null) => void
+  expandedCall: string | null
+  setExpandedCall: (id: string | null) => void
   setActiveSection: (section: string) => void
 }
 

@@ -4,7 +4,6 @@ import {
   Home,
   Phone,
   PhoneCall,
-  Users,
   Settings,
   Globe,
 } from "lucide-react"
@@ -31,7 +30,6 @@ export default function Sidebar({
     { id: "home", label: "Dashboard", icon: Home },
     { id: "make-call", label: "Make a Call", icon: Phone },
     { id: "active", label: "Active Calls", icon: PhoneCall },
-    { id: "contacts", label: "Contacts", icon: Users },
     { id: "settings", label: "Settings", icon: Settings },
   ]
 

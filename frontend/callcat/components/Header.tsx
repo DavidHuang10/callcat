@@ -7,6 +7,7 @@ import {
   Heart,
   Settings,
   Search,
+  LogOut,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,6 +19,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
+import { useAuth } from "@/contexts/AuthContext"
 
 interface HeaderProps {
   sidebarOpen: boolean
@@ -27,6 +29,21 @@ interface HeaderProps {
 }
 
 export default function Header({ sidebarOpen, setSidebarOpen, searchQuery, setSearchQuery }: HeaderProps) {
+  const { user, logout } = useAuth()
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+    } catch (error) {
+      console.error('Logout failed:', error)
+    }
+  }
+
+  const userInitials = user?.fullName
+    .split(' ')
+    .map(name => name[0])
+    .join('')
+    .toUpperCase() || 'U'
   return (
     <header className="bg-white/80 backdrop-blur-sm border-b-2 border-purple-200 px-4 lg:px-6 py-3 flex items-center justify-between sticky top-0 z-10">
       {/* Left Section */}
@@ -95,9 +112,9 @@ export default function Header({ sidebarOpen, setSidebarOpen, searchQuery, setSe
               className="relative h-10 w-10 rounded-full hover:bg-purple-100 transition-colors duration-200"
             >
               <Avatar className="h-10 w-10 border-2 border-purple-200">
-                <AvatarImage src="/placeholder.svg?height=40&width=40" alt="Sarah" />
+                <AvatarImage src="/placeholder.svg?height=40&width=40" alt={user?.fullName} />
                 <AvatarFallback className="bg-gradient-to-br from-purple-400 to-pink-500 text-white font-semibold">
-                  S
+                  {userInitials}
                 </AvatarFallback>
               </Avatar>
             </Button>
@@ -116,7 +133,11 @@ export default function Header({ sidebarOpen, setSidebarOpen, searchQuery, setSe
               <Heart className="h-4 w-4 mr-2" />
               Feedback
             </DropdownMenuItem>
-            <DropdownMenuItem>Logout</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

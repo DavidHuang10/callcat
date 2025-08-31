@@ -4,6 +4,7 @@ import { useDashboard } from "@/hooks/useDashboard"
 import Header from "@/components/Header"
 import Sidebar from "@/components/Sidebar"
 import HomeSection from "@/components/sections/HomeSection"
+import MakeCallSection from "@/components/sections/MakeCallSection"
 
 export default function CallCatDashboard() {
   const {
@@ -37,10 +38,9 @@ export default function CallCatDashboard() {
         )
       case "make-call":
         return (
-          <div className="p-4 lg:p-6">
-            <h1 className="text-2xl font-bold text-gray-800 mb-4">Make a Call</h1>
-            <p className="text-gray-600">Call creation form will go here...</p>
-          </div>
+          <MakeCallSection 
+            onCallCreated={() => setActiveSection("home")}
+          />
         )
       case "active":
         return (
@@ -49,13 +49,7 @@ export default function CallCatDashboard() {
             <p className="text-gray-600">Active calls will be displayed here...</p>
           </div>
         )
-      case "contacts":
-        return (
-          <div className="p-4 lg:p-6">
-            <h1 className="text-2xl font-bold text-gray-800 mb-4">Contacts</h1>
-            <p className="text-gray-600">Contact management will go here...</p>
-          </div>
-        )
+
       case "settings":
         return (
           <div className="p-4 lg:p-6">
