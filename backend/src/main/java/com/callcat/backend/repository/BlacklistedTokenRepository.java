@@ -1,7 +1,6 @@
 package com.callcat.backend.repository;
 
 import com.callcat.backend.entity.BlacklistedToken;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;

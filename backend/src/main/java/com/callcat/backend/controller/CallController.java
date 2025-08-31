@@ -113,7 +113,7 @@ public class CallController {
                 return ResponseEntity.badRequest().body(new ApiResponse("Call is not scheduled", false));
             }
             
-            CallResponse response = retellService.makeCall(callId);
+            retellService.makeCall(callId);
             return ResponseEntity.ok(new ApiResponse("Call triggered successfully", true));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage(), false));

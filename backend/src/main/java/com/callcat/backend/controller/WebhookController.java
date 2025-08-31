@@ -2,7 +2,6 @@ package com.callcat.backend.controller;
 
 import com.callcat.backend.service.CallService;
 import com.callcat.backend.entity.CallRecord;
-import com.callcat.backend.service.TranscriptService;
 import com.callcat.backend.service.LiveTranscriptService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,13 +17,11 @@ public class WebhookController {
     private static final Logger logger = LoggerFactory.getLogger(WebhookController.class);
 
     private final CallService callService;
-    private final TranscriptService transcriptService;
     private final LiveTranscriptService liveTranscriptService;
     private final ObjectMapper objectMapper;
 
-    public WebhookController(CallService callService, TranscriptService transcriptService, LiveTranscriptService liveTranscriptService, ObjectMapper objectMapper) {
+    public WebhookController(CallService callService, LiveTranscriptService liveTranscriptService, ObjectMapper objectMapper) {
         this.callService = callService;
-        this.transcriptService = transcriptService;
         this.liveTranscriptService = liveTranscriptService;
         this.objectMapper = objectMapper;
     }
