@@ -4,8 +4,8 @@ import {
   Home,
   Phone,
   PhoneCall,
-  Settings,
   Globe,
+  User,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -30,7 +30,7 @@ export default function Sidebar({
     { id: "home", label: "Dashboard", icon: Home },
     { id: "make-call", label: "Make a Call", icon: Phone },
     { id: "active", label: "Active Calls", icon: PhoneCall },
-    { id: "settings", label: "Settings", icon: Settings },
+    { id: "profile", label: "Profile", icon: User },
   ]
 
   return (

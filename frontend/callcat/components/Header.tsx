@@ -5,7 +5,6 @@ import {
   Bell,
   User,
   Heart,
-  Settings,
   Search,
   LogOut,
 } from "lucide-react"
@@ -26,9 +25,10 @@ interface HeaderProps {
   setSidebarOpen: (open: boolean) => void
   searchQuery: string
   setSearchQuery: (query: string) => void
+  setActiveSection: (section: string) => void
 }
 
-export default function Header({ sidebarOpen, setSidebarOpen, searchQuery, setSearchQuery }: HeaderProps) {
+export default function Header({ sidebarOpen, setSidebarOpen, searchQuery, setSearchQuery, setActiveSection }: HeaderProps) {
   const { user, logout } = useAuth()
 
   const handleLogout = async () => {
@@ -120,13 +120,9 @@ export default function Header({ sidebarOpen, setSidebarOpen, searchQuery, setSe
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setActiveSection('profile')}>
               <User className="h-4 w-4 mr-2" />
               Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem>

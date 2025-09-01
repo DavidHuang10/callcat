@@ -237,6 +237,16 @@ class ApiService {
             body: JSON.stringify({ token, newPassword }),
         });
     }
+
+    async changePassword(
+        currentPassword: string,
+        newPassword: string
+    ): Promise<ApiResponse> {
+        return this.request<ApiResponse>("/api/user/change-password", {
+            method: "POST",
+            body: JSON.stringify({ currentPassword, newPassword }),
+        });
+    }
 }
 
 export const apiService = new ApiService();

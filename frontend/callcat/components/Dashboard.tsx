@@ -5,6 +5,7 @@ import Header from "@/components/Header"
 import Sidebar from "@/components/Sidebar"
 import HomeSection from "@/components/sections/HomeSection"
 import MakeCallSection from "@/components/sections/MakeCallSection"
+import { ProfileSection } from "@/components/sections/ProfileSection"
 
 export default function CallCatDashboard() {
   const {
@@ -45,13 +46,8 @@ export default function CallCatDashboard() {
           </div>
         )
 
-      case "settings":
-        return (
-          <div className="p-4 lg:p-6">
-            <h1 className="text-2xl font-bold text-gray-800 mb-4">Settings</h1>
-            <p className="text-gray-600">Settings will be displayed here...</p>
-          </div>
-        )
+      case "profile":
+        return <ProfileSection />
       default:
         return (
           <div className="p-4 lg:p-6">
@@ -70,6 +66,7 @@ export default function CallCatDashboard() {
         setSidebarOpen={setSidebarOpen}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        setActiveSection={setActiveSection}
       />
 
       <div className="flex flex-1 overflow-hidden">

@@ -1,4 +1,4 @@
-export type DashboardSection = 'home' | 'make-call' | 'history' | 'settings' | 'active';
+export type DashboardSection = 'home' | 'make-call' | 'history' | 'active' | 'profile';
 
 export type LoadingState = 'idle' | 'loading' | 'success' | 'error';
 

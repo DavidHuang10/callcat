@@ -45,3 +45,34 @@ export const validateVerificationCode = (code: string): string | null => {
   if (!/^\d{6}$/.test(code)) return 'Verification code must be 6 digits';
   return null;
 };
+
+export interface ChangePasswordFormData {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface ProfileFormData {
+  firstName: string;
+  lastName: string;
+}
+
+export interface PreferencesFormData {
+  systemPrompt: string;
+  timezone: string;
+  emailNotifications: boolean;
+  voiceId: string;
+  defaultLanguage: string;
+}
+
+export const validateSystemPrompt = (prompt: string): string | null => {
+  if (prompt && prompt.length > 1000) {
+    return 'System prompt cannot exceed 1000 characters';
+  }
+  return null;
+};
+
+export const validatePasswordMatch = (password: string, confirmPassword: string): string | null => {
+  if (password !== confirmPassword) return 'Passwords do not match';
+  return null;
+};
