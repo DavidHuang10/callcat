@@ -24,7 +24,7 @@ public class LiveTranscriptService {
     public LiveTranscriptService(RetellService retellService, TranscriptService transcriptService) {
         this.retellService = retellService;
         this.transcriptService = transcriptService;
-        this.executorService = Executors.newScheduledThreadPool(50); // Max 50 concurrent calls
+        this.executorService = Executors.newScheduledThreadPool(10); // Max 10 concurrent calls
         this.activePolls = new ConcurrentHashMap<>();
     }
     
