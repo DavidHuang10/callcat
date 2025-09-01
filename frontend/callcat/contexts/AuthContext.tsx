@@ -14,7 +14,7 @@ interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
-  login: (user: User) => void
+  login: (user: User, token: string) => void
   logout: () => Promise<void>
   checkAuth: () => Promise<void>
 }
@@ -26,28 +26,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
-  const login = (userData: User) => {
-    // httpOnly cookie is already set by server
+  const login = (userData: User, token: string) => {
+    // Store JWT in localStorage
+    localStorage.setItem('jwt', token)
     setUser(userData)
   }
 
   const logout = async () => {
     try {
-      // Call backend logout to clear httpOnly cookie
+      // Call backend logout to blacklist token and clear localStorage
       await apiService.logout()
     } catch (error) {
       console.error('Logout API call failed:', error)
       // Continue with local cleanup even if API call fails
+      localStorage.removeItem('jwt')
     }
     
-    // Clear user state - httpOnly cookie is cleared by server
+    // Clear user state
     setUser(null)
     router.push('/login')
   }
 
   const checkAuth = async () => {
     try {
-      // Try to get user profile - if httpOnly cookie is valid, this will succeed
+      // Check if token exists in localStorage
+      const token = localStorage.getItem('jwt')
+      if (!token) {
+        setUser(null)
+        setIsLoading(false)
+        return
+      }
+
+      // Validate token by calling user profile endpoint
       const userData = await apiService.getUserProfile()
       setUser({
         id: userData.id,
@@ -56,7 +66,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
     } catch (error) {
       console.error('Auth check failed:', error)
-      // Cookie is invalid or expired - clear user state
+      // Token is invalid or expired - clear user state and localStorage
+      localStorage.removeItem('jwt')
       setUser(null)
     } finally {
       setIsLoading(false)

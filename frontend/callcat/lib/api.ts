@@ -11,6 +11,10 @@ import {
 import { API_BASE_URL } from "@/constants";
 
 class ApiService {
+    private getAuthToken(): string | null {
+        return localStorage.getItem('jwt');
+    }
+
     private async request<T>(
         endpoint: string,
         options: RequestInit = {}
@@ -25,13 +29,24 @@ class ApiService {
             ...options,
         };
 
-        // Enable credentials to include httpOnly cookies
-        config.credentials = 'include';
+        // Add Authorization header if token exists
+        const token = this.getAuthToken();
+        if (token) {
+            config.headers = {
+                ...config.headers,
+                "Authorization": `Bearer ${token}`,
+            };
+        }
 
         try {
             const response = await fetch(url, config);
 
             if (!response.ok) {
+                // Handle unauthorized - clear invalid token
+                if (response.status === 401) {
+                    localStorage.removeItem('jwt');
+                }
+                
                 let errorMessage = `HTTP error! status: ${response.status}`;
                 try {
                     const errorData = await response.json();
@@ -133,31 +148,37 @@ class ApiService {
         email: string,
         password: string
     ): Promise<{
+        token: string;
         userId: string;
         email: string;
         fullName: string;
     }> {
         const response = await this.request<{
+            token: string;
             userId: string;
             email: string;
             fullName: string;
         }>("/api/auth/login", {
             method: "POST",
             body: JSON.stringify({ email, password }),
-            credentials: 'include',
         });
 
-        // httpOnly cookie is set by server, no client-side token storage needed
         return response;
     }
 
     async logout(): Promise<void> {
-        await this.request("/api/auth/logout", {
-            method: "POST",
-            credentials: 'include',
-        });
+        try {
+            // Call backend to blacklist token (requires Authorization header)
+            await this.request("/api/auth/logout", {
+                method: "POST",
+            });
+        } catch (error) {
+            console.error('Logout API call failed:', error);
+            // Continue with local cleanup even if server call fails
+        }
 
-        // httpOnly cookie is cleared by server
+        // Always clear token from localStorage
+        localStorage.removeItem('jwt');
     }
 
     async register(
@@ -166,21 +187,21 @@ class ApiService {
         firstName: string,
         lastName: string
     ): Promise<{
+        token: string;
         userId: string;
         email: string;
         fullName: string;
     }> {
         const response = await this.request<{
+            token: string;
             userId: string;
             email: string;
             fullName: string;
         }>("/api/auth/register", {
             method: "POST",
             body: JSON.stringify({ email, password, firstName, lastName }),
-            credentials: 'include',
         });
 
-        // httpOnly cookie is set by server
         return response;
     }
 

@@ -1,4 +1,4 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.call-cat.com';
 
 export const API_ENDPOINTS = {
   AUTH: {

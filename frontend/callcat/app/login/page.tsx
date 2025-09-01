@@ -32,7 +32,7 @@ export default function LoginPage() {
         id: data.userId,
         email: data.email,
         fullName: data.fullName
-      })
+      }, data.token)
       setSuccess('Login successful! Redirecting...')
       setTimeout(() => router.push('/'), 1500)
     } catch (error) {
