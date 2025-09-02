@@ -60,7 +60,7 @@ public class RetellService {
     public CallResponse makeCall(String callId) {
         try {
             CallRecord callRecord = callService.findCallByCallId(callId);
-            String systemPrompt = userService.getUserPreferences(callRecord.getUserId()).getSystemPrompt();
+            String systemPrompt = userService.getUserPreferences(Long.parseLong(callRecord.getUserId())).getSystemPrompt();
             
             Map<String, Object> requestBody = buildRetellRequestBody(callRecord, systemPrompt, callId);
             logger.info("Making POST request to Retell API for phone: {}", callRecord.getPhoneNumber());

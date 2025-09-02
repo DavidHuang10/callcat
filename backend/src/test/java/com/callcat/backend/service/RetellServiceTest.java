@@ -56,7 +56,7 @@ class RetellServiceTest {
         // Set up mock objects
         mockCallRecord = new CallRecord();
         mockCallRecord.setCallId("test-call-id");
-        mockCallRecord.setUserId("test-user-id");
+        mockCallRecord.setUserId("2");
         mockCallRecord.setPhoneNumber("+0987654321");
         mockCallRecord.setPrompt("Test call prompt");
         mockCallRecord.setStatus("SCHEDULED");
@@ -79,7 +79,7 @@ class RetellServiceTest {
             """;
 
         when(callService.findCallByCallId(callId)).thenReturn(mockCallRecord);
-        when(userService.getUserPreferences("test-user-id")).thenReturn(mockUserPreferences);
+        when(userService.getUserPreferences(2L)).thenReturn(mockUserPreferences);
 
         // Mock RestClient chain
         when(restClient.post()).thenReturn(requestBodyUriSpec);
@@ -99,7 +99,7 @@ class RetellServiceTest {
 
         // Verify service interactions
         verify(callService).findCallByCallId(callId);
-        verify(userService).getUserPreferences("test-user-id");
+        verify(userService).getUserPreferences(2L);
         verify(callService).saveCallRecord(any(CallRecord.class));
     }
 
@@ -109,7 +109,7 @@ class RetellServiceTest {
         String callId = "test-call-id";
 
         when(callService.findCallByCallId(callId)).thenReturn(mockCallRecord);
-        when(userService.getUserPreferences("test-user-id")).thenReturn(mockUserPreferences);
+        when(userService.getUserPreferences(2L)).thenReturn(mockUserPreferences);
 
         // Mock RestClient to throw exception
         when(restClient.post()).thenReturn(requestBodyUriSpec);
@@ -128,7 +128,7 @@ class RetellServiceTest {
 
         // Verify services were called but call was not saved
         verify(callService).findCallByCallId(callId);
-        verify(userService).getUserPreferences("test-user-id");
+        verify(userService).getUserPreferences(2L);
         verify(callService, never()).saveCallRecord(any(CallRecord.class));
     }
 

@@ -553,11 +553,11 @@ All call endpoints require JWT authentication via `Authorization: Bearer <token>
 #### Request Body
 ```json
 {
-  "calleeName": "John Smith",
-  "phoneNumber": "+15551234567",
-  "subject": "Appointment Reminder",
-  "prompt": "Remind about tomorrow's appointment at 2 PM",
-  "scheduledFor": 1703980800000,
+  "calleeName": "David Huang",
+  "phoneNumber": "+19144919901",
+  "subject": "hello to mom",
+  "prompt": "say hello and ask how his day is",
+  "scheduledFor": 1756763271,
   "aiLanguage": "en",
   "voiceId": "voice_id_123"
 }

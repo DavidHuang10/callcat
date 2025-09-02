@@ -103,6 +103,21 @@ public class UserService {
         );
     }
     
+    public UserPreferencesResponse getUserPreferences(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        UserPreferences preferences = userPreferencesRepository.findByUserId(user.getId())
+                .orElseGet(() -> createDefaultPreferences(user));
+        
+        return new UserPreferencesResponse(
+                preferences.getTimezone(),
+                preferences.getEmailNotifications(),
+                preferences.getVoiceId(),
+                preferences.getSystemPrompt()
+        );
+    }
+    
     @Transactional
     public UserPreferencesResponse updateUserPreferences(String email, UpdatePreferencesRequest request) {
         User user = userRepository.findByEmailAndIsActive(email, true)
