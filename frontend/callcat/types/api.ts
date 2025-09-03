@@ -71,21 +71,40 @@ export interface CallResponse {
   callerNumber?: string;
   subject: string;
   prompt: string;
-  status: string;
-  scheduledFor?: number;
-  providerId?: string;
+  status: 'SCHEDULED' | 'COMPLETED';
+  scheduledFor?: number | null;
+  providerId?: string | null;
   aiLanguage?: string;
   voiceId?: string;
   createdAt: number;
   updatedAt: number;
-  completedAt?: number;
-  dialSuccessful?: boolean;
+  completedAt?: number | null;
+  dialSuccessful?: boolean | null;
   callAnalyzed?: boolean;
+  retellCallData?: string; // JSON string containing Retell AI response data with transcript
 }
 
 export interface CallListResponse {
   calls: CallResponse[];
-  total: number;
+  total?: number;
+}
+
+// UI-specific interfaces for call display
+export interface PaginatedCallsResponse {
+  scheduledCalls: CallResponse[];
+  completedCalls: CallResponse[];
+  scheduledTotal: number;
+  completedTotal: number;
+  scheduledPage: number;
+  completedPage: number;
+  hasMoreScheduled: boolean;
+  hasMoreCompleted: boolean;
+}
+
+// Transcript response from API
+export interface TranscriptResponse {
+  providerId: string;
+  transcriptText: string;
 }
 
 export interface UpdateCallRequest {

@@ -79,11 +79,13 @@ class ApiService {
 
     async getCalls(
         status?: string,
-        limit: number = 20
+        limit: number = 20,
+        offset?: number
     ): Promise<CallListResponse> {
         const params = new URLSearchParams();
         if (status) params.append("status", status);
         params.append("limit", limit.toString());
+        if (offset) params.append("offset", offset.toString());
 
         return this.request<CallListResponse>(
             `/api/calls?${params.toString()}`
@@ -110,13 +112,6 @@ class ApiService {
         });
     }
 
-    async getCallTranscript(
-        callId: string
-    ): Promise<{ transcriptText: string }> {
-        return this.request<{ transcriptText: string }>(
-            `/api/calls/${callId}/transcript`
-        );
-    }
 
     // User Management
     async getUserProfile(): Promise<UserResponse> {

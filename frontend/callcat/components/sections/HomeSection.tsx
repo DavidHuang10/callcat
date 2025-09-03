@@ -11,8 +11,10 @@ import {
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { getFilteredCalls } from "@/data/calls"
+import { Button } from "@/components/ui/button"
 import CallCard from "@/components/CallCard"
+import { useCallsForDashboard } from "@/hooks/useCallsForDashboard"
+import { useAuth } from "@/contexts/AuthContext"
 
 interface HomeSectionProps {
   searchQuery: string
@@ -27,7 +29,39 @@ export default function HomeSection({
   setExpandedCall, 
   setActiveSection 
 }: HomeSectionProps) {
-  const { scheduledCalls, completedCalls } = getFilteredCalls(searchQuery)
+  const { user } = useAuth()
+  const {
+    scheduledCalls,
+    completedCalls,
+    scheduledLoading,
+    completedLoading,
+    scheduledError,
+    completedError,
+    scheduledPage,
+    completedPage,
+    hasMoreScheduled,
+    hasMoreCompleted,
+    scheduledTotal,
+    completedTotal,
+    refreshAll,
+    setScheduledPage,
+    setCompletedPage,
+  } = useCallsForDashboard()
+
+  // Filter calls by search query if provided
+  const filteredScheduledCalls = scheduledCalls.filter(call => 
+    !searchQuery || 
+    call.calleeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    call.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    call.callId.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const filteredCompletedCalls = completedCalls.filter(call => 
+    !searchQuery || 
+    call.calleeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    call.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    call.callId.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   const stats = [
     {
@@ -73,7 +107,7 @@ export default function HomeSection({
       {/* Welcome Section */}
       <div className="text-center mb-8">
         <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
-          Welcome back, Sarah! 👋
+          Welcome back{user?.fullName ? `, ${user.fullName.split(' ')[0]}` : ''}! 👋
         </h1>
         <p className="text-gray-600 text-lg">
           Here&apos;s what&apos;s happening with your calls today
@@ -161,61 +195,189 @@ export default function HomeSection({
         </CardContent>
       </Card>
 
-      {/* Recent Calls */}
+      {/* Scheduled Calls Section */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-800">Recent Calls</h2>
-          <Badge variant="secondary" className="text-xs">
-            {completedCalls.length} calls
-          </Badge>
+          <h2 className="text-xl font-semibold text-gray-800">Scheduled Calls</h2>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs">
+              {scheduledTotal} total
+            </Badge>
+            {scheduledLoading && (
+              <div className="text-xs text-gray-500">Loading...</div>
+            )}
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {completedCalls.slice(0, 4).map((call) => (
-            <CallCard
-              key={call.id}
-              call={call}
-              expandedCall={expandedCall}
-              setExpandedCall={setExpandedCall}
-              setActiveSection={setActiveSection}
-            />
-          ))}
-        </div>
-
-        {completedCalls.length === 0 && (
-          <Card className="text-center py-12">
-            <CardContent>
-              <Coffee className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-600 mb-2">No calls yet</h3>
-              <p className="text-gray-500">Start by making your first call!</p>
+        {scheduledError && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-red-700">
+                <span className="text-sm">Failed to load scheduled calls: {scheduledError}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={refreshAll}
+                  className="text-xs"
+                >
+                  Retry
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
+
+        {!scheduledLoading && !scheduledError && (
+          <>
+            {filteredScheduledCalls.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {filteredScheduledCalls.slice(0, 6).map((call) => (
+                    <CallCard
+                      key={call.callId}
+                      call={call}
+                      expandedCall={expandedCall}
+                      setExpandedCall={setExpandedCall}
+                      setActiveSection={setActiveSection}
+                    />
+                  ))}
+                </div>
+
+                {/* Scheduled Calls Pagination */}
+                {(scheduledPage > 0 || hasMoreScheduled) && (
+                  <div className="flex items-center justify-between">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setScheduledPage(scheduledPage - 1)}
+                      disabled={scheduledPage === 0 || scheduledLoading}
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-sm text-gray-600">
+                      Page {scheduledPage + 1} • {scheduledTotal} total calls
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setScheduledPage(scheduledPage + 1)}
+                      disabled={!hasMoreScheduled || scheduledLoading}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <Card className="text-center py-12">
+                <CardContent>
+                  <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-600 mb-2">No scheduled calls</h3>
+                  <p className="text-gray-500 mb-4">Schedule your first call to get started!</p>
+                  <Button 
+                    onClick={() => setActiveSection("make-call")}
+                    className="bg-gradient-to-r from-purple-600 to-pink-600"
+                  >
+                    Schedule a Call
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
       </div>
 
-      {/* Scheduled Calls */}
-      {scheduledCalls.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-800">Scheduled Calls</h2>
+      {/* Completed Calls Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-800">Recent Calls</h2>
+          <div className="flex items-center gap-2">
             <Badge variant="secondary" className="text-xs">
-              {scheduledCalls.length} scheduled
+              {completedTotal} total
             </Badge>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {scheduledCalls.slice(0, 2).map((call) => (
-              <CallCard
-                key={call.id}
-                call={call}
-                expandedCall={expandedCall}
-                setExpandedCall={setExpandedCall}
-                setActiveSection={setActiveSection}
-              />
-            ))}
+            {completedLoading && (
+              <div className="text-xs text-gray-500">Loading...</div>
+            )}
           </div>
         </div>
-      )}
+
+        {completedError && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-red-700">
+                <span className="text-sm">Failed to load completed calls: {completedError}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={refreshAll}
+                  className="text-xs"
+                >
+                  Retry
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {!completedLoading && !completedError && (
+          <>
+            {filteredCompletedCalls.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {filteredCompletedCalls.slice(0, 6).map((call) => (
+                    <CallCard
+                      key={call.callId}
+                      call={call}
+                      expandedCall={expandedCall}
+                      setExpandedCall={setExpandedCall}
+                      setActiveSection={setActiveSection}
+                    />
+                  ))}
+                </div>
+
+                {/* Completed Calls Pagination */}
+                {(completedPage > 0 || hasMoreCompleted) && (
+                  <div className="flex items-center justify-between">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCompletedPage(completedPage - 1)}
+                      disabled={completedPage === 0 || completedLoading}
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-sm text-gray-600">
+                      Page {completedPage + 1} • {completedTotal} total calls
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCompletedPage(completedPage + 1)}
+                      disabled={!hasMoreCompleted || completedLoading}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <Card className="text-center py-12">
+                <CardContent>
+                  <Coffee className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-600 mb-2">No calls yet</h3>
+                  <p className="text-gray-500 mb-4">Start by making your first call!</p>
+                  <Button 
+                    onClick={() => setActiveSection("make-call")}
+                    className="bg-gradient-to-r from-purple-600 to-pink-600"
+                  >
+                    Make a Call
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
+      </div>
     </div>
   )
 }
