@@ -18,6 +18,7 @@ public class CallResponse {
     private Long completedAt;
     private Boolean dialSuccessful;
     private Boolean callAnalyzed;
+    private String retellCallData;
 
     public CallResponse() {}
 
@@ -149,5 +150,13 @@ public class CallResponse {
 
     public void setCallAnalyzed(Boolean callAnalyzed) {
         this.callAnalyzed = callAnalyzed;
+    }
+
+    public String getRetellCallData() {
+        return retellCallData;
+    }
+
+    public void setRetellCallData(String retellCallData) {
+        this.retellCallData = retellCallData;
     }
 }
