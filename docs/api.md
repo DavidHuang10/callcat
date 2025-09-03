@@ -557,7 +557,7 @@ All call endpoints require JWT authentication via `Authorization: Bearer <token>
   "phoneNumber": "+19144919901",
   "subject": "hello to mom",
   "prompt": "say hello and ask how his day is",
-  "scheduledFor": 1756763271,
+  "scheduledFor": 1756819800000,
   "aiLanguage": "en",
   "voiceId": "voice_id_123"
 }
