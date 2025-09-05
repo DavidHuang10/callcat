@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button"
 import CallCard from "@/components/CallCard"
 import { useCallsForDashboard } from "@/hooks/useCallsForDashboard"
 import { useAuth } from "@/contexts/AuthContext"
+import { apiService } from "@/lib/api"
 
 interface HomeSectionProps {
   searchQuery: string
@@ -47,6 +48,12 @@ export default function HomeSection({
     setScheduledPage,
     setCompletedPage,
   } = useCallsForDashboard()
+
+  // Handle call deletion
+  const handleDeleteCall = async (callId: string) => {
+    await apiService.deleteCall(callId)
+    refreshAll()
+  }
 
   // Filter calls by search query if provided
   const filteredScheduledCalls = scheduledCalls.filter(call => 
@@ -239,6 +246,7 @@ export default function HomeSection({
                       expandedTranscripts={expandedTranscripts}
                       toggleExpandedTranscript={toggleExpandedTranscript}
                       setActiveSection={setActiveSection}
+                      onDelete={handleDeleteCall}
                     />
                   ))}
                 </div>
@@ -331,6 +339,7 @@ export default function HomeSection({
                       expandedTranscripts={expandedTranscripts}
                       toggleExpandedTranscript={toggleExpandedTranscript}
                       setActiveSection={setActiveSection}
+                      onDelete={handleDeleteCall}
                     />
                   ))}
                 </div>
