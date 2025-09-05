@@ -33,8 +33,7 @@ export default function LoginPage() {
         email: data.email,
         fullName: data.fullName
       }, data.token)
-      setSuccess('Login successful! Redirecting...')
-      setTimeout(() => router.replace('/'), 1500)
+      router.replace('/')
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Login failed. Please try again.')
     } finally {
@@ -47,18 +46,18 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-          <p className="text-gray-600">Sign in to your CallCat account</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Hey there! 👋</h1>
+          <p className="text-gray-600">Ready to make some calls?</p>
         </div>
 
-        <Card>
+        <Card className="border-0 shadow-lg shadow-slate-200/50 bg-white/90 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="text-center">Sign In</CardTitle>
+            <CardTitle className="text-center">Welcome back!</CardTitle>
             <CardDescription className="text-center">
-              Enter your credentials to access your account
+              Let's get you signed in
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -110,7 +109,12 @@ export default function LoginPage() {
               )}
 
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Signing In...' : 'Sign In'}
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Signing In...
+                  </div>
+                ) : 'Sign In'}
               </Button>
             </form>
 

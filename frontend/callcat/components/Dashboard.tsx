@@ -11,6 +11,7 @@ export default function CallCatDashboard() {
   const {
     activeSection,
     sidebarOpen,
+    sidebarCollapsed,
     selectedLanguage,
     expandedTranscripts,
     searchQuery,
@@ -19,6 +20,7 @@ export default function CallCatDashboard() {
     setSelectedLanguage,
     toggleExpandedTranscript,
     setSearchQuery,
+    toggleSidebarCollapsed,
   } = useDashboard()
 
   const renderSection = () => {
@@ -75,12 +77,18 @@ export default function CallCatDashboard() {
           activeSection={activeSection}
           setActiveSection={setActiveSection}
           sidebarOpen={sidebarOpen}
+          sidebarCollapsed={sidebarCollapsed}
           selectedLanguage={selectedLanguage}
           setSelectedLanguage={setSelectedLanguage}
+          toggleSidebarCollapsed={toggleSidebarCollapsed}
         />
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto">
+        <main 
+          className={`flex-1 overflow-y-auto transition-all duration-300 ${
+            sidebarCollapsed ? 'ml-20' : 'ml-64'
+          }`}
+        >
           {renderSection()}
         </main>
       </div>

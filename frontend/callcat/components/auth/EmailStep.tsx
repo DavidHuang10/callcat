@@ -29,7 +29,12 @@ export function EmailStep({ email, loading, onEmailChange, onSubmit }: EmailStep
         </div>
       </div>
       <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? 'Sending...' : 'Send Verification Code'}
+        {loading ? (
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            Sending...
+          </div>
+        ) : 'Send Verification Code'}
       </Button>
     </form>
   )

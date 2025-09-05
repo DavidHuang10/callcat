@@ -6,6 +6,7 @@ export function useDashboard() {
     activeSection: "home",
     isMobile: false,
     sidebarOpen: true,
+    sidebarCollapsed: false,
     selectedLanguage: "en",
     expandedTranscripts: new Set<string>(),
     scheduledPage: 0,
@@ -20,6 +21,15 @@ export function useDashboard() {
         ...prev,
         isMobile,
         sidebarOpen: isMobile ? false : prev.sidebarOpen
+      }))
+    }
+
+    // Load sidebar collapsed state from localStorage
+    const savedCollapsed = localStorage.getItem('sidebar-collapsed')
+    if (savedCollapsed) {
+      setState(prev => ({
+        ...prev,
+        sidebarCollapsed: JSON.parse(savedCollapsed)
       }))
     }
 
@@ -67,6 +77,15 @@ export function useDashboard() {
     setState(prev => ({ ...prev, searchQuery: query }))
   }
 
+  const setSidebarCollapsed = (collapsed: boolean) => {
+    setState(prev => ({ ...prev, sidebarCollapsed: collapsed }))
+    localStorage.setItem('sidebar-collapsed', JSON.stringify(collapsed))
+  }
+
+  const toggleSidebarCollapsed = () => {
+    setSidebarCollapsed(!state.sidebarCollapsed)
+  }
+
   return {
     ...state,
     setActiveSection,
@@ -76,5 +95,7 @@ export function useDashboard() {
     setScheduledPage,
     setCompletedPage,
     setSearchQuery,
+    setSidebarCollapsed,
+    toggleSidebarCollapsed,
   }
 }

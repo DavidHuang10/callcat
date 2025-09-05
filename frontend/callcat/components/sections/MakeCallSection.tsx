@@ -1,15 +1,29 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Phone, Globe, Mic, Clock, CheckCircle, AlertCircle } from "lucide-react"
-import { CallRequest } from "@/types"
+import { Phone, Clock, CheckCircle, AlertCircle, Calendar, MapPin, Globe } from "lucide-react"
+import { CallRequest, UserPreferencesResponse } from "@/types"
 import apiService from "@/lib/api"
+import { getUserTimezone, getTimezoneDisplayName, convertLocalToUTC, convertUTCToLocal, isDateTimeInFuture, getMinimumDateTime, getDefaultDateTime } from "@/utils/timezone"
+
+const TIMEZONE_OPTIONS = [
+  { value: 'UTC', label: 'UTC' },
+  { value: 'America/New_York', label: 'Eastern Time' },
+  { value: 'America/Chicago', label: 'Central Time' },
+  { value: 'America/Denver', label: 'Mountain Time' },
+  { value: 'America/Los_Angeles', label: 'Pacific Time' },
+  { value: 'Europe/London', label: 'London Time' },
+  { value: 'Europe/Paris', label: 'Central European Time' },
+  { value: 'Asia/Tokyo', label: 'Japan Standard Time' },
+  { value: 'Asia/Shanghai', label: 'China Standard Time' },
+  { value: 'Australia/Sydney', label: 'Australian Eastern Time' },
+]
 
 interface MakeCallSectionProps {
   onCallCreated?: () => void
@@ -20,20 +34,78 @@ export default function MakeCallSection({ onCallCreated }: MakeCallSectionProps)
     calleeName: "",
     phoneNumber: "",
     subject: "",
-    prompt: "",
-    aiLanguage: "en",
-    voiceId: ""
+    prompt: ""
   })
+
+  const [selectedTimezone, setSelectedTimezone] = useState(getUserTimezone())
+  const [userPreferences, setUserPreferences] = useState<UserPreferencesResponse | null>(null)
+  const [isLoadingPreferences, setIsLoadingPreferences] = useState(true)
+  
+  // Initialize with default date/time (current time + 1 hour)
+  const defaultDateTime = getDefaultDateTime()
+  const [dateValue, setDateValue] = useState(defaultDateTime.dateValue)
+  const [timeValue, setTimeValue] = useState(defaultDateTime.timeValue)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [success, setSuccess] = useState(false)
+  
+  // Get minimum date/time for validation
+  const { minDate, minTime } = getMinimumDateTime()
 
   const handleInputChange = (field: keyof CallRequest, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }))
+    }
+  }
+
+  // Load user preferences on mount
+  useEffect(() => {
+    const loadUserPreferences = async () => {
+      try {
+        const preferences = await apiService.getUserPreferences()
+        setUserPreferences(preferences)
+        if (preferences.timezone) {
+          setSelectedTimezone(preferences.timezone)
+        }
+      } catch (error) {
+        console.warn('Failed to load user preferences:', error)
+        // Fallback to browser timezone
+        setSelectedTimezone(getUserTimezone())
+      } finally {
+        setIsLoadingPreferences(false)
+      }
+    }
+
+    loadUserPreferences()
+  }, [])
+
+  // Handle timezone change
+  const handleTimezoneChange = async (newTimezone: string) => {
+    const oldTimezone = selectedTimezone
+    
+    try {
+      // Update selected timezone immediately for UI responsiveness
+      setSelectedTimezone(newTimezone)
+      
+      // Convert current date/time to new timezone
+      if (dateValue && timeValue) {
+        // First convert current local time to UTC
+        const utcTimestamp = convertLocalToUTC(dateValue, timeValue, oldTimezone)
+        // Then convert UTC to new timezone
+        const newLocal = convertUTCToLocal(utcTimestamp, newTimezone)
+        setDateValue(newLocal.dateValue)
+        setTimeValue(newLocal.timeValue)
+      }
+      
+      // Update user preferences
+      await apiService.updateUserPreferences({ timezone: newTimezone })
+    } catch (error) {
+      console.error('Failed to update timezone:', error)
+      // Revert on error
+      setSelectedTimezone(oldTimezone)
     }
   }
 
@@ -58,6 +130,15 @@ export default function MakeCallSection({ onCallCreated }: MakeCallSectionProps)
       newErrors.prompt = "Prompt is required"
     }
 
+    // Validate date and time (always required since we always show the picker)
+    if (!dateValue.trim()) {
+      newErrors.date = "Date is required"
+    } else if (!timeValue.trim()) {
+      newErrors.time = "Time is required"
+    } else if (!isDateTimeInFuture(dateValue, timeValue, selectedTimezone)) {
+      newErrors.datetime = "Scheduled time must be in the future"
+    }
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -73,16 +154,26 @@ export default function MakeCallSection({ onCallCreated }: MakeCallSectionProps)
     setErrors({})
 
     try {
-      await apiService.createCall(formData)
+      // Always schedule for the selected date/time
+      const callData = { ...formData }
+      
+      if (dateValue && timeValue) {
+        callData.scheduledFor = convertLocalToUTC(dateValue, timeValue, selectedTimezone)
+      }
+      
+      await apiService.createCall(callData)
       setSuccess(true)
       setFormData({
         calleeName: "",
         phoneNumber: "",
         subject: "",
-        prompt: "",
-        aiLanguage: "en",
-        voiceId: ""
+        prompt: ""
       })
+      
+      // Reset to default date/time (current time + 1 hour)
+      const newDefaultDateTime = getDefaultDateTime()
+      setDateValue(newDefaultDateTime.dateValue)
+      setTimeValue(newDefaultDateTime.timeValue)
       
       // Call callback if provided
       if (onCallCreated) {
@@ -99,20 +190,6 @@ export default function MakeCallSection({ onCallCreated }: MakeCallSectionProps)
     }
   }
 
-  const languageOptions = [
-    { value: "en", label: "English" },
-    { value: "es", label: "Español" },
-    { value: "fr", label: "Français" },
-    { value: "de", label: "Deutsch" },
-    { value: "ja", label: "日本語" },
-    { value: "zh", label: "中文" }
-  ]
-
-  const voiceOptions = [
-    { value: "voice_1", label: "Voice 1 (Default)" },
-    { value: "voice_2", label: "Voice 2" },
-    { value: "voice_3", label: "Voice 3" }
-  ]
 
   return (
     <div className="space-y-6 p-4 lg:p-6">
@@ -121,7 +198,7 @@ export default function MakeCallSection({ onCallCreated }: MakeCallSectionProps)
           Make a Call
         </h1>
         <p className="text-gray-600 text-lg">
-          Schedule a new AI-powered phone call
+          Create a new AI-powered phone call - call now or schedule for later
         </p>
       </div>
 
@@ -130,7 +207,9 @@ export default function MakeCallSection({ onCallCreated }: MakeCallSectionProps)
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-green-700">
               <CheckCircle className="h-5 w-5" />
-              <span className="font-medium">Call scheduled successfully!</span>
+              <span className="font-medium">
+                Call scheduled successfully!
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -229,55 +308,110 @@ export default function MakeCallSection({ onCallCreated }: MakeCallSectionProps)
               </p>
             </div>
 
-            {/* AI Configuration */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="aiLanguage" className="text-sm font-medium text-gray-700">
-                  AI Language
-                </Label>
-                <Select
-                  value={formData.aiLanguage}
-                  onValueChange={(value) => handleInputChange("aiLanguage", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {languageOptions.map((lang) => (
-                      <SelectItem key={lang.value} value={lang.value}>
-                        <div className="flex items-center gap-2">
-                          <Globe className="w-4 h-4" />
-                          {lang.label}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Scheduling Section */}
+            <div className="space-y-4 pt-4 border-t">
+              <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+                  {/* Timezone Selector */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                      <Globe className="h-4 w-4" />
+                      Timezone
+                    </Label>
+                    {isLoadingPreferences ? (
+                      <div className="h-10 bg-gray-200 rounded-md animate-pulse" />
+                    ) : (
+                      <Select value={selectedTimezone} onValueChange={handleTimezoneChange}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TIMEZONE_OPTIONS.map(option => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <p className="text-xs text-gray-500">
+                      Schedule times shown in: {getTimezoneDisplayName(selectedTimezone)}
+                    </p>
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="voiceId" className="text-sm font-medium text-gray-700">
-                  Voice Selection
-                </Label>
-                <Select
-                  value={formData.voiceId}
-                  onValueChange={(value) => handleInputChange("voiceId", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a voice" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {voiceOptions.map((voice) => (
-                      <SelectItem key={voice.value} value={voice.value}>
-                        <div className="flex items-center gap-2">
-                          <Mic className="w-4 h-4" />
-                          {voice.label}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="date" className="text-sm font-medium text-gray-700">
+                        Date *
+                      </Label>
+                      <div className="relative">
+                        <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="date"
+                          type="date"
+                          value={dateValue}
+                          onChange={(e) => {
+                            setDateValue(e.target.value)
+                            if (errors.date || errors.datetime) {
+                              setErrors(prev => ({ ...prev, date: "", datetime: "" }))
+                            }
+                          }}
+                          min={minDate}
+                          className={`pl-10 ${errors.date || errors.datetime ? "border-red-500" : ""}`}
+                        />
+                      </div>
+                      {errors.date && (
+                        <p className="text-sm text-red-600">{errors.date}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="time" className="text-sm font-medium text-gray-700">
+                        Time *
+                      </Label>
+                      <div className="relative">
+                        <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="time"
+                          type="time"
+                          value={timeValue}
+                          onChange={(e) => {
+                            setTimeValue(e.target.value)
+                            if (errors.time || errors.datetime) {
+                              setErrors(prev => ({ ...prev, time: "", datetime: "" }))
+                            }
+                          }}
+                          min={dateValue === minDate ? minTime : undefined}
+                          className={`pl-10 ${errors.time || errors.datetime ? "border-red-500" : ""}`}
+                        />
+                      </div>
+                      {errors.time && (
+                        <p className="text-sm text-red-600">{errors.time}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {errors.datetime && (
+                    <p className="text-sm text-red-600">{errors.datetime}</p>
+                  )}
+
+                  {dateValue && timeValue && (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                      <p className="text-sm text-blue-700">
+                        <Clock className="inline h-4 w-4 mr-1" />
+                        Call will be scheduled for: {new Date(`${dateValue}T${timeValue}`).toLocaleDateString('en-US', {
+                          timeZone: selectedTimezone,
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          timeZoneName: 'short'
+                        })}
+                      </p>
+                    </div>
+                  )}
+                </div>
             </div>
 
             {/* Submit Button */}
@@ -294,7 +428,7 @@ export default function MakeCallSection({ onCallCreated }: MakeCallSectionProps)
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4" />
+                    <Calendar className="h-4 w-4" />
                     Schedule Call
                   </div>
                 )}

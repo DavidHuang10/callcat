@@ -37,7 +37,12 @@ export function VerificationStep({
         </p>
       </div>
       <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? 'Verifying...' : 'Verify Code'}
+        {loading ? (
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            Verifying...
+          </div>
+        ) : 'Verify Code'}
       </Button>
       <Button 
         type="button" 

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/contexts/AuthContext'
 import { apiService } from '@/lib/api'
+import { getUserTimezone } from '@/utils/timezone'
 import {
   AuthStepIndicator,
   AuthAlerts,
@@ -93,8 +94,7 @@ function AuthPageContent() {
     
     try {
       await apiService.resetPassword(authState.resetToken, authState.password)
-      setSuccess('Password reset successful! Redirecting to login...')
-      setTimeout(() => router.push('/login?message=password-reset'), 1500)
+      router.push('/login?message=password-reset')
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Password reset failed')
     } finally {
@@ -141,8 +141,17 @@ function AuthPageContent() {
         email: data.email,
         fullName: data.fullName
       }, data.token)
-      setSuccess('Registration successful! Redirecting...')
-      setTimeout(() => router.push('/'), 1500)
+      
+      // Auto-set user timezone after successful registration
+      try {
+        const userTimezone = getUserTimezone()
+        await apiService.updateUserPreferences({ timezone: userTimezone })
+      } catch (timezoneError) {
+        // Don't block registration flow if timezone update fails
+        console.warn('Failed to set user timezone:', timezoneError)
+      }
+      
+      router.push('/')
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Registration failed')
     } finally {
@@ -167,26 +176,26 @@ function AuthPageContent() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {authMode === 'reset' ? 'Reset Your Password' : 'Welcome to CallCat'}
+            {authMode === 'reset' ? 'Forgot your password?' : 'Join CallCat! ✨'}
           </h1>
           <p className="text-gray-600">
-            {authMode === 'reset' ? 'Enter your email to reset your password' : 'Create your account to get started'}
+            {authMode === 'reset' ? "No worries, let's get you back in" : 'Ready to start making amazing calls?'}
           </p>
         </div>
 
-        <Card>
+        <Card className="border-0 shadow-lg shadow-slate-200/50 bg-white/90 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-center">
-              {authMode === 'reset' ? 'Password Reset' : 'Account Setup'}
+              {authMode === 'reset' ? 'Reset Password' : 'Create Your Account'}
             </CardTitle>
             <CardDescription className="text-center">
               {authMode === 'reset' 
-                ? 'Follow the steps below to reset your password'
-                : 'Follow the steps below to create your account'
+                ? "We'll help you get back in"
+                : "Just a few quick steps and you'll be ready to go"
               }
             </CardDescription>
           </CardHeader>
