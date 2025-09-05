@@ -8,14 +8,18 @@ import {
   Coffee,
   Zap,
   Settings,
+  Plus,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import CallCard from "@/components/CallCard"
+import DeleteConfirmationDialog from "@/components/DeleteConfirmationDialog"
 import { useCallsForDashboard } from "@/hooks/useCallsForDashboard"
 import { useAuth } from "@/contexts/AuthContext"
 import { apiService } from "@/lib/api"
+import { CallResponse } from "@/types"
+import { useState } from "react"
 
 interface HomeSectionProps {
   searchQuery: string
@@ -49,11 +53,35 @@ export default function HomeSection({
     setCompletedPage,
   } = useCallsForDashboard()
 
-  // Handle call deletion
-  const handleDeleteCall = async (callId: string) => {
-    await apiService.deleteCall(callId)
-    refreshAll()
+  // Delete confirmation dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [callToDelete, setCallToDelete] = useState<CallResponse | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  // Handle opening delete confirmation dialog
+  const handleDeleteClick = (call: CallResponse) => {
+    setCallToDelete(call)
+    setDeleteDialogOpen(true)
   }
+
+  // Handle confirmed deletion
+  const handleDeleteConfirm = async () => {
+    if (!callToDelete) return
+    
+    setIsDeleting(true)
+    try {
+      await apiService.deleteCall(callToDelete.callId)
+      refreshAll()
+      setDeleteDialogOpen(false)
+      setCallToDelete(null)
+    } catch (error) {
+      console.error('Failed to delete call:', error)
+      // Error will be handled by the user - you might want to add toast notification here
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
 
   // Filter calls by search query if provided
   const filteredScheduledCalls = scheduledCalls.filter(call => 
@@ -206,10 +234,18 @@ export default function HomeSection({
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-800">Scheduled Calls</h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Badge variant="secondary" className="text-xs">
               {scheduledTotal} total
             </Badge>
+            <Button
+              size="sm"
+              onClick={() => setActiveSection("make-call")}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-md hover:shadow-lg transition-all duration-300 rounded-lg px-4 py-2 text-xs font-medium"
+            >
+              <Plus className="w-3 h-3 mr-1" />
+              Add Call
+            </Button>
             {scheduledLoading && (
               <div className="text-xs text-gray-500">Loading...</div>
             )}
@@ -246,7 +282,7 @@ export default function HomeSection({
                       expandedTranscripts={expandedTranscripts}
                       toggleExpandedTranscript={toggleExpandedTranscript}
                       setActiveSection={setActiveSection}
-                      onDelete={handleDeleteCall}
+                      onDeleteClick={handleDeleteClick}
                     />
                   ))}
                 </div>
@@ -339,7 +375,7 @@ export default function HomeSection({
                       expandedTranscripts={expandedTranscripts}
                       toggleExpandedTranscript={toggleExpandedTranscript}
                       setActiveSection={setActiveSection}
-                      onDelete={handleDeleteCall}
+                      onDeleteClick={handleDeleteClick}
                     />
                   ))}
                 </div>
@@ -387,6 +423,15 @@ export default function HomeSection({
           </>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        call={callToDelete}
+        onConfirm={handleDeleteConfirm}
+        isDeleting={isDeleting}
+      />
     </div>
   )
 }

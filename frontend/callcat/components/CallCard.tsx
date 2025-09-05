@@ -2,18 +2,13 @@
 
 import {
   Clock,
-  Timer,
-  Globe,
   Calendar,
   MessageCircle,
   ChevronDown,
   ChevronRight,
   RotateCcw,
-  Phone,
-  PhoneMissed,
   Edit3,
   Trash2,
-  User,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -31,11 +26,17 @@ interface CallCardProps {
   setActiveSection: (section: string) => void
   onEdit?: (callId: string) => void
   onDelete?: (callId: string) => void
+  onDeleteClick?: (call: CallResponse) => void
 }
 
 // Helper functions for formatting and status
 const getStatusConfig = (status: string, dialSuccessful?: boolean | null) => {
-  const configs: Record<string, any> = {
+  const configs: Record<string, {
+    label: string;
+    color: string;
+    bgGradient: string;
+    icon: string;
+  }> = {
     SCHEDULED: {
       label: "Scheduled",
       color: "bg-blue-100 text-blue-800 border-blue-200",
@@ -110,7 +111,8 @@ export default function CallCard({
   toggleExpandedTranscript, 
   setActiveSection,
   onEdit,
-  onDelete 
+  onDelete,
+  onDeleteClick
 }: CallCardProps) {
   const [promptExpanded, setPromptExpanded] = useState(false)
   const statusConfig = getStatusConfig(call.status, call.dialSuccessful)
@@ -142,7 +144,9 @@ export default function CallCard({
   }
 
   const handleDelete = () => {
-    if (onDelete) {
+    if (onDeleteClick) {
+      onDeleteClick(call)
+    } else if (onDelete) {
       onDelete(call.callId)
     }
   }
@@ -199,54 +203,60 @@ export default function CallCard({
         </div>
 
         {/* Actions Section */}
-        <div className="flex items-center justify-between gap-2">
-          {/* Left side - Edit/Delete for scheduled calls */}
-          <div className="flex items-center gap-1">
-            {call.status === "SCHEDULED" && (
-              <>
+        <div className="flex items-center justify-center gap-2">
+          {/* Scheduled calls: Edit, Delete, and Transcript/Reschedule if available */}
+          {call.status === "SCHEDULED" && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 transition-all duration-300 h-8 px-3 text-xs rounded-lg hover:scale-105"
+                onClick={handleEdit}
+              >
+                <Edit3 className="w-3 h-3 mr-1" />
+                <span className="hidden sm:inline">Edit</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-300 h-8 px-3 text-xs rounded-lg hover:scale-105"
+                onClick={handleDelete}
+              >
+                <Trash2 className="w-3 h-3 mr-1" />
+                <span className="hidden sm:inline">Delete</span>
+              </Button>
+            </>
+          )}
+
+          {/* Transcript Button - show for calls with available transcripts */}
+          {transcriptAvailable && (
+            <Collapsible open={isExpanded} onOpenChange={handleToggleExpanded}>
+              <CollapsibleTrigger asChild>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 transition-all duration-300 h-8 px-3 text-xs rounded-lg hover:scale-105"
-                  onClick={handleEdit}
+                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-300 h-8 px-3 text-xs rounded-lg hover:scale-105"
                 >
-                  <Edit3 className="w-3 h-3 mr-1" />
-                  <span className="hidden sm:inline">Edit</span>
+                  {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                  <MessageCircle className="w-3 h-3 ml-1" />
+                  <span className="ml-1 hidden sm:inline">Transcript</span>
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-300 h-8 px-3 text-xs rounded-lg hover:scale-105"
-                  onClick={handleDelete}
-                >
-                  <Trash2 className="w-3 h-3 mr-1" />
-                  <span className="hidden sm:inline">Delete</span>
-                </Button>
-              </>
-            )}
-          </div>
+              </CollapsibleTrigger>
+            </Collapsible>
+          )}
 
-          {/* Center/Right side - Transcript and Reschedule */}
-          <div className="flex items-center gap-2">
-            {/* Transcript Button - only show for completed calls with available transcripts */}
-            {transcriptAvailable && (
-              <Collapsible open={isExpanded} onOpenChange={handleToggleExpanded}>
-                <CollapsibleTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-300 h-8 px-3 text-xs rounded-lg hover:scale-105"
-                  >
-                    {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                    <MessageCircle className="w-3 h-3 ml-1" />
-                    <span className="ml-1 hidden sm:inline">Transcript</span>
-                  </Button>
-                </CollapsibleTrigger>
-              </Collapsible>
-            )}
-
-            {/* Reschedule button for completed calls */}
-            {call.status === "COMPLETED" && (
+          {/* Delete and Reschedule buttons for completed calls */}
+          {call.status === "COMPLETED" && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-300 h-8 px-3 text-xs rounded-lg hover:scale-105"
+                onClick={handleDelete}
+              >
+                <Trash2 className="w-3 h-3 mr-1" />
+                <span className="hidden sm:inline">Delete</span>
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
@@ -256,8 +266,8 @@ export default function CallCard({
                 <RotateCcw className="w-3 h-3 mr-1" />
                 <span className="hidden sm:inline">Reschedule</span>
               </Button>
-            )}
-          </div>
+            </>
+          )}
         </div>
 
         {/* Transcript Section */}

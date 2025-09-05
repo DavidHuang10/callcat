@@ -7,23 +7,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Phone, Clock, CheckCircle, AlertCircle, Calendar, MapPin, Globe } from "lucide-react"
+import { Phone, Clock, CheckCircle, AlertCircle, Calendar, Globe } from "lucide-react"
 import { CallRequest, UserPreferencesResponse } from "@/types"
 import apiService from "@/lib/api"
-import { getUserTimezone, getTimezoneDisplayName, convertLocalToUTC, convertUTCToLocal, isDateTimeInFuture, getMinimumDateTime, getDefaultDateTime } from "@/utils/timezone"
+import { getUserTimezone, getTimezoneDisplayName, convertLocalToUTC, convertUTCToLocal, isDateTimeInFuture, getMinimumDateTime, generateTimezoneOptions, getTimezoneAwareDefaultTime } from "@/utils/timezone"
 
-const TIMEZONE_OPTIONS = [
-  { value: 'UTC', label: 'UTC' },
-  { value: 'America/New_York', label: 'Eastern Time' },
-  { value: 'America/Chicago', label: 'Central Time' },
-  { value: 'America/Denver', label: 'Mountain Time' },
-  { value: 'America/Los_Angeles', label: 'Pacific Time' },
-  { value: 'Europe/London', label: 'London Time' },
-  { value: 'Europe/Paris', label: 'Central European Time' },
-  { value: 'Asia/Tokyo', label: 'Japan Standard Time' },
-  { value: 'Asia/Shanghai', label: 'China Standard Time' },
-  { value: 'Australia/Sydney', label: 'Australian Eastern Time' },
-]
+// Generate comprehensive timezone options
+const TIMEZONE_OPTIONS = generateTimezoneOptions()
 
 interface MakeCallSectionProps {
   onCallCreated?: () => void
@@ -38,20 +28,19 @@ export default function MakeCallSection({ onCallCreated }: MakeCallSectionProps)
   })
 
   const [selectedTimezone, setSelectedTimezone] = useState(getUserTimezone())
-  const [userPreferences, setUserPreferences] = useState<UserPreferencesResponse | null>(null)
+  const [, setUserPreferences] = useState<UserPreferencesResponse | null>(null)
   const [isLoadingPreferences, setIsLoadingPreferences] = useState(true)
   
-  // Initialize with default date/time (current time + 1 hour)
-  const defaultDateTime = getDefaultDateTime()
-  const [dateValue, setDateValue] = useState(defaultDateTime.dateValue)
-  const [timeValue, setTimeValue] = useState(defaultDateTime.timeValue)
+  // Initialize with timezone-aware default date/time
+  const [dateValue, setDateValue] = useState("")
+  const [timeValue, setTimeValue] = useState("")
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [success, setSuccess] = useState(false)
   
-  // Get minimum date/time for validation
-  const { minDate, minTime } = getMinimumDateTime()
+  // Get minimum date/time for validation based on selected timezone
+  const { minDate, minTime } = getMinimumDateTime(selectedTimezone)
 
   const handleInputChange = (field: keyof CallRequest, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -61,13 +50,16 @@ export default function MakeCallSection({ onCallCreated }: MakeCallSectionProps)
     }
   }
 
-  // Load user preferences on mount
+  // Load user preferences and initialize default time on mount
   useEffect(() => {
     const loadUserPreferences = async () => {
+      let finalTimezone = getUserTimezone()
+      
       try {
         const preferences = await apiService.getUserPreferences()
         setUserPreferences(preferences)
         if (preferences.timezone) {
+          finalTimezone = preferences.timezone
           setSelectedTimezone(preferences.timezone)
         }
       } catch (error) {
@@ -75,6 +67,10 @@ export default function MakeCallSection({ onCallCreated }: MakeCallSectionProps)
         // Fallback to browser timezone
         setSelectedTimezone(getUserTimezone())
       } finally {
+        // Set initial default time based on final timezone
+        const defaultTime = getTimezoneAwareDefaultTime(finalTimezone)
+        setDateValue(defaultTime.dateValue)
+        setTimeValue(defaultTime.timeValue)
         setIsLoadingPreferences(false)
       }
     }
@@ -82,7 +78,7 @@ export default function MakeCallSection({ onCallCreated }: MakeCallSectionProps)
     loadUserPreferences()
   }, [])
 
-  // Handle timezone change
+  // Handle timezone change with intelligent time adjustment
   const handleTimezoneChange = async (newTimezone: string) => {
     const oldTimezone = selectedTimezone
     
@@ -90,14 +86,28 @@ export default function MakeCallSection({ onCallCreated }: MakeCallSectionProps)
       // Update selected timezone immediately for UI responsiveness
       setSelectedTimezone(newTimezone)
       
-      // Convert current date/time to new timezone
+      // Convert current date/time to new timezone OR set new default if time would be in past
       if (dateValue && timeValue) {
         // First convert current local time to UTC
         const utcTimestamp = convertLocalToUTC(dateValue, timeValue, oldTimezone)
         // Then convert UTC to new timezone
         const newLocal = convertUTCToLocal(utcTimestamp, newTimezone)
-        setDateValue(newLocal.dateValue)
-        setTimeValue(newLocal.timeValue)
+        
+        // Check if the converted time is still in the future
+        if (isDateTimeInFuture(newLocal.dateValue, newLocal.timeValue, newTimezone)) {
+          setDateValue(newLocal.dateValue)
+          setTimeValue(newLocal.timeValue)
+        } else {
+          // If converted time is in the past, set a new default time
+          const newDefault = getTimezoneAwareDefaultTime(newTimezone)
+          setDateValue(newDefault.dateValue)
+          setTimeValue(newDefault.timeValue)
+        }
+      } else {
+        // If no time set, use default for new timezone
+        const newDefault = getTimezoneAwareDefaultTime(newTimezone)
+        setDateValue(newDefault.dateValue)
+        setTimeValue(newDefault.timeValue)
       }
       
       // Update user preferences
@@ -170,8 +180,8 @@ export default function MakeCallSection({ onCallCreated }: MakeCallSectionProps)
         prompt: ""
       })
       
-      // Reset to default date/time (current time + 1 hour)
-      const newDefaultDateTime = getDefaultDateTime()
+      // Reset to timezone-aware default date/time
+      const newDefaultDateTime = getTimezoneAwareDefaultTime(selectedTimezone)
       setDateValue(newDefaultDateTime.dateValue)
       setTimeValue(newDefaultDateTime.timeValue)
       
@@ -324,7 +334,7 @@ export default function MakeCallSection({ onCallCreated }: MakeCallSectionProps)
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="max-h-60 overflow-y-auto">
                           {TIMEZONE_OPTIONS.map(option => (
                             <SelectItem key={option.value} value={option.value}>
                               {option.label}
