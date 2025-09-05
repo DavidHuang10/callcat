@@ -18,15 +18,15 @@ import { useAuth } from "@/contexts/AuthContext"
 
 interface HomeSectionProps {
   searchQuery: string
-  expandedCall: string | null
-  setExpandedCall: (id: string | null) => void
+  expandedTranscripts: Set<string>
+  toggleExpandedTranscript: (id: string) => void
   setActiveSection: (section: string) => void
 }
 
 export default function HomeSection({ 
   searchQuery, 
-  expandedCall, 
-  setExpandedCall, 
+  expandedTranscripts, 
+  toggleExpandedTranscript, 
   setActiveSection 
 }: HomeSectionProps) {
   const { user } = useAuth()
@@ -236,8 +236,8 @@ export default function HomeSection({
                     <CallCard
                       key={call.callId}
                       call={call}
-                      expandedCall={expandedCall}
-                      setExpandedCall={setExpandedCall}
+                      expandedTranscripts={expandedTranscripts}
+                      toggleExpandedTranscript={toggleExpandedTranscript}
                       setActiveSection={setActiveSection}
                     />
                   ))}
@@ -328,8 +328,8 @@ export default function HomeSection({
                     <CallCard
                       key={call.callId}
                       call={call}
-                      expandedCall={expandedCall}
-                      setExpandedCall={setExpandedCall}
+                      expandedTranscripts={expandedTranscripts}
+                      toggleExpandedTranscript={toggleExpandedTranscript}
                       setActiveSection={setActiveSection}
                     />
                   ))}

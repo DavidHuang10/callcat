@@ -79,6 +79,12 @@ export interface CallResponse {
   createdAt: number;
   updatedAt: number;
   completedAt?: number | null;
+  /**
+   * Call success status for determining UI display:
+   * - null: Call was triggered but callee didn't answer (shows "No Answer" - yellow)
+   * - true: Call connected successfully (shows "Connected" - green)  
+   * - false: Call failed due to system/network error (shows "Failed" - yellow)
+   */
   dialSuccessful?: boolean | null;
   callAnalyzed?: boolean;
   retellCallData?: string; // JSON string containing Retell AI response data with transcript

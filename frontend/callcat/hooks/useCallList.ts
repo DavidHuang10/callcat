@@ -81,13 +81,26 @@ export function useCallList({
     fetchCalls(0, false);
   }, [fetchCalls]);
 
-  // Auto-refresh functionality
+  // Auto-refresh functionality (timer-based)
   useEffect(() => {
     if (!autoRefresh) return;
 
     const interval = setInterval(refresh, refreshInterval);
     return () => clearInterval(interval);
   }, [autoRefresh, refreshInterval, refresh]);
+
+  // Smart refresh on page visibility change (when user returns to tab/page)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // User returned to the tab - refresh to check for any status changes
+        refresh();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [refresh]);
 
   return {
     calls,

@@ -10,6 +10,7 @@ import {
   ChevronRight,
   RotateCcw,
   Phone,
+  PhoneMissed,
   Edit3,
   Trash2,
   User,
@@ -25,29 +26,54 @@ import { useState } from "react"
 
 interface CallCardProps {
   call: CallResponse
-  expandedCall: string | null
-  setExpandedCall: (id: string | null) => void
+  expandedTranscripts: Set<string>
+  toggleExpandedTranscript: (id: string) => void
   setActiveSection: (section: string) => void
   onEdit?: (callId: string) => void
   onDelete?: (callId: string) => void
 }
 
 // Helper functions for formatting and status
-const getStatusConfig = (status: string) => {
+const getStatusConfig = (status: string, dialSuccessful?: boolean | null) => {
   const configs: Record<string, any> = {
     SCHEDULED: {
       label: "Scheduled",
       color: "bg-blue-100 text-blue-800 border-blue-200",
-      bgGradient: "from-blue-50 to-cyan-50",
+      bgGradient: "from-blue-50 via-indigo-50 to-purple-50",
       icon: "⏰",
     },
     COMPLETED: {
-      label: "Completed", 
+      // Default completed status (when dialSuccessful is true)
+      label: "Connected", 
       color: "bg-green-100 text-green-800 border-green-200",
-      bgGradient: "from-green-50 to-emerald-50",
+      bgGradient: "from-green-50 via-emerald-50 to-teal-50",
       icon: "✓",
     },
+    NO_ANSWER: {
+      label: "No Answer",
+      color: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      bgGradient: "from-yellow-50 via-amber-50 to-orange-50",
+      icon: "!",
+    },
+    FAILED: {
+      label: "Failed",
+      color: "bg-red-100 text-red-800 border-red-200",
+      bgGradient: "from-red-50 via-pink-50 to-rose-50",
+      icon: "⚠️",
+    },
   }
+  
+  // Handle the 3-tier status logic based on dialSuccessful
+  if (status === "COMPLETED") {
+    if (dialSuccessful === true) {
+      return configs.COMPLETED
+    } else if (dialSuccessful === null) {
+      return configs.NO_ANSWER
+    } else if (dialSuccessful === false) {
+      return configs.FAILED
+    }
+  }
+  
   return configs[status] || configs.COMPLETED
 }
 
@@ -80,16 +106,20 @@ const formatPhoneNumber = (phone: string) => {
 
 export default function CallCard({ 
   call, 
-  expandedCall, 
-  setExpandedCall, 
+  expandedTranscripts, 
+  toggleExpandedTranscript, 
   setActiveSection,
   onEdit,
   onDelete 
 }: CallCardProps) {
-  const statusConfig = getStatusConfig(call.status)
-  const isExpanded = expandedCall === call.callId
+  const [promptExpanded, setPromptExpanded] = useState(false)
+  const statusConfig = getStatusConfig(call.status, call.dialSuccessful)
+  const isExpanded = expandedTranscripts.has(call.callId)
   const createdDate = formatTimestamp(call.createdAt)
   const scheduledDate = call.scheduledFor ? formatTimestamp(call.scheduledFor) : null
+  
+  // Check if prompt is long enough to need expansion (more than ~100 chars or 2 lines)
+  const isPromptLong = call.prompt && call.prompt.length > 100
   
   // Use the call details hook for transcript data (only when expanded)
   const { transcript, loading: transcriptLoading } = useCallDetails({
@@ -100,7 +130,7 @@ export default function CallCard({
   const transcriptAvailable = hasAvailableTranscript(call)
 
   const handleToggleExpanded = () => {
-    setExpandedCall(isExpanded ? null : call.callId)
+    toggleExpandedTranscript(call.callId)
   }
 
   const handleEdit = () => {
@@ -119,21 +149,18 @@ export default function CallCard({
 
   return (
     <Card
-      className={`bg-gradient-to-br ${statusConfig.bgGradient} border-2 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] group h-fit`}
+      className={`bg-gradient-to-br ${statusConfig.bgGradient} border-0 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group h-fit rounded-xl`}
     >
       <CardContent className="p-4">
         {/* Header Section */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="w-10 h-10 bg-white/60 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200 flex-shrink-0">
-              <User className="w-5 h-5 text-gray-600" />
-            </div>
             <div className="min-w-0 flex-1">
               <h3 className="font-semibold text-gray-800 text-base truncate">{call.calleeName}</h3>
               <p className="text-xs text-gray-600 truncate">{formatPhoneNumber(call.phoneNumber)}</p>
             </div>
           </div>
-          <Badge className={`${statusConfig.color} font-medium px-2 py-1 text-xs flex-shrink-0 ml-2`}>
+          <Badge className={`${statusConfig.color} font-medium px-3 py-1.5 text-xs flex-shrink-0 ml-2 rounded-full shadow-sm`}>
             <span className="mr-1">{statusConfig.icon}</span>
             {statusConfig.label}
           </Badge>
@@ -142,8 +169,20 @@ export default function CallCard({
         {/* Subject Section */}
         <div className="mb-3">
           <p className="text-gray-700 text-sm leading-relaxed line-clamp-2 mb-2">{call.subject}</p>
-          <div className="bg-white/60 rounded-lg p-2">
-            <p className="text-xs text-gray-800 font-medium line-clamp-2">{call.prompt}</p>
+          <div className="bg-white/70 rounded-xl p-3 border border-white/30 backdrop-blur-sm">
+            <p className={`text-xs text-gray-800 font-medium transition-all duration-200 ${
+              promptExpanded ? '' : 'line-clamp-2'
+            }`}>
+              {call.prompt}
+            </p>
+            {isPromptLong && (
+              <button
+                onClick={() => setPromptExpanded(!promptExpanded)}
+                className="text-xs text-blue-600 hover:text-blue-700 mt-1 font-medium transition-colors duration-200"
+              >
+                {promptExpanded ? 'Show Less' : 'Show More'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -157,19 +196,38 @@ export default function CallCard({
             <Clock className="w-3 h-3 flex-shrink-0" />
             <span className="truncate">{scheduledDate ? scheduledDate.time : createdDate.time}</span>
           </div>
-          <div className="flex items-center gap-1 truncate">
-            <Phone className="w-3 h-3 flex-shrink-0" />
-            <span className="truncate">{call.callerNumber ? formatPhoneNumber(call.callerNumber) : 'System'}</span>
-          </div>
-          <div className="flex items-center gap-1 truncate">
-            <Globe className="w-3 h-3 flex-shrink-0" />
-            <span className="truncate">{(call.aiLanguage || 'en').toUpperCase()}</span>
-          </div>
         </div>
 
         {/* Actions Section */}
         <div className="flex items-center justify-between gap-2">
+          {/* Left side - Edit/Delete for scheduled calls */}
           <div className="flex items-center gap-1">
+            {call.status === "SCHEDULED" && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 transition-all duration-300 h-8 px-3 text-xs rounded-lg hover:scale-105"
+                  onClick={handleEdit}
+                >
+                  <Edit3 className="w-3 h-3 mr-1" />
+                  <span className="hidden sm:inline">Edit</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-300 h-8 px-3 text-xs rounded-lg hover:scale-105"
+                  onClick={handleDelete}
+                >
+                  <Trash2 className="w-3 h-3 mr-1" />
+                  <span className="hidden sm:inline">Delete</span>
+                </Button>
+              </>
+            )}
+          </div>
+
+          {/* Center/Right side - Transcript and Reschedule */}
+          <div className="flex items-center gap-2">
             {/* Transcript Button - only show for completed calls with available transcripts */}
             {transcriptAvailable && (
               <Collapsible open={isExpanded} onOpenChange={handleToggleExpanded}>
@@ -177,7 +235,7 @@ export default function CallCard({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-200 h-7 px-2 text-xs"
+                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-300 h-8 px-3 text-xs rounded-lg hover:scale-105"
                   >
                     {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                     <MessageCircle className="w-3 h-3 ml-1" />
@@ -187,36 +245,12 @@ export default function CallCard({
               </Collapsible>
             )}
 
-            {/* Edit/Delete buttons for scheduled calls */}
-            {call.status === "SCHEDULED" && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 transition-all duration-200 h-7 px-2 text-xs"
-                  onClick={handleEdit}
-                >
-                  <Edit3 className="w-3 h-3 mr-1" />
-                  <span className="hidden sm:inline">Edit</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200 h-7 px-2 text-xs"
-                  onClick={handleDelete}
-                >
-                  <Trash2 className="w-3 h-3 mr-1" />
-                  <span className="hidden sm:inline">Delete</span>
-                </Button>
-              </>
-            )}
-
             {/* Reschedule button for completed calls */}
             {call.status === "COMPLETED" && (
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 transition-all duration-200 h-7 px-2 text-xs"
+                className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 transition-all duration-300 h-8 px-3 text-xs rounded-lg hover:scale-105"
                 onClick={() => setActiveSection("make-call")}
               >
                 <RotateCcw className="w-3 h-3 mr-1" />
@@ -230,14 +264,14 @@ export default function CallCard({
         {transcriptAvailable && (
           <Collapsible open={isExpanded} onOpenChange={handleToggleExpanded}>
             <CollapsibleContent className="mt-3 animate-in slide-in-from-top-2 duration-300">
-              <div className="bg-white/80 rounded-xl p-4 border border-white/50 backdrop-blur-sm">
+              <div className="bg-white/80 rounded-2xl p-5 border border-white/60 backdrop-blur-sm shadow-lg">
                 <div className="flex items-center gap-2 mb-4">
                   <MessageCircle className="w-4 h-4 text-blue-500" />
                   <span className="font-medium text-gray-800 text-sm">Call Transcript</span>
                 </div>
                 
-                {/* Large Scrollable Conversation Container */}
-                <div className="min-h-[400px] max-h-[600px] overflow-y-auto space-y-3 pr-2" style={{ scrollbarWidth: 'thin' }}>
+                {/* Scrollable Conversation Container */}
+                <div className="h-[300px] overflow-y-auto space-y-3 pr-2" style={{ scrollbarWidth: 'thin' }}>
                   {transcriptLoading && (
                     <div className="text-center text-gray-500 text-sm py-8">
                       Loading transcript...

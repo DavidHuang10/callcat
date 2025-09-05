@@ -12,12 +12,12 @@ export default function CallCatDashboard() {
     activeSection,
     sidebarOpen,
     selectedLanguage,
-    expandedCall,
+    expandedTranscripts,
     searchQuery,
     setActiveSection,
     setSidebarOpen,
     setSelectedLanguage,
-    setExpandedCall,
+    toggleExpandedTranscript,
     setSearchQuery,
   } = useDashboard()
 
@@ -27,8 +27,8 @@ export default function CallCatDashboard() {
         return (
           <HomeSection
             searchQuery={searchQuery}
-            expandedCall={expandedCall}
-            setExpandedCall={setExpandedCall}
+            expandedTranscripts={expandedTranscripts}
+            toggleExpandedTranscript={toggleExpandedTranscript}
             setActiveSection={setActiveSection}
           />
         )

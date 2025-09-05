@@ -34,7 +34,7 @@ export default function LoginPage() {
         fullName: data.fullName
       }, data.token)
       setSuccess('Login successful! Redirecting...')
-      setTimeout(() => router.push('/'), 1500)
+      setTimeout(() => router.replace('/'), 1500)
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Login failed. Please try again.')
     } finally {

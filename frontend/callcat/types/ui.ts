@@ -29,7 +29,7 @@ export interface DashboardState {
   isMobile: boolean;
   sidebarOpen: boolean;
   selectedLanguage: string;
-  expandedCall: string | null;
+  expandedTranscripts: Set<string>;
   scheduledPage: number;
   completedPage: number;
   searchQuery: string;

@@ -7,7 +7,7 @@ export function useDashboard() {
     isMobile: false,
     sidebarOpen: true,
     selectedLanguage: "en",
-    expandedCall: null,
+    expandedTranscripts: new Set<string>(),
     scheduledPage: 0,
     completedPage: 0,
     searchQuery: "",
@@ -43,8 +43,16 @@ export function useDashboard() {
     setState(prev => ({ ...prev, selectedLanguage: language }))
   }
 
-  const setExpandedCall = (id: string | null) => {
-    setState(prev => ({ ...prev, expandedCall: id }))
+  const toggleExpandedTranscript = (id: string) => {
+    setState(prev => {
+      const newExpandedTranscripts = new Set(prev.expandedTranscripts)
+      if (newExpandedTranscripts.has(id)) {
+        newExpandedTranscripts.delete(id)
+      } else {
+        newExpandedTranscripts.add(id)
+      }
+      return { ...prev, expandedTranscripts: newExpandedTranscripts }
+    })
   }
 
   const setScheduledPage = (page: number) => {
@@ -64,7 +72,7 @@ export function useDashboard() {
     setActiveSection,
     setSidebarOpen,
     setSelectedLanguage,
-    setExpandedCall,
+    toggleExpandedTranscript,
     setScheduledPage,
     setCompletedPage,
     setSearchQuery,

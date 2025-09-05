@@ -34,8 +34,7 @@ export function useCallsForDashboard(): UseCallsForDashboardReturn {
   } = useCallList({
     status: 'SCHEDULED',
     limit: 6,
-    autoRefresh: true,
-    refreshInterval: 30000, // Refresh every 30 seconds
+    autoRefresh: false, // Only refresh on user action, page reload, or navigation
   });
 
   // Hook for completed calls
