@@ -18,7 +18,7 @@ import DeleteConfirmationDialog from "@/components/DeleteConfirmationDialog"
 import { useCallsForDashboard } from "@/hooks/useCallsForDashboard"
 import { useAuth } from "@/contexts/AuthContext"
 import { apiService } from "@/lib/api"
-import { CallResponse } from "@/types"
+import { CallResponse, RescheduleData } from "@/types"
 import { useState } from "react"
 
 interface HomeSectionProps {
@@ -26,13 +26,15 @@ interface HomeSectionProps {
   expandedTranscripts: Set<string>
   toggleExpandedTranscript: (id: string) => void
   setActiveSection: (section: string) => void
+  setRescheduleData: (data: RescheduleData | null) => void
 }
 
 export default function HomeSection({ 
   searchQuery, 
   expandedTranscripts, 
   toggleExpandedTranscript, 
-  setActiveSection 
+  setActiveSection,
+  setRescheduleData
 }: HomeSectionProps) {
   const { user } = useAuth()
   const {
@@ -282,6 +284,7 @@ export default function HomeSection({
                       expandedTranscripts={expandedTranscripts}
                       toggleExpandedTranscript={toggleExpandedTranscript}
                       setActiveSection={setActiveSection}
+                      setRescheduleData={setRescheduleData}
                       onDeleteClick={handleDeleteClick}
                     />
                   ))}
@@ -375,6 +378,7 @@ export default function HomeSection({
                       expandedTranscripts={expandedTranscripts}
                       toggleExpandedTranscript={toggleExpandedTranscript}
                       setActiveSection={setActiveSection}
+                      setRescheduleData={setRescheduleData}
                       onDeleteClick={handleDeleteClick}
                     />
                   ))}

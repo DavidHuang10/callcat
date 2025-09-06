@@ -23,6 +23,15 @@ export interface SectionProps {
   children?: React.ReactNode;
 }
 
+// Reschedule data interface
+export interface RescheduleData {
+  callId: string;
+  calleeName: string;
+  phoneNumber: string;
+  subject: string;
+  prompt: string;
+}
+
 // Dashboard state management
 export interface DashboardState {
   activeSection: string;
@@ -34,6 +43,7 @@ export interface DashboardState {
   scheduledPage: number;
   completedPage: number;
   searchQuery: string;
+  rescheduleData: RescheduleData | null;
 }
 
 // Legacy interface for mock data (can be removed later)

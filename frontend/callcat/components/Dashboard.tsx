@@ -15,12 +15,15 @@ export default function CallCatDashboard() {
     selectedLanguage,
     expandedTranscripts,
     searchQuery,
+    rescheduleData,
     setActiveSection,
     setSidebarOpen,
     setSelectedLanguage,
     toggleExpandedTranscript,
     setSearchQuery,
     toggleSidebarCollapsed,
+    setRescheduleData,
+    clearRescheduleData,
   } = useDashboard()
 
   const renderSection = () => {
@@ -32,12 +35,15 @@ export default function CallCatDashboard() {
             expandedTranscripts={expandedTranscripts}
             toggleExpandedTranscript={toggleExpandedTranscript}
             setActiveSection={setActiveSection}
+            setRescheduleData={setRescheduleData}
           />
         )
       case "make-call":
         return (
           <MakeCallSection 
             onCallCreated={() => setActiveSection("home")}
+            rescheduleData={rescheduleData}
+            clearRescheduleData={clearRescheduleData}
           />
         )
       case "active":

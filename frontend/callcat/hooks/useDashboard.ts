@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { DashboardState } from "@/types"
+import { DashboardState, RescheduleData } from "@/types"
 
 export function useDashboard() {
   const [state, setState] = useState<DashboardState>({
@@ -12,6 +12,7 @@ export function useDashboard() {
     scheduledPage: 0,
     completedPage: 0,
     searchQuery: "",
+    rescheduleData: null,
   })
 
   useEffect(() => {
@@ -86,6 +87,14 @@ export function useDashboard() {
     setSidebarCollapsed(!state.sidebarCollapsed)
   }
 
+  const setRescheduleData = (data: RescheduleData | null) => {
+    setState(prev => ({ ...prev, rescheduleData: data }))
+  }
+
+  const clearRescheduleData = () => {
+    setState(prev => ({ ...prev, rescheduleData: null }))
+  }
+
   return {
     ...state,
     setActiveSection,
@@ -97,5 +106,7 @@ export function useDashboard() {
     setSearchQuery,
     setSidebarCollapsed,
     toggleSidebarCollapsed,
+    setRescheduleData,
+    clearRescheduleData,
   }
 }

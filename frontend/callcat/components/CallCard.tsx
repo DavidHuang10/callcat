@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { CallResponse } from "@/types"
+import { CallResponse, RescheduleData } from "@/types"
 import { useCallDetails } from "@/hooks/useCallDetails"
 import { hasAvailableTranscript, TranscriptMessage } from "@/utils/transcript"
 import { useState } from "react"
@@ -24,6 +24,7 @@ interface CallCardProps {
   expandedTranscripts: Set<string>
   toggleExpandedTranscript: (id: string) => void
   setActiveSection: (section: string) => void
+  setRescheduleData?: (data: RescheduleData | null) => void
   onEdit?: (callId: string) => void
   onDelete?: (callId: string) => void
   onDeleteClick?: (call: CallResponse) => void
@@ -110,6 +111,7 @@ export default function CallCard({
   expandedTranscripts, 
   toggleExpandedTranscript, 
   setActiveSection,
+  setRescheduleData,
   onEdit,
   onDelete,
   onDeleteClick
@@ -149,6 +151,20 @@ export default function CallCard({
     } else if (onDelete) {
       onDelete(call.callId)
     }
+  }
+
+  const handleReschedule = () => {
+    if (setRescheduleData) {
+      const rescheduleData: RescheduleData = {
+        callId: call.callId,
+        calleeName: call.calleeName,
+        phoneNumber: call.phoneNumber,
+        subject: call.subject,
+        prompt: call.prompt
+      }
+      setRescheduleData(rescheduleData)
+    }
+    setActiveSection("make-call")
   }
 
   return (
@@ -261,7 +277,7 @@ export default function CallCard({
                 variant="ghost"
                 size="sm"
                 className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 transition-all duration-300 h-8 px-3 text-xs rounded-lg hover:scale-105"
-                onClick={() => setActiveSection("make-call")}
+                onClick={handleReschedule}
               >
                 <RotateCcw className="w-3 h-3 mr-1" />
                 <span className="hidden sm:inline">Reschedule</span>

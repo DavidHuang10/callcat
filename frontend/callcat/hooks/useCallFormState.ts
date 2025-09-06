@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { CallRequest, UserPreferencesResponse } from "@/types"
+import { CallRequest, UserPreferencesResponse, RescheduleData } from "@/types"
 import apiService from "@/lib/api"
 import { 
   getUserTimezone, 
@@ -23,9 +23,14 @@ interface CallFormState {
   success: boolean
 }
 
-export function useCallFormState(onCallCreated?: () => void) {
+export function useCallFormState(onCallCreated?: () => void, rescheduleData?: RescheduleData | null, clearRescheduleData?: () => void) {
   const [state, setState] = useState<CallFormState>({
-    formData: {
+    formData: rescheduleData ? {
+      calleeName: rescheduleData.calleeName,
+      phoneNumber: rescheduleData.phoneNumber,
+      subject: rescheduleData.subject,
+      prompt: rescheduleData.prompt
+    } : {
       calleeName: "",
       phoneNumber: "",
       subject: "",
@@ -42,6 +47,13 @@ export function useCallFormState(onCallCreated?: () => void) {
 
   // Get minimum date/time for validation based on selected timezone
   const { minDate, minTime } = getMinimumDateTime(state.selectedTimezone)
+
+  // Clear reschedule data after it has been used for initialization
+  useEffect(() => {
+    if (rescheduleData && clearRescheduleData) {
+      clearRescheduleData()
+    }
+  }, [rescheduleData, clearRescheduleData])
 
   // Load user preferences and initialize default time on mount
   useEffect(() => {
