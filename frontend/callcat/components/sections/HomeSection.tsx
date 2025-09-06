@@ -6,9 +6,9 @@ import {
   CheckCircle,
   Activity,
   Coffee,
-  Zap,
-  Settings,
   Plus,
+  Timer,
+  TrendingUp,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button"
 import CallCard from "@/components/CallCard"
 import DeleteConfirmationDialog from "@/components/DeleteConfirmationDialog"
 import { useCallsForDashboard } from "@/hooks/useCallsForDashboard"
+import { useDashboardStats } from "@/hooks/useDashboardStats"
 import { useAuth } from "@/contexts/AuthContext"
 import { apiService } from "@/lib/api"
 import { CallResponse, RescheduleData } from "@/types"
@@ -55,10 +56,81 @@ export default function HomeSection({
     setCompletedPage,
   } = useCallsForDashboard()
 
+  const {
+    totalCallsThisMonth,
+    successRate,
+    avgCallDuration,
+    loading: statsLoading,
+    error: statsError
+  } = useDashboardStats()
+
   // Delete confirmation dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [callToDelete, setCallToDelete] = useState<CallResponse | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // Pagination transition states
+  const [scheduledTransitioning, setScheduledTransitioning] = useState(false)
+  const [completedTransitioning, setCompletedTransitioning] = useState(false)
+  const [previousScheduledCalls, setPreviousScheduledCalls] = useState<CallResponse[]>([])
+  const [previousCompletedCalls, setPreviousCompletedCalls] = useState<CallResponse[]>([])
+
+  // Filter calls by search query if provided
+  const allFilteredScheduledCalls = scheduledCalls.filter(call => 
+    !searchQuery || 
+    call.calleeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    call.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    call.callId.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const allFilteredCompletedCalls = completedCalls.filter(call => 
+    !searchQuery || 
+    call.calleeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    call.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    call.callId.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  // Apply pagination to filtered calls (6 per page)
+  const startIndexScheduled = scheduledPage * 6
+  const endIndexScheduled = startIndexScheduled + 6
+  const filteredScheduledCalls = allFilteredScheduledCalls.slice(startIndexScheduled, endIndexScheduled)
+
+  const startIndexCompleted = completedPage * 6
+  const endIndexCompleted = startIndexCompleted + 6
+  const filteredCompletedCalls = allFilteredCompletedCalls.slice(startIndexCompleted, endIndexCompleted)
+
+  // Update previous calls when new data arrives and not transitioning
+  if (!scheduledTransitioning && filteredScheduledCalls.length > 0) {
+    if (JSON.stringify(previousScheduledCalls) !== JSON.stringify(filteredScheduledCalls)) {
+      setPreviousScheduledCalls(filteredScheduledCalls)
+    }
+  }
+  if (!completedTransitioning && filteredCompletedCalls.length > 0) {
+    if (JSON.stringify(previousCompletedCalls) !== JSON.stringify(filteredCompletedCalls)) {
+      setPreviousCompletedCalls(filteredCompletedCalls)
+    }
+  }
+
+  // Handle pagination with smooth transitions
+  const handleScheduledPageChange = (newPage: number) => {
+    setScheduledTransitioning(true)
+    setScheduledPage(newPage)
+    
+    // Clear transitioning after a brief moment to allow new content to load
+    setTimeout(() => {
+      setScheduledTransitioning(false)
+    }, 300)
+  }
+
+  const handleCompletedPageChange = (newPage: number) => {
+    setCompletedTransitioning(true)
+    setCompletedPage(newPage)
+    
+    // Clear transitioning after a brief moment to allow new content to load
+    setTimeout(() => {
+      setCompletedTransitioning(false)
+    }, 300)
+  }
 
   // Handle opening delete confirmation dialog
   const handleDeleteClick = (call: CallResponse) => {
@@ -84,58 +156,31 @@ export default function HomeSection({
     }
   }
 
-
-  // Filter calls by search query if provided
-  const filteredScheduledCalls = scheduledCalls.filter(call => 
-    !searchQuery || 
-    call.calleeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    call.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    call.callId.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  const filteredCompletedCalls = completedCalls.filter(call => 
-    !searchQuery || 
-    call.calleeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    call.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    call.callId.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
+  // Generate dynamic stats based on real data (3 cards instead of 4)
   const stats = [
     {
-      title: "Total Calls",
-      value: "47",
-      change: "+12%",
-      changeType: "positive",
+      title: "Calls This Month",
+      value: statsLoading ? "..." : totalCallsThisMonth.toString(),
+      subtitle: "Total scheduled & completed",
       icon: Phone,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
     },
     {
       title: "Success Rate",
-      value: "89%",
-      change: "+5%",
-      changeType: "positive",
+      value: statsLoading ? "..." : `${successRate}%`,
+      subtitle: "Successfully completed calls",
       icon: CheckCircle,
       color: "text-green-600",
       bgColor: "bg-green-50",
     },
     {
       title: "Avg Duration",
-      value: "3m 24s",
-      change: "-8%",
-      changeType: "negative",
+      value: statsLoading ? "..." : avgCallDuration,
+      subtitle: "Average call length",
       icon: Clock,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
-    },
-    {
-      title: "Active Calls",
-      value: "3",
-      change: "0",
-      changeType: "neutral",
-      icon: Activity,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
     },
   ]
 
@@ -152,30 +197,17 @@ export default function HomeSection({
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon
           return (
             <Card key={index} className="hover:shadow-lg transition-all duration-300">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
-                  <div>
+                  <div className="flex-1">
                     <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                    <div className="flex items-center gap-1 mt-1">
-                      <span
-                        className={`text-xs font-medium ${
-                          stat.changeType === "positive"
-                            ? "text-green-600"
-                            : stat.changeType === "negative"
-                            ? "text-red-600"
-                            : "text-gray-500"
-                        }`}
-                      >
-                        {stat.change}
-                      </span>
-                      <span className="text-xs text-gray-500">from last week</span>
-                    </div>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                    <p className="text-xs text-gray-500 mt-1">{stat.subtitle}</p>
                   </div>
                   <div className={`p-3 rounded-full ${stat.bgColor}`}>
                     <Icon className={`h-6 w-6 ${stat.color}`} />
@@ -186,51 +218,19 @@ export default function HomeSection({
           )
         })}
       </div>
+      
+      {/* Stats Error Display */}
+      {statsError && (
+        <Card className="border-yellow-200 bg-yellow-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-yellow-700">
+              <TrendingUp className="h-5 w-5" />
+              <span className="text-sm">Using cached statistics: {statsError}</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Quick Actions */}
-      <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-purple-700">
-            <Zap className="h-5 w-5" />
-            Quick Actions
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button
-              onClick={() => setActiveSection("make-call")}
-              className="p-4 bg-white rounded-lg border-2 border-purple-200 hover:border-purple-400 hover:shadow-md transition-all duration-200 text-left group"
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors duration-200">
-                  <Phone className="h-5 w-5 text-purple-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-800">Make a Call</h3>
-                  <p className="text-sm text-gray-600">Schedule a new call</p>
-                </div>
-              </div>
-            </button>
-
-
-
-            <button
-              onClick={() => setActiveSection("settings")}
-              className="p-4 bg-white rounded-lg border-2 border-purple-200 hover:border-purple-400 hover:shadow-md transition-all duration-200 text-left group"
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors duration-200">
-                  <Settings className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-800">Settings</h3>
-                  <p className="text-sm text-gray-600">Configure preferences</p>
-                </div>
-              </div>
-            </button>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Scheduled Calls Section */}
       <div className="space-y-4">
@@ -240,6 +240,36 @@ export default function HomeSection({
             <Badge variant="secondary" className="text-xs">
               {scheduledTotal} total
             </Badge>
+            {/* Scheduled Calls Pagination */}
+            {(allFilteredScheduledCalls.length > 6) && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleScheduledPageChange(scheduledPage - 1)}
+                  disabled={scheduledPage === 0 || scheduledLoading || scheduledTransitioning}
+                  className="h-8 w-8 p-0 hover:bg-gray-100"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </Button>
+                <span className="text-xs text-gray-500 min-w-[60px] text-center">
+                  {scheduledPage + 1} of {Math.ceil(allFilteredScheduledCalls.length / 6)}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleScheduledPageChange(scheduledPage + 1)}
+                  disabled={endIndexScheduled >= allFilteredScheduledCalls.length || scheduledLoading || scheduledTransitioning}
+                  className="h-8 w-8 p-0 hover:bg-gray-100"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Button>
+              </div>
+            )}
             <Button
               size="sm"
               onClick={() => setActiveSection("make-call")}
@@ -274,10 +304,12 @@ export default function HomeSection({
 
         {!scheduledLoading && !scheduledError && (
           <>
-            {filteredScheduledCalls.length > 0 ? (
+            {(filteredScheduledCalls.length > 0 || scheduledTransitioning) ? (
               <>
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {filteredScheduledCalls.slice(0, 6).map((call) => (
+                <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 transition-opacity duration-300 ${
+                  scheduledTransitioning ? 'opacity-60' : 'opacity-100'
+                }`}>
+                  {(scheduledTransitioning ? previousScheduledCalls : filteredScheduledCalls).map((call) => (
                     <CallCard
                       key={call.callId}
                       call={call}
@@ -290,30 +322,6 @@ export default function HomeSection({
                   ))}
                 </div>
 
-                {/* Scheduled Calls Pagination */}
-                {(scheduledPage > 0 || hasMoreScheduled) && (
-                  <div className="flex items-center justify-between">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setScheduledPage(scheduledPage - 1)}
-                      disabled={scheduledPage === 0 || scheduledLoading}
-                    >
-                      Previous
-                    </Button>
-                    <span className="text-sm text-gray-600">
-                      Page {scheduledPage + 1} • {scheduledTotal} total calls
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setScheduledPage(scheduledPage + 1)}
-                      disabled={!hasMoreScheduled || scheduledLoading}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                )}
               </>
             ) : (
               <Card className="text-center py-12">
@@ -338,10 +346,40 @@ export default function HomeSection({
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-800">Recent Calls</h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Badge variant="secondary" className="text-xs">
               {completedTotal} total
             </Badge>
+            {/* Completed Calls Pagination */}
+            {(allFilteredCompletedCalls.length > 6) && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleCompletedPageChange(completedPage - 1)}
+                  disabled={completedPage === 0 || completedLoading || completedTransitioning}
+                  className="h-8 w-8 p-0 hover:bg-gray-100"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </Button>
+                <span className="text-xs text-gray-500 min-w-[60px] text-center">
+                  {completedPage + 1} of {Math.ceil(allFilteredCompletedCalls.length / 6)}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleCompletedPageChange(completedPage + 1)}
+                  disabled={endIndexCompleted >= allFilteredCompletedCalls.length || completedLoading || completedTransitioning}
+                  className="h-8 w-8 p-0 hover:bg-gray-100"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Button>
+              </div>
+            )}
             {completedLoading && (
               <div className="text-xs text-gray-500">Loading...</div>
             )}
@@ -368,10 +406,12 @@ export default function HomeSection({
 
         {!completedLoading && !completedError && (
           <>
-            {filteredCompletedCalls.length > 0 ? (
+            {(filteredCompletedCalls.length > 0 || completedTransitioning) ? (
               <>
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {filteredCompletedCalls.slice(0, 6).map((call) => (
+                <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 transition-opacity duration-300 ${
+                  completedTransitioning ? 'opacity-60' : 'opacity-100'
+                }`}>
+                  {(completedTransitioning ? previousCompletedCalls : filteredCompletedCalls).map((call) => (
                     <CallCard
                       key={call.callId}
                       call={call}
@@ -384,30 +424,6 @@ export default function HomeSection({
                   ))}
                 </div>
 
-                {/* Completed Calls Pagination */}
-                {(completedPage > 0 || hasMoreCompleted) && (
-                  <div className="flex items-center justify-between">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCompletedPage(completedPage - 1)}
-                      disabled={completedPage === 0 || completedLoading}
-                    >
-                      Previous
-                    </Button>
-                    <span className="text-sm text-gray-600">
-                      Page {completedPage + 1} • {completedTotal} total calls
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCompletedPage(completedPage + 1)}
-                      disabled={!hasMoreCompleted || completedLoading}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                )}
               </>
             ) : (
               <Card className="text-center py-12">

@@ -52,19 +52,43 @@ export const convertLocalToUTC = (
 ): number => {
   const tz = timezone || getUserTimezone();
   
-  // Create datetime string in user's timezone
-  const dateTimeString = `${dateValue}T${timeValue}:00`;
+  // Create the date/time string and use Temporal-like approach with Intl
+  // We want: "When it's 6:00 PM in EDT, what's the UTC timestamp?"
   
-  // Parse the date assuming it's in the user's timezone
-  const date = new Date(dateTimeString);
+  // Parse the input values
+  const [year, month, day] = dateValue.split('-').map(Number);
+  const [hours, minutes] = timeValue.split(':').map(Number);
   
-  // Get the timezone offset for the user's timezone at this specific date
-  const userDate = new Date(date.toLocaleString('en-US', { timeZone: tz }));
-  const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
-  const timezoneOffset = userDate.getTime() - utcDate.getTime();
+  // Use the inverse approach: find what UTC time will display as our desired local time
+  // Start with our desired local time as if it were UTC
+  let testTimestamp = Date.UTC(year, month - 1, day, hours, minutes, 0, 0);
   
-  // Adjust for timezone and return timestamp
-  return date.getTime() - timezoneOffset;
+  // Check what this timestamp displays as in our target timezone
+  const testDate = new Date(testTimestamp);
+  const displayedTime = new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }).format(testDate);
+  
+  // Parse what time it actually shows
+  const [displayedDate, displayedTimeStr] = displayedTime.split(', ');
+  const [dispYear, dispMonth, dispDay] = displayedDate.split('-').map(Number);
+  const [dispHours, dispMinutes] = displayedTimeStr.split(':').map(Number);
+  
+  // Calculate the difference between what we want and what we got
+  const wantedTimestamp = Date.UTC(year, month - 1, day, hours, minutes, 0, 0);
+  const actuallyDisplayed = Date.UTC(dispYear, dispMonth - 1, dispDay, dispHours, dispMinutes, 0, 0);
+  
+  const offset = actuallyDisplayed - wantedTimestamp;
+  
+  // Adjust our test timestamp by the offset to get the correct UTC time
+  return testTimestamp - offset;
 };
 
 /**
@@ -197,16 +221,28 @@ export const generateTimezoneOptions = (): { value: string; label: string; offse
     try {
       const date = new Date();
       
-      // Get the timezone offset in minutes
-      const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
-      const tzDate = new Date(date.toLocaleString('en-US', { timeZone: tz }));
-      const offsetMinutes = (utcDate.getTime() - tzDate.getTime()) / (1000 * 60);
+      // Get the timezone offset using proper Intl formatting
+      const formatter = new Intl.DateTimeFormat('en', {
+        timeZone: tz,
+        timeZoneName: 'longOffset'
+      });
       
-      // Format offset as GMT+/-X:XX
-      const hours = Math.floor(Math.abs(offsetMinutes) / 60);
-      const minutes = Math.abs(offsetMinutes) % 60;
-      const sign = offsetMinutes <= 0 ? '+' : '-';
-      const offsetString = `GMT${sign}${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      const parts = formatter.formatToParts(date);
+      const offsetPart = parts.find(part => part.type === 'timeZoneName');
+      let offsetString = 'GMT+00:00';
+      let offsetMinutes = 0;
+      
+      if (offsetPart?.value && offsetPart.value !== 'GMT') {
+        offsetString = offsetPart.value;
+        // Parse offset like "GMT-04:00" to get minutes
+        const match = offsetPart.value.match(/GMT([+-])(\d{2}):(\d{2})/);
+        if (match) {
+          const sign = match[1] === '+' ? -1 : 1; // Reversed because JS timezone offsets are inverted
+          const hours = parseInt(match[2], 10);
+          const mins = parseInt(match[3], 10);
+          offsetMinutes = sign * (hours * 60 + mins);
+        }
+      }
       
       // Special cases for better display names
       const specialNames: Record<string, string> = {
@@ -295,15 +331,12 @@ export const generateTimezoneOptions = (): { value: string; label: string; offse
 export const getTimezoneAwareDefaultTime = (selectedTimezone: string): { dateValue: string; timeValue: string } => {
   const now = new Date();
   
-  // Get current time in both local browser timezone and selected timezone
-  const nowInSelected = new Date(now.toLocaleString('en-US', { timeZone: selectedTimezone }));
-  
-  // Add 1 hour and 5 minutes buffer to current time in selected timezone
-  const defaultTime = new Date(nowInSelected.getTime() + 65 * 60 * 1000);
+  // Add 1 hour to current time and convert to the selected timezone
+  const defaultTime = new Date(now.getTime() + 60 * 60 * 1000);
   
   // Ensure it's at least 10 minutes from actual current time
   const minTime = new Date(now.getTime() + 10 * 60 * 1000);
-  const finalTime = defaultTime > minTime ? defaultTime : new Date(now.getTime() + 70 * 60 * 1000);
+  const finalTime = defaultTime > minTime ? defaultTime : new Date(now.getTime() + 60 * 60 * 1000);
   
   return convertUTCToLocal(finalTime.getTime(), selectedTimezone);
 };
@@ -340,16 +373,13 @@ export const getMinimumDateTime = (timezone?: string): { minDate: string; minTim
 export const getDefaultDateTime = (timezone?: string): { dateValue: string; timeValue: string } => {
   const tz = timezone || getUserTimezone();
   
-  // Get current time in the specified timezone
+  // Get current time and add 1 hour
   const now = new Date();
-  const currentTimeInTz = new Date(now.toLocaleString('en-US', { timeZone: tz }));
-  
-  // Add 1 hour to current time in the specified timezone
-  const defaultDateTime = new Date(currentTimeInTz.getTime() + 60 * 60 * 1000);
+  const defaultDateTime = new Date(now.getTime() + 60 * 60 * 1000);
   
   // Ensure the time is at least 5 minutes in the future from actual current time
   const minFutureTime = new Date(now.getTime() + 5 * 60 * 1000);
-  const finalDateTime = defaultDateTime > minFutureTime ? defaultDateTime : new Date(now.getTime() + 65 * 60 * 1000); // 1 hour 5 minutes
+  const finalDateTime = defaultDateTime > minFutureTime ? defaultDateTime : new Date(now.getTime() + 60 * 60 * 1000);
   
   const { dateValue, timeValue } = convertUTCToLocal(finalDateTime.getTime(), tz);
   

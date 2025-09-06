@@ -1,4 +1,5 @@
-import { PHONE_NUMBER_REGEX, DEFAULT_CALL_SETTINGS } from '@/constants';
+import { DEFAULT_CALL_SETTINGS } from '@/constants';
+import { validatePhoneNumber as validatePhone } from '@/utils/phone';
 
 export interface CreateCallFormData {
   phoneNumber: string;
@@ -7,13 +8,7 @@ export interface CreateCallFormData {
   aiLanguage?: string;
 }
 
-export const validatePhoneNumber = (phone: string): string | null => {
-  if (!phone) return 'Phone number is required';
-  if (!PHONE_NUMBER_REGEX.test(phone)) {
-    return 'Phone number must be in format +1XXXXXXXXXX';
-  }
-  return null;
-};
+export const validatePhoneNumber = validatePhone;
 
 export const validateAiPrompt = (prompt: string): string | null => {
   if (!prompt) return 'AI prompt is required';

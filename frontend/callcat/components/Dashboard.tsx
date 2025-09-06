@@ -12,13 +12,11 @@ export default function CallCatDashboard() {
     activeSection,
     sidebarOpen,
     sidebarCollapsed,
-    selectedLanguage,
     expandedTranscripts,
     searchQuery,
     rescheduleData,
     setActiveSection,
     setSidebarOpen,
-    setSelectedLanguage,
     toggleExpandedTranscript,
     setSearchQuery,
     toggleSidebarCollapsed,
@@ -84,8 +82,6 @@ export default function CallCatDashboard() {
           setActiveSection={setActiveSection}
           sidebarOpen={sidebarOpen}
           sidebarCollapsed={sidebarCollapsed}
-          selectedLanguage={selectedLanguage}
-          setSelectedLanguage={setSelectedLanguage}
           toggleSidebarCollapsed={toggleSidebarCollapsed}
         />
 

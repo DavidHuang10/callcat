@@ -5,14 +5,11 @@ import {
   Home,
   Phone,
   PhoneCall,
-  Globe,
   User,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface SidebarProps {
@@ -20,8 +17,6 @@ interface SidebarProps {
   setActiveSection: (section: string) => void
   sidebarOpen: boolean
   sidebarCollapsed: boolean
-  selectedLanguage: string
-  setSelectedLanguage: (language: string) => void
   toggleSidebarCollapsed: () => void
 }
 
@@ -30,8 +25,6 @@ export default function Sidebar({
   setActiveSection, 
   sidebarOpen, 
   sidebarCollapsed,
-  selectedLanguage, 
-  setSelectedLanguage,
   toggleSidebarCollapsed
 }: SidebarProps) {
   const [isHovered, setIsHovered] = useState(false)
@@ -70,75 +63,6 @@ export default function Sidebar({
             </Button>
           </div>
 
-          {/* Language Selector */}
-          {isExpanded && (
-            <div className="mb-6">
-              <Label className="text-sm font-medium text-gray-700 mb-2 block">Language</Label>
-              <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="en">
-                    <div className="flex items-center gap-2">
-                      <Globe className="w-4 h-4" />
-                      English
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="es">
-                    <div className="flex items-center gap-2">
-                      <Globe className="w-4 h-4" />
-                      Español
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="fr">
-                    <div className="flex items-center gap-2">
-                      <Globe className="w-4 h-4" />
-                      Français
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="de">
-                    <div className="flex items-center gap-2">
-                      <Globe className="w-4 h-4" />
-                      Deutsch
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="ja">
-                    <div className="flex items-center gap-2">
-                      <Globe className="w-4 h-4" />
-                      日本語
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="zh">
-                    <div className="flex items-center gap-2">
-                      <Globe className="w-4 h-4" />
-                      中文
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Collapsed Language Icon */}
-          {!isExpanded && (
-            <div className="mb-6 flex justify-center">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-10 w-10 hover:bg-purple-100 transition-colors"
-                  >
-                    <Globe className="h-5 w-5 text-purple-600" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  <p>Language: {selectedLanguage.toUpperCase()}</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          )}
 
           {/* Navigation */}
           <nav className="space-y-2 flex-1">

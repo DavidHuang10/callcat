@@ -9,6 +9,7 @@ import {
   RotateCcw,
   Edit3,
   Trash2,
+  Timer,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -17,6 +18,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { CallResponse, RescheduleData } from "@/types"
 import { useCallDetails } from "@/hooks/useCallDetails"
 import { hasAvailableTranscript, TranscriptMessage } from "@/utils/transcript"
+import { formatCallTiming } from "@/utils/duration"
 import { useState } from "react"
 
 interface CallCardProps {
@@ -122,6 +124,11 @@ export default function CallCard({
   const createdDate = formatTimestamp(call.createdAt)
   const scheduledDate = call.scheduledFor ? formatTimestamp(call.scheduledFor) : null
   
+  // Get call timing data for completed calls
+  const callTiming = call.status === 'COMPLETED' 
+    ? formatCallTiming(call.callAt, call.completedAt, call.durationSec, call.retellCallData, call.scheduledFor)
+    : null
+  
   // Check if prompt is long enough to need expansion (more than ~100 chars or 2 lines)
   const isPromptLong = call.prompt && call.prompt.length > 100
   
@@ -207,16 +214,35 @@ export default function CallCard({
         </div>
 
         {/* Metadata Section */}
-        <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 mb-3">
-          <div className="flex items-center gap-1 truncate">
-            <Calendar className="w-3 h-3 flex-shrink-0" />
-            <span className="truncate">{scheduledDate ? scheduledDate.date : createdDate.date}</span>
+        {call.status === 'COMPLETED' && callTiming && callTiming.hasTimingData ? (
+          // 3-column layout for completed calls with duration
+          <div className="grid grid-cols-3 gap-2 text-xs text-gray-600 mb-3">
+            <div className="flex items-center gap-1 truncate">
+              <Calendar className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate">{call.callAt ? formatTimestamp(call.callAt).date : createdDate.date}</span>
+            </div>
+            <div className="flex items-center gap-1 truncate">
+              <Clock className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate">{callTiming.startTime}</span>
+            </div>
+            <div className="flex items-center gap-1 truncate">
+              <Timer className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate">{callTiming.duration}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1 truncate">
-            <Clock className="w-3 h-3 flex-shrink-0" />
-            <span className="truncate">{scheduledDate ? scheduledDate.time : createdDate.time}</span>
+        ) : (
+          // 2-column layout for scheduled calls or completed calls without timing data
+          <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 mb-3">
+            <div className="flex items-center gap-1 truncate">
+              <Calendar className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate">{scheduledDate ? scheduledDate.date : createdDate.date}</span>
+            </div>
+            <div className="flex items-center gap-1 truncate">
+              <Clock className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate">{scheduledDate ? scheduledDate.time : createdDate.time}</span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Actions Section */}
         <div className="flex items-center justify-center gap-2">

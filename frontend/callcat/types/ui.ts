@@ -38,7 +38,6 @@ export interface DashboardState {
   isMobile: boolean;
   sidebarOpen: boolean;
   sidebarCollapsed: boolean;
-  selectedLanguage: string;
   expandedTranscripts: Set<string>;
   scheduledPage: number;
   completedPage: number;

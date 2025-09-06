@@ -1,9 +1,11 @@
 "use client"
 
+import { useState } from "react"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { CallRequest } from "@/types"
+import { formatPhoneAsUserTypes, formatPhoneToE164 } from "@/utils/phone"
 
 interface CallFormFieldsProps {
   formData: CallRequest
@@ -16,6 +18,21 @@ export default function CallFormFields({
   errors,
   onChange
 }: CallFormFieldsProps) {
+  const [displayPhone, setDisplayPhone] = useState(formData.phoneNumber)
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value
+    const previousValue = displayPhone
+    
+    // Format for display as user types
+    const formatted = formatPhoneAsUserTypes(inputValue, previousValue)
+    setDisplayPhone(formatted)
+    
+    // Convert to E.164 format for storage
+    const e164 = formatPhoneToE164(inputValue)
+    onChange("phoneNumber", e164)
+  }
+
   return (
     <div className="space-y-6">
       {/* Basic Information */}
@@ -42,14 +59,18 @@ export default function CallFormFields({
           </Label>
           <Input
             id="phoneNumber"
-            value={formData.phoneNumber}
-            onChange={(e) => onChange("phoneNumber", e.target.value)}
-            placeholder="+1XXXXXXXXXX"
+            type="tel"
+            value={displayPhone}
+            onChange={handlePhoneChange}
+            placeholder="(555) 123-4567"
             className={errors.phoneNumber ? "border-red-500" : ""}
           />
           {errors.phoneNumber && (
             <p className="text-sm text-red-600">{errors.phoneNumber}</p>
           )}
+          <p className="text-xs text-gray-500">
+            Enter any US phone number format
+          </p>
         </div>
       </div>
 

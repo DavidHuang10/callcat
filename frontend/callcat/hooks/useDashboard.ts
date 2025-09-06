@@ -7,7 +7,6 @@ export function useDashboard() {
     isMobile: false,
     sidebarOpen: true,
     sidebarCollapsed: false,
-    selectedLanguage: "en",
     expandedTranscripts: new Set<string>(),
     scheduledPage: 0,
     completedPage: 0,
@@ -50,9 +49,6 @@ export function useDashboard() {
     setState(prev => ({ ...prev, sidebarOpen: open }))
   }
 
-  const setSelectedLanguage = (language: string) => {
-    setState(prev => ({ ...prev, selectedLanguage: language }))
-  }
 
   const toggleExpandedTranscript = (id: string) => {
     setState(prev => {
@@ -99,7 +95,6 @@ export function useDashboard() {
     ...state,
     setActiveSection,
     setSidebarOpen,
-    setSelectedLanguage,
     toggleExpandedTranscript,
     setScheduledPage,
     setCompletedPage,
