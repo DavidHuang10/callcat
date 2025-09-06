@@ -140,112 +140,149 @@ export const getTimezoneDisplayName = (timezone?: string): string => {
 };
 
 /**
- * Generate comprehensive timezone options for select dropdown
- * @returns Array of timezone options with user-friendly labels and GMT offsets
+ * Generate simplified timezone options for select dropdown
+ * @returns Array of curated timezone options with user-friendly labels and GMT offsets
  */
 export const generateTimezoneOptions = (): { value: string; label: string; offset: number }[] => {
+  // Curated list of most commonly used timezones worldwide
+  const curatedTimezones = [
+    // UTC first
+    'UTC',
+    
+    // North America - US
+    'America/New_York',      // Eastern Time
+    'America/Chicago',       // Central Time  
+    'America/Denver',        // Mountain Time
+    'America/Los_Angeles',   // Pacific Time
+    'America/Anchorage',     // Alaska Time
+    'Pacific/Honolulu',      // Hawaii Time
+    
+    // North America - Canada
+    'America/Toronto',       // Eastern Canada
+    'America/Vancouver',     // Pacific Canada
+    
+    // Central/South America
+    'America/Mexico_City',   // Mexico
+    'America/Sao_Paulo',     // Brazil
+    'America/Argentina/Buenos_Aires', // Argentina
+    
+    // Europe
+    'Europe/London',         // UK
+    'Europe/Dublin',         // Ireland
+    'Europe/Paris',          // France
+    'Europe/Berlin',         // Germany
+    'Europe/Rome',           // Italy
+    'Europe/Madrid',         // Spain
+    'Europe/Amsterdam',      // Netherlands
+    'Europe/Stockholm',      // Sweden
+    'Europe/Moscow',         // Russia
+    
+    // Asia
+    'Asia/Dubai',           // UAE
+    'Asia/Kolkata',         // India
+    'Asia/Shanghai',        // China
+    'Asia/Tokyo',           // Japan
+    'Asia/Seoul',           // South Korea
+    'Asia/Singapore',       // Singapore
+    'Asia/Hong_Kong',       // Hong Kong
+    
+    // Oceania  
+    'Australia/Sydney',     // Australia East
+    'Australia/Perth',      // Australia West
+    'Pacific/Auckland',     // New Zealand
+  ];
+
+  // Helper function to get timezone info
+  const getTimezoneInfo = (tz: string) => {
+    try {
+      const date = new Date();
+      
+      // Get the timezone offset in minutes
+      const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+      const tzDate = new Date(date.toLocaleString('en-US', { timeZone: tz }));
+      const offsetMinutes = (utcDate.getTime() - tzDate.getTime()) / (1000 * 60);
+      
+      // Format offset as GMT+/-X:XX
+      const hours = Math.floor(Math.abs(offsetMinutes) / 60);
+      const minutes = Math.abs(offsetMinutes) % 60;
+      const sign = offsetMinutes <= 0 ? '+' : '-';
+      const offsetString = `GMT${sign}${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      
+      // Special cases for better display names
+      const specialNames: Record<string, string> = {
+        'UTC': 'UTC',
+        'America/New_York': 'Eastern Time (US)',
+        'America/Chicago': 'Central Time (US)',
+        'America/Denver': 'Mountain Time (US)', 
+        'America/Los_Angeles': 'Pacific Time (US)',
+        'America/Anchorage': 'Alaska Time',
+        'Pacific/Honolulu': 'Hawaii Time',
+        'America/Toronto': 'Eastern Time (Canada)',
+        'America/Vancouver': 'Pacific Time (Canada)',
+        'America/Mexico_City': 'Mexico City',
+        'America/Sao_Paulo': 'São Paulo',
+        'America/Argentina/Buenos_Aires': 'Buenos Aires',
+        'Europe/London': 'London',
+        'Europe/Dublin': 'Dublin',
+        'Europe/Paris': 'Paris',
+        'Europe/Berlin': 'Berlin',
+        'Europe/Rome': 'Rome',
+        'Europe/Madrid': 'Madrid',
+        'Europe/Amsterdam': 'Amsterdam',
+        'Europe/Stockholm': 'Stockholm',
+        'Europe/Moscow': 'Moscow',
+        'Asia/Dubai': 'Dubai',
+        'Asia/Kolkata': 'Mumbai/Delhi',
+        'Asia/Shanghai': 'Beijing/Shanghai',
+        'Asia/Tokyo': 'Tokyo',
+        'Asia/Seoul': 'Seoul',
+        'Asia/Singapore': 'Singapore',
+        'Asia/Hong_Kong': 'Hong Kong',
+        'Australia/Sydney': 'Sydney',
+        'Australia/Perth': 'Perth',
+        'Pacific/Auckland': 'Auckland'
+      };
+      
+      const displayName = specialNames[tz] || tz.split('/').pop()?.replace(/_/g, ' ') || tz;
+      
+      return {
+        value: tz,
+        label: `${displayName} (${offsetString})`,
+        offset: offsetMinutes
+      };
+    } catch (error) {
+      return null;
+    }
+  };
+  
   try {
-    // Get all supported timezones
-    const supportedTimezones = Intl.supportedValuesOf('timeZone');
-    
-    // Popular timezones to show at the top
-    const popularTimezones = [
-      'UTC',
-      'America/New_York',
-      'America/Chicago', 
-      'America/Denver',
-      'America/Los_Angeles',
-      'Europe/London',
-      'Europe/Paris',
-      'Europe/Berlin',
-      'Asia/Tokyo',
-      'Asia/Shanghai',
-      'Asia/Kolkata',
-      'Australia/Sydney'
-    ];
-    
-    const now = new Date();
-    const timezoneOptions = [];
-    
-    // Helper function to get timezone info
-    const getTimezoneInfo = (tz: string) => {
-      try {
-        const date = new Date();
-        
-        // Get the timezone offset in minutes
-        const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
-        const tzDate = new Date(date.toLocaleString('en-US', { timeZone: tz }));
-        const offsetMinutes = (utcDate.getTime() - tzDate.getTime()) / (1000 * 60);
-        
-        // Format offset as GMT+/-X:XX
-        const hours = Math.floor(Math.abs(offsetMinutes) / 60);
-        const minutes = Math.abs(offsetMinutes) % 60;
-        const sign = offsetMinutes <= 0 ? '+' : '-';
-        const offsetString = `GMT${sign}${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-        
-        // Get timezone name/abbreviation
-        let displayName = tz.split('/').pop()?.replace(/_/g, ' ') || tz;
-        
-        // Special cases for better display names
-        const specialNames: Record<string, string> = {
-          'America/New_York': 'Eastern Time',
-          'America/Chicago': 'Central Time',
-          'America/Denver': 'Mountain Time', 
-          'America/Los_Angeles': 'Pacific Time',
-          'Europe/London': 'London Time',
-          'Europe/Paris': 'Central European Time',
-          'Europe/Berlin': 'Central European Time',
-          'Asia/Tokyo': 'Japan Standard Time',
-          'Asia/Shanghai': 'China Standard Time',
-          'Asia/Kolkata': 'India Standard Time',
-          'Australia/Sydney': 'Australian Eastern Time',
-          'UTC': 'Coordinated Universal Time'
-        };
-        
-        if (specialNames[tz]) {
-          displayName = specialNames[tz];
-        }
-        
-        return {
-          value: tz,
-          label: `${displayName} (${offsetString})`,
-          offset: offsetMinutes,
-          isPopular: popularTimezones.includes(tz)
-        };
-      } catch (error) {
-        return null;
-      }
-    };
-    
-    // Process all timezones
-    const allTimezones = supportedTimezones
+    // Process curated timezones and sort by offset
+    const timezoneOptions = curatedTimezones
       .map(tz => getTimezoneInfo(tz))
       .filter(Boolean)
       .sort((a, b) => {
-        // Sort by popularity first, then by offset, then by name
-        if (a!.isPopular && !b!.isPopular) return -1;
-        if (!a!.isPopular && b!.isPopular) return 1;
+        // Sort by offset first, then by name
         if (a!.offset !== b!.offset) return a!.offset - b!.offset;
         return a!.label.localeCompare(b!.label);
       });
     
-    return allTimezones as { value: string; label: string; offset: number }[];
+    return timezoneOptions as { value: string; label: string; offset: number }[];
     
   } catch (error) {
     console.error('Failed to generate timezone options:', error);
     
-    // Fallback to hardcoded popular timezones
+    // Fallback to minimal hardcoded list
     return [
       { value: 'UTC', label: 'UTC (GMT+00:00)', offset: 0 },
-      { value: 'America/New_York', label: 'Eastern Time (GMT-05:00)', offset: 300 },
-      { value: 'America/Chicago', label: 'Central Time (GMT-06:00)', offset: 360 },
-      { value: 'America/Denver', label: 'Mountain Time (GMT-07:00)', offset: 420 },
-      { value: 'America/Los_Angeles', label: 'Pacific Time (GMT-08:00)', offset: 480 },
-      { value: 'Europe/London', label: 'London Time (GMT+00:00)', offset: 0 },
-      { value: 'Europe/Paris', label: 'Central European Time (GMT+01:00)', offset: -60 },
-      { value: 'Asia/Tokyo', label: 'Japan Standard Time (GMT+09:00)', offset: -540 },
-      { value: 'Asia/Shanghai', label: 'China Standard Time (GMT+08:00)', offset: -480 },
-      { value: 'Australia/Sydney', label: 'Australian Eastern Time (GMT+11:00)', offset: -660 },
+      { value: 'America/New_York', label: 'Eastern Time (US) (GMT-05:00)', offset: 300 },
+      { value: 'America/Chicago', label: 'Central Time (US) (GMT-06:00)', offset: 360 },
+      { value: 'America/Denver', label: 'Mountain Time (US) (GMT-07:00)', offset: 420 },
+      { value: 'America/Los_Angeles', label: 'Pacific Time (US) (GMT-08:00)', offset: 480 },
+      { value: 'Europe/London', label: 'London (GMT+00:00)', offset: 0 },
+      { value: 'Europe/Paris', label: 'Paris (GMT+01:00)', offset: -60 },
+      { value: 'Asia/Tokyo', label: 'Tokyo (GMT+09:00)', offset: -540 },
+      { value: 'Asia/Shanghai', label: 'Beijing/Shanghai (GMT+08:00)', offset: -480 },
+      { value: 'Australia/Sydney', label: 'Sydney (GMT+11:00)', offset: -660 },
     ];
   }
 };

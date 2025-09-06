@@ -10,21 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Save, Settings, Volume2, Globe, Bell } from "lucide-react"
 import { apiService } from "@/lib/api"
 import { validateSystemPrompt } from "@/schemas/auth"
+import { generateTimezoneOptions } from "@/utils/timezone"
 import type { PreferencesFormData } from "@/schemas/auth"
 import type { UserPreferencesResponse } from "@/types"
 
-const TIMEZONE_OPTIONS = [
-  { value: 'UTC', label: 'UTC' },
-  { value: 'America/New_York', label: 'Eastern Time' },
-  { value: 'America/Chicago', label: 'Central Time' },
-  { value: 'America/Denver', label: 'Mountain Time' },
-  { value: 'America/Los_Angeles', label: 'Pacific Time' },
-  { value: 'Europe/London', label: 'London Time' },
-  { value: 'Europe/Paris', label: 'Central European Time' },
-  { value: 'Asia/Tokyo', label: 'Japan Standard Time' },
-  { value: 'Asia/Shanghai', label: 'China Standard Time' },
-  { value: 'Australia/Sydney', label: 'Australian Eastern Time' },
-]
+const TIMEZONE_OPTIONS = generateTimezoneOptions()
 
 const LANGUAGE_OPTIONS = [
   { value: 'en', label: 'English' },
