@@ -2,7 +2,6 @@
 
 import {
   Menu,
-  Bell,
   User,
   Heart,
   Search,
@@ -58,9 +57,12 @@ export default function Header({ sidebarOpen, setSidebarOpen, searchQuery, setSe
         </Button>
 
         <div className="hidden lg:block">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+          <button 
+            onClick={() => setActiveSection('home')}
+            className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent hover:opacity-80 transition-opacity duration-200 cursor-pointer"
+          >
             CallCat
-          </h1>
+          </button>
         </div>
       </div>
 
@@ -80,30 +82,6 @@ export default function Header({ sidebarOpen, setSidebarOpen, searchQuery, setSe
 
       {/* Right Section */}
       <div className="flex items-center gap-2">
-        {/* Notifications */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative hover:bg-purple-100 transition-colors duration-200">
-              <Bell className="h-5 w-5 text-purple-600" />
-              <span className="absolute top-0 right-0 h-2 w-2 bg-pink-500 rounded-full animate-pulse"></span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>
-              <Bell className="h-4 w-4 mr-2" />
-              New call scheduled
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Bell className="h-4 w-4 mr-2" />
-              Call completed successfully
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Bell className="h-4 w-4 mr-2" />
-              System update available
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

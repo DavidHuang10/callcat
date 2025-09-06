@@ -6,7 +6,7 @@ import { extractCallDuration, formatDuration } from '@/utils/duration'
 export interface DashboardStats {
   totalCallsThisMonth: number
   successRate: number
-  avgCallDuration: string
+  totalTimeSaved: string
   loading: boolean
   error: string | null
 }
@@ -15,7 +15,7 @@ export function useDashboardStats() {
   const [stats, setStats] = useState<DashboardStats>({
     totalCallsThisMonth: 0,
     successRate: 0,
-    avgCallDuration: '0m 0s',
+    totalTimeSaved: '0m 0s',
     loading: true,
     error: null
   })
@@ -57,7 +57,7 @@ export function useDashboardStats() {
           ? Math.round((successfulCalls.length / totalAttemptedCalls) * 100)
           : 0
 
-        // Calculate average call duration from real data
+        // Calculate total time saved from successful calls
         const durations = thisMonthCompleted
           .filter(call => call.dialSuccessful === true)
           .map(call => {
@@ -67,14 +67,14 @@ export function useDashboardStats() {
           })
           .filter(duration => duration > 0)
         
-        const avgCallDuration = durations.length > 0
-          ? formatDuration(Math.round(durations.reduce((sum, duration) => sum + duration, 0) / durations.length))
+        const totalTimeSaved = durations.length > 0
+          ? formatDuration(durations.reduce((sum, duration) => sum + duration, 0))
           : '0m 0s'
 
         setStats({
           totalCallsThisMonth,
           successRate,
-          avgCallDuration,
+          totalTimeSaved,
           loading: false,
           error: null
         })

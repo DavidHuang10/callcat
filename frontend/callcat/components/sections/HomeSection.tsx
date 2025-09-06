@@ -59,7 +59,7 @@ export default function HomeSection({
   const {
     totalCallsThisMonth,
     successRate,
-    avgCallDuration,
+    totalTimeSaved,
     loading: statsLoading,
     error: statsError
   } = useDashboardStats()
@@ -149,9 +149,9 @@ export default function HomeSection({
       bgColor: "bg-green-50",
     },
     {
-      title: "Avg Duration",
-      value: statsLoading ? "..." : avgCallDuration,
-      subtitle: "Average call length",
+      title: "Time Saved",
+      value: statsLoading ? "..." : totalTimeSaved,
+      subtitle: "Total time from successful calls",
       icon: Clock,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
