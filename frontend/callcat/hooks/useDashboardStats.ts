@@ -59,6 +59,7 @@ export function useDashboardStats() {
 
         // Calculate average call duration from real data
         const durations = thisMonthCompleted
+          .filter(call => call.dialSuccessful === true)
           .map(call => {
             // Use scheduledFor as fallback for callAt (same logic as CallCard)
             const actualCallAt = call.callAt || call.scheduledFor

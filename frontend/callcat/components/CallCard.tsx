@@ -125,8 +125,15 @@ export default function CallCard({
   const scheduledDate = call.scheduledFor ? formatTimestamp(call.scheduledFor) : null
   
   // Get call timing data for completed calls
-  const callTiming = call.status === 'COMPLETED' 
-    ? formatCallTiming(call.callAt, call.completedAt, call.durationSec, call.retellCallData, call.scheduledFor)
+  // If dial was unsuccessful (false), we do not want to show duration
+  const callTiming = call.status === 'COMPLETED'
+    ? formatCallTiming(
+        call.callAt,
+        call.completedAt,
+        call.dialSuccessful === null ? 0 : call.durationSec,
+        call.dialSuccessful === null ? undefined : call.retellCallData,
+        call.scheduledFor
+      )
     : null
   
   // Check if prompt is long enough to need expansion (more than ~100 chars or 2 lines)
@@ -187,7 +194,7 @@ export default function CallCard({
               <p className="text-xs text-gray-600 truncate">{formatPhoneNumber(call.phoneNumber)}</p>
             </div>
           </div>
-          <Badge className={`${statusConfig.color} font-medium px-3 py-1.5 text-xs flex-shrink-0 ml-2 rounded-full shadow-sm`}>
+          <Badge variant="outline" className={`${statusConfig.color} font-medium px-3 py-1.5 text-xs flex-shrink-0 ml-2 rounded-full shadow-sm`}>
             <span className="mr-1">{statusConfig.icon}</span>
             {statusConfig.label}
           </Badge>
@@ -214,7 +221,7 @@ export default function CallCard({
         </div>
 
         {/* Metadata Section */}
-        {call.status === 'COMPLETED' && callTiming && callTiming.hasTimingData ? (
+        {call.status === 'COMPLETED' && callTiming && callTiming.hasTimingData && call.dialSuccessful === true ? (
           // 3-column layout for completed calls with duration
           <div className="grid grid-cols-3 gap-2 text-xs text-gray-600 mb-3">
             <div className="flex items-center gap-1 truncate">

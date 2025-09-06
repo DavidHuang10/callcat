@@ -69,11 +69,7 @@ export default function HomeSection({
   const [callToDelete, setCallToDelete] = useState<CallResponse | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Pagination transition states
-  const [scheduledTransitioning, setScheduledTransitioning] = useState(false)
-  const [completedTransitioning, setCompletedTransitioning] = useState(false)
-  const [previousScheduledCalls, setPreviousScheduledCalls] = useState<CallResponse[]>([])
-  const [previousCompletedCalls, setPreviousCompletedCalls] = useState<CallResponse[]>([])
+  // Pagination simplified: no transition/fade state
 
   // Filter calls by search query if provided
   const allFilteredScheduledCalls = scheduledCalls.filter(call => 
@@ -99,37 +95,15 @@ export default function HomeSection({
   const endIndexCompleted = startIndexCompleted + 6
   const filteredCompletedCalls = allFilteredCompletedCalls.slice(startIndexCompleted, endIndexCompleted)
 
-  // Update previous calls when new data arrives and not transitioning
-  if (!scheduledTransitioning && filteredScheduledCalls.length > 0) {
-    if (JSON.stringify(previousScheduledCalls) !== JSON.stringify(filteredScheduledCalls)) {
-      setPreviousScheduledCalls(filteredScheduledCalls)
-    }
-  }
-  if (!completedTransitioning && filteredCompletedCalls.length > 0) {
-    if (JSON.stringify(previousCompletedCalls) !== JSON.stringify(filteredCompletedCalls)) {
-      setPreviousCompletedCalls(filteredCompletedCalls)
-    }
-  }
+  // No transition buffering of previous calls
 
-  // Handle pagination with smooth transitions
+  // Handle pagination (no fade/transition)
   const handleScheduledPageChange = (newPage: number) => {
-    setScheduledTransitioning(true)
     setScheduledPage(newPage)
-    
-    // Clear transitioning after a brief moment to allow new content to load
-    setTimeout(() => {
-      setScheduledTransitioning(false)
-    }, 300)
   }
 
   const handleCompletedPageChange = (newPage: number) => {
-    setCompletedTransitioning(true)
     setCompletedPage(newPage)
-    
-    // Clear transitioning after a brief moment to allow new content to load
-    setTimeout(() => {
-      setCompletedTransitioning(false)
-    }, 300)
   }
 
   // Handle opening delete confirmation dialog
@@ -247,7 +221,7 @@ export default function HomeSection({
                   variant="ghost"
                   size="sm"
                   onClick={() => handleScheduledPageChange(scheduledPage - 1)}
-                  disabled={scheduledPage === 0 || scheduledLoading || scheduledTransitioning}
+                  disabled={scheduledPage === 0 || scheduledLoading}
                   className="h-8 w-8 p-0 hover:bg-gray-100"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -261,7 +235,7 @@ export default function HomeSection({
                   variant="ghost"
                   size="sm"
                   onClick={() => handleScheduledPageChange(scheduledPage + 1)}
-                  disabled={endIndexScheduled >= allFilteredScheduledCalls.length || scheduledLoading || scheduledTransitioning}
+                  disabled={endIndexScheduled >= allFilteredScheduledCalls.length || scheduledLoading}
                   className="h-8 w-8 p-0 hover:bg-gray-100"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -304,12 +278,10 @@ export default function HomeSection({
 
         {!scheduledLoading && !scheduledError && (
           <>
-            {(filteredScheduledCalls.length > 0 || scheduledTransitioning) ? (
+            {(filteredScheduledCalls.length > 0) ? (
               <>
-                <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 transition-opacity duration-300 ${
-                  scheduledTransitioning ? 'opacity-60' : 'opacity-100'
-                }`}>
-                  {(scheduledTransitioning ? previousScheduledCalls : filteredScheduledCalls).map((call) => (
+                <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4`}>
+                  {filteredScheduledCalls.map((call) => (
                     <CallCard
                       key={call.callId}
                       call={call}
@@ -357,7 +329,7 @@ export default function HomeSection({
                   variant="ghost"
                   size="sm"
                   onClick={() => handleCompletedPageChange(completedPage - 1)}
-                  disabled={completedPage === 0 || completedLoading || completedTransitioning}
+                  disabled={completedPage === 0 || completedLoading}
                   className="h-8 w-8 p-0 hover:bg-gray-100"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -371,7 +343,7 @@ export default function HomeSection({
                   variant="ghost"
                   size="sm"
                   onClick={() => handleCompletedPageChange(completedPage + 1)}
-                  disabled={endIndexCompleted >= allFilteredCompletedCalls.length || completedLoading || completedTransitioning}
+                  disabled={endIndexCompleted >= allFilteredCompletedCalls.length || completedLoading}
                   className="h-8 w-8 p-0 hover:bg-gray-100"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -406,12 +378,10 @@ export default function HomeSection({
 
         {!completedLoading && !completedError && (
           <>
-            {(filteredCompletedCalls.length > 0 || completedTransitioning) ? (
+            {(filteredCompletedCalls.length > 0) ? (
               <>
-                <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 transition-opacity duration-300 ${
-                  completedTransitioning ? 'opacity-60' : 'opacity-100'
-                }`}>
-                  {(completedTransitioning ? previousCompletedCalls : filteredCompletedCalls).map((call) => (
+                <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4`}>
+                  {filteredCompletedCalls.map((call) => (
                     <CallCard
                       key={call.callId}
                       call={call}
