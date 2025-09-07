@@ -153,10 +153,13 @@ export function PreferencesForm() {
             id="systemPrompt"
             value={formData.systemPrompt}
             onChange={(e) => handleFormChange('systemPrompt', e.target.value)}
-            placeholder="Customize how the AI behaves during calls (optional)..."
+            placeholder="Customize how the AI behaves during calls. Include your name, phone number, email, and any other personal information the AI should know about you..."
             className={`min-h-[100px] resize-none ${errors.systemPrompt ? 'border-red-300' : ''}`}
             maxLength={1000}
           />
+          <p className="text-xs text-gray-600 mt-1">
+            💡 Tip: Include your personal details (name, phone, email) so the AI can identify itself properly during calls
+          </p>
           <div className="flex justify-between text-xs text-gray-500">
             <span>
               {errors.systemPrompt && (
