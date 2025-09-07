@@ -100,7 +100,14 @@ export function useCallFormState(onCallCreated?: () => void) {
         const preferences = await apiService.getUserPreferences()
         if (preferences.timezone) {
           finalTimezone = preferences.timezone
-          setState(prev => ({ ...prev, selectedTimezone: preferences.timezone! }))
+          setState(prev => ({ 
+            ...prev, 
+            selectedTimezone: preferences.timezone!,
+            formData: {
+              ...prev.formData,
+              voiceId: preferences.voiceId || 'default'
+            }
+          }))
         }
       } catch (error) {
         console.warn('Failed to load user preferences:', error)

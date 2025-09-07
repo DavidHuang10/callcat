@@ -26,10 +26,9 @@ const LANGUAGE_OPTIONS = [
 ]
 
 const VOICE_OPTIONS = [
-  { value: 'voice_id_123', label: 'Default Voice' },
-  { value: 'voice_professional', label: 'Professional' },
-  { value: 'voice_friendly', label: 'Friendly' },
-  { value: 'voice_formal', label: 'Formal' },
+  { value: 'default', label: 'Default' },
+  { value: 'friendly', label: 'Friendly' },
+  { value: 'professional', label: 'Professional' },
 ]
 
 export function PreferencesForm() {
@@ -39,7 +38,7 @@ export function PreferencesForm() {
     systemPrompt: '',
     timezone: 'UTC',
     emailNotifications: true,
-    voiceId: 'voice_id_123',
+    voiceId: 'default',
     defaultLanguage: 'en'
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -56,7 +55,7 @@ export function PreferencesForm() {
         systemPrompt: userPreferences.systemPrompt || '',
         timezone: userPreferences.timezone || 'UTC',
         emailNotifications: userPreferences.emailNotifications,
-        voiceId: userPreferences.voiceId || 'voice_id_123',
+        voiceId: userPreferences.voiceId || 'default',
         defaultLanguage: userPreferences.defaultLanguage || 'en'
       })
     } catch (error) {

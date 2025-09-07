@@ -137,7 +137,7 @@ public class RetellService {
         dynamicVariables.put("time_info", timeInfo);
         String langInfo = "The current language is: " + callRecord.getAiLanguage();
         dynamicVariables.put("ai_language", langInfo);
-       
+        dynamicVariables.put("voice_id", callRecord.getVoiceId());
        
         requestBody.put("retell_llm_dynamic_variables", dynamicVariables);
         
