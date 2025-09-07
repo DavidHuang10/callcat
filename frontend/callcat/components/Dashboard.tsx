@@ -1,6 +1,7 @@
 "use client"
 
 import { useDashboard } from "@/hooks/useDashboard"
+import { usePathname, useRouter } from "next/navigation"
 import Header from "@/components/Header"
 import Sidebar from "@/components/Sidebar"
 import HomeSection from "@/components/sections/HomeSection"
@@ -8,24 +9,38 @@ import MakeCallSection from "@/components/sections/MakeCallSection"
 import { ProfileSection } from "@/components/sections/ProfileSection"
 
 export default function CallCatDashboard() {
+  const pathname = usePathname()
+  const router = useRouter()
   const {
-    activeSection,
     sidebarOpen,
     sidebarCollapsed,
     expandedTranscripts,
     searchQuery,
-    rescheduleData,
-    editData,
-    setActiveSection,
     setSidebarOpen,
     toggleExpandedTranscript,
     setSearchQuery,
     toggleSidebarCollapsed,
-    setRescheduleData,
-    clearRescheduleData,
-    setEditData,
-    clearEditData,
   } = useDashboard()
+
+  // Determine active section from pathname
+  const getActiveSection = () => {
+    if (pathname === '/make-call') return 'make-call'
+    if (pathname === '/profile') return 'profile'
+    return 'home'
+  }
+
+  const activeSection = getActiveSection()
+  
+  const setActiveSection = (section: string) => {
+    // Navigate to the appropriate route using Next.js router
+    if (section === 'make-call') {
+      router.push('/make-call')
+    } else if (section === 'profile') {
+      router.push('/profile')
+    } else {
+      router.push('/')
+    }
+  }
 
   const renderSection = () => {
     switch (activeSection) {
@@ -36,36 +51,24 @@ export default function CallCatDashboard() {
             expandedTranscripts={expandedTranscripts}
             toggleExpandedTranscript={toggleExpandedTranscript}
             setActiveSection={setActiveSection}
-            setRescheduleData={setRescheduleData}
-            setEditData={setEditData}
           />
         )
       case "make-call":
         return (
           <MakeCallSection 
-            onCallCreated={() => setActiveSection("home")}
-            rescheduleData={rescheduleData}
-            editData={editData}
-            clearRescheduleData={clearRescheduleData}
-            clearEditData={clearEditData}
+            onCallCreated={() => router.push('/')}
           />
         )
-      case "active":
-        return (
-          <div className="p-4 lg:p-6">
-            <h1 className="text-2xl font-bold text-gray-800 mb-4">Active Calls</h1>
-            <p className="text-gray-600">Active calls will be displayed here...</p>
-          </div>
-        )
-
       case "profile":
         return <ProfileSection />
       default:
         return (
-          <div className="p-4 lg:p-6">
-            <h1 className="text-2xl font-bold text-gray-800 mb-4">Dashboard</h1>
-            <p className="text-gray-600">Select a section from the sidebar...</p>
-          </div>
+          <HomeSection
+            searchQuery={searchQuery}
+            expandedTranscripts={expandedTranscripts}
+            toggleExpandedTranscript={toggleExpandedTranscript}
+            setActiveSection={setActiveSection}
+          />
         )
     }
   }
@@ -95,9 +98,18 @@ export default function CallCatDashboard() {
         <main 
           className={`flex-1 overflow-y-auto transition-all duration-300 ${
             sidebarCollapsed ? 'ml-20' : 'ml-64'
-          }`}
+          } flex flex-col`}
         >
-          {renderSection()}
+          <div className="flex-1">
+            {renderSection()}
+          </div>
+          
+          {/* Feedback Footer */}
+          <footer className="p-4 border-t border-purple-200 bg-white/50 backdrop-blur-sm">
+            <div className="text-center text-sm text-gray-600">
+              Got feedback? Email me at polarpenguins24@gmail.com
+            </div>
+          </footer>
         </main>
       </div>
     </div>

@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { CallResponse, RescheduleData } from "@/types"
+import { CallResponse, RescheduleData, EditData } from "@/types"
 import { useCallDetails } from "@/hooks/useCallDetails"
 import { hasAvailableTranscript, TranscriptMessage } from "@/utils/transcript"
 import { formatCallTiming } from "@/utils/duration"
@@ -157,7 +157,20 @@ export default function CallCard({
     if (onEdit) {
       onEdit(call.callId)
     } else {
-      setActiveSection("make-call")
+      // Store edit data in localStorage for cross-route access
+      const editData: EditData = {
+        originalCallId: call.callId,
+        calleeName: call.calleeName,
+        phoneNumber: call.phoneNumber,
+        subject: call.subject,
+        prompt: call.prompt,
+        scheduledFor: call.scheduledFor,
+        aiLanguage: call.aiLanguage || 'en'
+      }
+      localStorage.setItem('editData', JSON.stringify(editData))
+      
+      // Navigate to make-call page
+      window.location.href = '/make-call'
     }
   }
 
@@ -180,8 +193,25 @@ export default function CallCard({
         aiLanguage: call.aiLanguage || 'en'
       }
       setRescheduleData(rescheduleData)
+    } else {
+      // Store reschedule data in localStorage for cross-route access
+      const rescheduleData: RescheduleData = {
+        callId: call.callId,
+        calleeName: call.calleeName,
+        phoneNumber: call.phoneNumber,
+        subject: call.subject,
+        prompt: call.prompt,
+        aiLanguage: call.aiLanguage || 'en'
+      }
+      localStorage.setItem('rescheduleData', JSON.stringify(rescheduleData))
     }
-    setActiveSection("make-call")
+    
+    // Navigate to make-call page
+    if (!setRescheduleData) {
+      window.location.href = '/make-call'
+    } else {
+      setActiveSection("make-call")
+    }
   }
 
   return (

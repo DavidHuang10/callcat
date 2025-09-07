@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { DashboardState, RescheduleData, EditData } from "@/types"
+import { DashboardState } from "@/types"
 
 export function useDashboard() {
   const [state, setState] = useState<DashboardState>({
@@ -11,8 +11,6 @@ export function useDashboard() {
     scheduledPage: 0,
     completedPage: 0,
     searchQuery: "",
-    rescheduleData: null,
-    editData: null,
   })
 
   useEffect(() => {
@@ -50,7 +48,6 @@ export function useDashboard() {
     setState(prev => ({ ...prev, sidebarOpen: open }))
   }
 
-
   const toggleExpandedTranscript = (id: string) => {
     setState(prev => {
       const newExpandedTranscripts = new Set(prev.expandedTranscripts)
@@ -84,21 +81,6 @@ export function useDashboard() {
     setSidebarCollapsed(!state.sidebarCollapsed)
   }
 
-  const setRescheduleData = (data: RescheduleData | null) => {
-    setState(prev => ({ ...prev, rescheduleData: data }))
-  }
-
-  const clearRescheduleData = () => {
-    setState(prev => ({ ...prev, rescheduleData: null }))
-  }
-
-  const setEditData = (data: EditData | null) => {
-    setState(prev => ({ ...prev, editData: data }))
-  }
-
-  const clearEditData = () => {
-    setState(prev => ({ ...prev, editData: null }))
-  }
 
   return {
     ...state,
@@ -110,9 +92,5 @@ export function useDashboard() {
     setSearchQuery,
     setSidebarCollapsed,
     toggleSidebarCollapsed,
-    setRescheduleData,
-    clearRescheduleData,
-    setEditData,
-    clearEditData,
   }
 }

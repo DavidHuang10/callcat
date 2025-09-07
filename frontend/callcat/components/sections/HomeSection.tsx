@@ -4,13 +4,11 @@ import {
   Phone,
   Clock,
   CheckCircle,
-  Activity,
   Coffee,
   Plus,
-  Timer,
   TrendingUp,
 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import CallCard from "@/components/CallCard"
@@ -19,7 +17,7 @@ import { useCallsForDashboard } from "@/hooks/useCallsForDashboard"
 import { useDashboardStats } from "@/hooks/useDashboardStats"
 import { useAuth } from "@/contexts/AuthContext"
 import { apiService } from "@/lib/api"
-import { CallResponse, RescheduleData, EditData } from "@/types"
+import { CallResponse } from "@/types"
 import { useState } from "react"
 
 interface HomeSectionProps {
@@ -27,17 +25,13 @@ interface HomeSectionProps {
   expandedTranscripts: Set<string>
   toggleExpandedTranscript: (id: string) => void
   setActiveSection: (section: string) => void
-  setRescheduleData: (data: RescheduleData | null) => void
-  setEditData: (data: EditData | null) => void
 }
 
 export default function HomeSection({ 
   searchQuery, 
   expandedTranscripts, 
   toggleExpandedTranscript, 
-  setActiveSection,
-  setRescheduleData,
-  setEditData
+  setActiveSection
 }: HomeSectionProps) {
   const { user } = useAuth()
   const {
@@ -136,15 +130,16 @@ export default function HomeSection({
   const handleEditCall = (callId: string) => {
     const call = scheduledCalls.find(c => c.callId === callId)
     if (call) {
-      const editData: EditData = {
+      const editData = {
         originalCallId: call.callId,
         calleeName: call.calleeName,
         phoneNumber: call.phoneNumber,
         subject: call.subject,
         prompt: call.prompt,
-        scheduledFor: call.scheduledFor
+        scheduledFor: call.scheduledFor,
+        aiLanguage: call.aiLanguage || 'en'
       }
-      setEditData(editData)
+      localStorage.setItem('editData', JSON.stringify(editData))
       setActiveSection("make-call")
     }
   }
@@ -307,7 +302,6 @@ export default function HomeSection({
                       expandedTranscripts={expandedTranscripts}
                       toggleExpandedTranscript={toggleExpandedTranscript}
                       setActiveSection={setActiveSection}
-                      setRescheduleData={setRescheduleData}
                       onEdit={handleEditCall}
                       onDeleteClick={handleDeleteClick}
                     />
@@ -408,7 +402,6 @@ export default function HomeSection({
                       expandedTranscripts={expandedTranscripts}
                       toggleExpandedTranscript={toggleExpandedTranscript}
                       setActiveSection={setActiveSection}
-                      setRescheduleData={setRescheduleData}
                       onEdit={handleEditCall}
                       onDeleteClick={handleDeleteClick}
                     />

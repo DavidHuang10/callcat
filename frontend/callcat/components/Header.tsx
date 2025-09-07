@@ -3,7 +3,6 @@
 import {
   Menu,
   User,
-  Heart,
   Search,
   LogOut,
 } from "lucide-react"
@@ -18,6 +17,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/contexts/AuthContext"
+import Link from "next/link"
 
 interface HeaderProps {
   sidebarOpen: boolean
@@ -101,11 +101,6 @@ export default function Header({ sidebarOpen, setSidebarOpen, searchQuery, setSe
             <DropdownMenuItem onClick={() => setActiveSection('profile')}>
               <User className="h-4 w-4 mr-2" />
               Profile
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <Heart className="h-4 w-4 mr-2" />
-              Feedback
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>

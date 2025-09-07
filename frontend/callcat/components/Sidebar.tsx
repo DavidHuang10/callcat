@@ -1,10 +1,11 @@
 "use client"
 
 import { useState } from "react"
+import { usePathname } from "next/navigation"
+import Link from "next/link"
 import {
   Home,
   Phone,
-  PhoneCall,
   User,
   ChevronLeft,
   ChevronRight,
@@ -32,7 +33,6 @@ export default function Sidebar({
   const navigationItems = [
     { id: "home", label: "Dashboard", icon: Home },
     { id: "make-call", label: "Make a Call", icon: Phone },
-    { id: "active", label: "Active Calls", icon: PhoneCall },
     { id: "profile", label: "Profile", icon: User },
   ]
 

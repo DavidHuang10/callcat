@@ -54,8 +54,6 @@ export interface DashboardState {
   scheduledPage: number;
   completedPage: number;
   searchQuery: string;
-  rescheduleData: RescheduleData | null;
-  editData: EditData | null;
 }
 
 // Legacy interface for mock data (can be removed later)

@@ -12,7 +12,6 @@ import {
   getTimezoneAwareDefaultTime,
   convertUTCToLocal
 } from "@/utils/timezone"
-
 interface CallFormState {
   formData: CallRequest
   selectedTimezone: string
@@ -26,7 +25,28 @@ interface CallFormState {
   originalScheduledFor: number | null  // Store original scheduled time for edit mode
 }
 
-export function useCallFormState(onCallCreated?: () => void, rescheduleData?: RescheduleData | null, editData?: EditData | null, clearRescheduleData?: () => void, clearEditData?: () => void) {
+export function useCallFormState(onCallCreated?: () => void) {
+  // Get reschedule/edit data from localStorage
+  const getStoredData = () => {
+    try {
+      const rescheduleData = localStorage.getItem('rescheduleData')
+      const editData = localStorage.getItem('editData')
+      
+      if (editData) {
+        return { editData: JSON.parse(editData) as EditData, rescheduleData: null }
+      }
+      if (rescheduleData) {
+        return { rescheduleData: JSON.parse(rescheduleData) as RescheduleData, editData: null }
+      }
+      return { rescheduleData: null, editData: null }
+    } catch (error) {
+      console.warn('Failed to parse stored call data:', error)
+      return { rescheduleData: null, editData: null }
+    }
+  }
+
+  const { rescheduleData, editData } = getStoredData()
+
   const [state, setState] = useState<CallFormState>({
     formData: editData ? {
       calleeName: editData.calleeName,
@@ -61,15 +81,15 @@ export function useCallFormState(onCallCreated?: () => void, rescheduleData?: Re
   // Get minimum date/time for validation based on selected timezone
   const { minDate, minTime } = getMinimumDateTime(state.selectedTimezone)
 
-  // Clear reschedule/edit data after it has been used for initialization
+  // Clear localStorage data after it has been used for initialization
   useEffect(() => {
-    if (rescheduleData && clearRescheduleData) {
-      clearRescheduleData()
+    if (rescheduleData) {
+      localStorage.removeItem('rescheduleData')
     }
-    if (editData && clearEditData) {
-      clearEditData()
+    if (editData) {
+      localStorage.removeItem('editData')
     }
-  }, [rescheduleData, clearRescheduleData, editData, clearEditData])
+  }, [rescheduleData, editData])
 
   // Load user preferences and initialize default time on mount
   useEffect(() => {

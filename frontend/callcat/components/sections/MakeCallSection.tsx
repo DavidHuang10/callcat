@@ -7,17 +7,11 @@ import CallFormFields from "@/components/forms/CallFormFields"
 import CallSchedulingForm from "@/components/forms/CallSchedulingForm"
 import TimezoneSelector from "@/components/forms/TimezoneSelector"
 import { useCallFormState } from "@/hooks/useCallFormState"
-import { RescheduleData, EditData } from "@/types"
-
 interface MakeCallSectionProps {
   onCallCreated?: () => void
-  rescheduleData?: RescheduleData | null
-  editData?: EditData | null
-  clearRescheduleData?: () => void
-  clearEditData?: () => void
 }
 
-export default function MakeCallSection({ onCallCreated, rescheduleData, editData, clearRescheduleData, clearEditData }: MakeCallSectionProps) {
+export default function MakeCallSection({ onCallCreated }: MakeCallSectionProps) {
   const {
     formData,
     selectedTimezone,
@@ -36,20 +30,18 @@ export default function MakeCallSection({ onCallCreated, rescheduleData, editDat
     handleTimezoneChange,
     clearDateTimeError,
     handleSubmit
-  } = useCallFormState(onCallCreated, rescheduleData, editData, clearRescheduleData, clearEditData)
+  } = useCallFormState(onCallCreated)
 
   return (
     <div className="space-y-6 p-4 lg:p-6">
       <div className="text-center mb-8">
         <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
-          {originalCallId ? 'Edit Call' : rescheduleData ? 'Reschedule Call' : 'Make a Call'}
+          {originalCallId ? 'Edit Call' : 'Make a Call'}
         </h1>
         <p className="text-gray-600 text-lg">
           {originalCallId
             ? 'Update your call details and timing'
-            : rescheduleData 
-              ? 'Update the details and set a new time for your call'
-              : 'Create a new AI-powered phone call - call now or schedule for later'
+            : 'Create a new AI-powered phone call - call now or schedule for later'
           }
         </p>
       </div>
@@ -142,7 +134,7 @@ export default function MakeCallSection({ onCallCreated, rescheduleData, editDat
                 ) : (
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    {originalCallId ? 'Update Call' : rescheduleData ? 'Update Call' : 'Schedule Call'}
+                    {originalCallId ? 'Update Call' : 'Schedule Call'}
                   </div>
                 )}
               </Button>
