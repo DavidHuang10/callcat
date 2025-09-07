@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import jakarta.annotation.PostConstruct;
 
 import java.time.LocalDate;
@@ -40,20 +41,25 @@ public class RetellService {
     private final ObjectMapper objectMapper;
     private final UserService userService;
     private final CallService callService;
+    private final HttpComponentsClientHttpRequestFactory httpRequestFactory;
     
-    public RetellService(UserService userService, CallService callService) {
+    public RetellService(UserService userService, CallService callService, HttpComponentsClientHttpRequestFactory httpRequestFactory) {
         this.objectMapper = new ObjectMapper();
         this.userService = userService;
         this.callService = callService;
+        this.httpRequestFactory = httpRequestFactory;
     }
     
     @PostConstruct
     private void initializeRestClient() {
         this.restClient = RestClient.builder()
+            .requestFactory(httpRequestFactory) // Use configured HTTP client with connection pooling
             .baseUrl(baseUrl)
             .defaultHeader("Authorization", "Bearer " + apiKey)
             .defaultHeader("Content-Type", "application/json")
             .build();
+            
+        logger.info("RestClient initialized with connection pooling - max 20 total connections, 10 per route");
     }
 
 

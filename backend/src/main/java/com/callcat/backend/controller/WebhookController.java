@@ -32,8 +32,20 @@ public class WebhookController {
             String event = payload.get("event").asText();
             JsonNode callInfo = payload.get("call");
             String providerId = callInfo.get("call_id").asText();
+            
+            // Try to get callId from metadata for better logging
+            String callId = "unknown";
+            try {
+                JsonNode metadata = callInfo.get("metadata");
+                if (metadata != null && metadata.has("callId")) {
+                    callId = metadata.get("callId").asText();
+                }
+            } catch (Exception e) {
+                // Metadata might not exist, that's okay
+            }
 
-            logger.info("Received Retell webhook for providerId {} with status {}", providerId, event);
+            logger.info("🔔 WEBHOOK [{}]: providerId={} | callId={} | event={}", 
+                       event.toUpperCase(), providerId, callId, event);
 
             switch (event) {
                 case "call_started":
@@ -70,7 +82,8 @@ public class WebhookController {
             // Start live transcript polling
             liveTranscriptService.startPolling(providerId);
             
-            logger.info("Updated call {} with provider ID {} and started live transcript polling", callRecord.getCallId(), providerId);
+            logger.info("✅ CALL STARTED: callId={} | providerId={} | dialSuccess=true | livePolling=STARTED", 
+                       callRecord.getCallId(), providerId);
         } catch (Exception e) {
             logger.error("Failed to update call status for provider ID {}", providerId, e);
         }
@@ -91,7 +104,8 @@ public class WebhookController {
             // Stop live transcript polling
             liveTranscriptService.stopPolling(providerId);
             
-            logger.info("Updated call {} (Provider: {}) to COMPLETED and stopped live transcript polling", callRecord.getCallId(), providerId);
+            logger.info("🏁 CALL ENDED: callId={} | providerId={} | status=COMPLETED | livePolling=STOPPED | endTime={}", 
+                       callRecord.getCallId(), providerId, endTimestamp);
         } catch (Exception e) {
             logger.error("Failed to process call end for provider ID {}", providerId, e);
         }
@@ -106,7 +120,8 @@ public class WebhookController {
             callRecord.setRetellCallData(objectMapper.writeValueAsString(callInfo));
             
             callService.saveCallRecord(callRecord);
-            logger.info("Updated call {} (Provider: {}) with analysis data", callRecord.getCallId(), providerId);
+            logger.info("📊 CALL ANALYZED: callId={} | providerId={} | analyzed=true", 
+                       callRecord.getCallId(), providerId);
         } catch (Exception e) {
             logger.error("Failed to process call analysis for provider ID {}", providerId, e);
         }

@@ -34,7 +34,8 @@ public class LiveTranscriptService {
             return;
         }
         
-        logger.info("Starting live transcript polling for providerId: {}", providerId);
+        logger.info("🎙️ LIVE POLLING STARTED: providerId={} | interval=3s | timeout=20min | activePolls={}", 
+                   providerId, activePolls.size() + 1);
         
         ScheduledFuture<?> pollingTask = executorService.scheduleAtFixedRate(
             () -> pollTranscript(providerId),
@@ -45,36 +46,48 @@ public class LiveTranscriptService {
         
         activePolls.put(providerId, pollingTask);
         
-        // Auto-stop after 10 minutes
+        // Auto-stop after 20 minutes (increased from 10)
         executorService.schedule(() -> {
             if (activePolls.containsKey(providerId)) {
-                logger.info("Auto-stopping polling for providerId {} after 10 minutes", providerId);
+                logger.warn("⏱️ TIMEOUT: Auto-stopping polling for providerId={} after 20 minutes | activePolls={}", 
+                           providerId, activePolls.size() - 1);
                 stopPolling(providerId);
             }
-        }, 10, TimeUnit.MINUTES);
+        }, 20, TimeUnit.MINUTES);
     }
     
     public void stopPolling(String providerId) {
         ScheduledFuture<?> pollingTask = activePolls.remove(providerId);
         if (pollingTask != null) {
             pollingTask.cancel(false);
-            logger.info("Stopped live transcript polling for providerId: {}", providerId);
+            logger.info("🛑 LIVE POLLING STOPPED: providerId={} | remainingActive={}", 
+                       providerId, activePolls.size());
+        } else {
+            logger.warn("⚠️ STOP POLLING FAILED: No active polling found for providerId={}", providerId);
         }
     }
     
     private void pollTranscript(String providerId) {
         try {
+            logger.debug("📡 POLLING: providerId={} | fetching from Retell API...", providerId);
             JsonNode callData = retellService.getCall(providerId);
             JsonNode transcriptNode = callData.get("transcript");
             
             if (transcriptNode != null && !transcriptNode.isNull()) {
                 String transcript = transcriptNode.asText();
                 if (transcript != null && !transcript.trim().isEmpty()) {
+                    logger.info("💬 TRANSCRIPT UPDATE: providerId={} | length={}chars | saved=true", 
+                               providerId, transcript.length());
                     transcriptService.updateLiveTranscript(providerId, transcript);
+                } else {
+                    logger.debug("📭 EMPTY TRANSCRIPT: providerId={} | transcript=null/empty", providerId);
                 }
+            } else {
+                logger.debug("📭 NO TRANSCRIPT NODE: providerId={} | response missing 'transcript' field", providerId);
             }
         } catch (Exception e) {
-            logger.error("Failed to poll transcript for providerId {}: {}", providerId, e.getMessage());
+            logger.error("❌ POLLING ERROR: providerId={} | error={} | continuing...", 
+                        providerId, e.getMessage());
             // Continue polling despite errors - let timeout handle persistent failures
         }
     }
