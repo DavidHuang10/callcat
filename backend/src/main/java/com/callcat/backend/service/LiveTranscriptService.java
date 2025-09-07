@@ -16,6 +16,9 @@ public class LiveTranscriptService {
     
     private static final Logger logger = LoggerFactory.getLogger(LiveTranscriptService.class);
     
+    // Feature toggle: Temporarily disabled because Retell doesn't provide transcript data until CALL_ANALYZED
+    private static final boolean LIVE_POLLING_ENABLED = false;
+    
     private final RetellService retellService;
     private final TranscriptService transcriptService;
     private final ScheduledExecutorService executorService;
@@ -29,6 +32,11 @@ public class LiveTranscriptService {
     }
     
     public void startPolling(String providerId) {
+        if (!LIVE_POLLING_ENABLED) {
+            logger.info("🚫 LIVE POLLING DISABLED: providerId={} | feature disabled until post-call transcript implementation", providerId);
+            return;
+        }
+        
         if (activePolls.containsKey(providerId)) {
             logger.warn("Polling already active for providerId: {}", providerId);
             return;
@@ -57,6 +65,11 @@ public class LiveTranscriptService {
     }
     
     public void stopPolling(String providerId) {
+        if (!LIVE_POLLING_ENABLED) {
+            logger.info("🚫 LIVE POLLING DISABLED: providerId={} | stop requested but feature is disabled", providerId);
+            return;
+        }
+        
         ScheduledFuture<?> pollingTask = activePolls.remove(providerId);
         if (pollingTask != null) {
             pollingTask.cancel(false);

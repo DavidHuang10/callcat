@@ -79,10 +79,10 @@ public class WebhookController {
             
             callService.saveCallRecord(callRecord);
             
-            // Start live transcript polling
-            liveTranscriptService.startPolling(providerId);
+            // Live transcript polling temporarily disabled (Retell doesn't provide transcript data until CALL_ANALYZED)
+            // liveTranscriptService.startPolling(providerId);
             
-            logger.info("✅ CALL STARTED: callId={} | providerId={} | dialSuccess=true | livePolling=STARTED", 
+            logger.info("✅ CALL STARTED: callId={} | providerId={} | dialSuccess=true", 
                        callRecord.getCallId(), providerId);
         } catch (Exception e) {
             logger.error("Failed to update call status for provider ID {}", providerId, e);
@@ -101,10 +101,10 @@ public class WebhookController {
             
             callService.saveCallRecord(callRecord);
             
-            // Stop live transcript polling
-            liveTranscriptService.stopPolling(providerId);
+            // Live transcript polling temporarily disabled (Retell doesn't provide transcript data until CALL_ANALYZED)
+            // liveTranscriptService.stopPolling(providerId);
             
-            logger.info("🏁 CALL ENDED: callId={} | providerId={} | status=COMPLETED | livePolling=STOPPED | endTime={}", 
+            logger.info("🏁 CALL ENDED: callId={} | providerId={} | status=COMPLETED | endTime={}", 
                        callRecord.getCallId(), providerId, endTimestamp);
         } catch (Exception e) {
             logger.error("Failed to process call end for provider ID {}", providerId, e);
