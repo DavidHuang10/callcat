@@ -30,6 +30,7 @@ export interface RescheduleData {
   phoneNumber: string;
   subject: string;
   prompt: string;
+  aiLanguage: string;
 }
 
 // Edit data interface - for delete + create pattern
@@ -40,6 +41,7 @@ export interface EditData {
   subject: string;
   prompt: string;
   scheduledFor?: number;
+  aiLanguage: string;
 }
 
 // Dashboard state management

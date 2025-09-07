@@ -350,8 +350,8 @@ export const getMinimumDateTime = (timezone?: string): { minDate: string; minTim
   const tz = timezone || getUserTimezone();
   const now = new Date();
   
-  // Add 5 minutes buffer to current time
-  const minDateTime = new Date(now.getTime() + 5 * 60 * 1000);
+  // Add 2 minutes buffer to current time
+  const minDateTime = new Date(now.getTime() + 2 * 60 * 1000);
   
   const { dateValue, timeValue } = convertUTCToLocal(minDateTime.getTime(), tz);
   
@@ -377,8 +377,8 @@ export const getDefaultDateTime = (timezone?: string): { dateValue: string; time
   const now = new Date();
   const defaultDateTime = new Date(now.getTime() + 60 * 60 * 1000);
   
-  // Ensure the time is at least 5 minutes in the future from actual current time
-  const minFutureTime = new Date(now.getTime() + 5 * 60 * 1000);
+  // Ensure the time is at least 2 minutes in the future from actual current time
+  const minFutureTime = new Date(now.getTime() + 2 * 60 * 1000);
   const finalDateTime = defaultDateTime > minFutureTime ? defaultDateTime : new Date(now.getTime() + 60 * 60 * 1000);
   
   const { dateValue, timeValue } = convertUTCToLocal(finalDateTime.getTime(), tz);

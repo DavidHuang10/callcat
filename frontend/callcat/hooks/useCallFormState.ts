@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { CallRequest, UserPreferencesResponse, RescheduleData, EditData } from "@/types"
 import apiService from "@/lib/api"
+import { DEFAULT_LANGUAGE } from "@/constants"
 import { 
   getUserTimezone, 
   convertLocalToUTC, 
@@ -31,17 +32,20 @@ export function useCallFormState(onCallCreated?: () => void, rescheduleData?: Re
       calleeName: editData.calleeName,
       phoneNumber: editData.phoneNumber,
       subject: editData.subject,
-      prompt: editData.prompt
+      prompt: editData.prompt,
+      aiLanguage: editData.aiLanguage
     } : rescheduleData ? {
       calleeName: rescheduleData.calleeName,
       phoneNumber: rescheduleData.phoneNumber,
       subject: rescheduleData.subject,
-      prompt: rescheduleData.prompt
+      prompt: rescheduleData.prompt,
+      aiLanguage: rescheduleData.aiLanguage
     } : {
       calleeName: "",
       phoneNumber: "",
       subject: "",
-      prompt: ""
+      prompt: "",
+      aiLanguage: DEFAULT_LANGUAGE
     },
     selectedTimezone: getUserTimezone(),
     dateValue: "",
@@ -208,6 +212,10 @@ export function useCallFormState(onCallCreated?: () => void, rescheduleData?: Re
       newErrors.prompt = "AI instructions are required"
     }
 
+    if (!state.formData.aiLanguage) {
+      newErrors.aiLanguage = "Language is required"
+    }
+
     if (!state.dateValue) {
       newErrors.date = "Date is required"
     }
@@ -260,7 +268,8 @@ export function useCallFormState(onCallCreated?: () => void, rescheduleData?: Re
           calleeName: "",
           phoneNumber: "",
           subject: "",
-          prompt: ""
+          prompt: "",
+          aiLanguage: DEFAULT_LANGUAGE
         },
         dateValue: newDefaultDateTime.dateValue,
         timeValue: newDefaultDateTime.timeValue,

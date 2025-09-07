@@ -10,6 +10,7 @@ import {
   Edit3,
   Trash2,
   Timer,
+  Languages,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -19,6 +20,7 @@ import { CallResponse, RescheduleData } from "@/types"
 import { useCallDetails } from "@/hooks/useCallDetails"
 import { hasAvailableTranscript, TranscriptMessage } from "@/utils/transcript"
 import { formatCallTiming } from "@/utils/duration"
+import { getLanguageName } from "@/constants"
 import { useState } from "react"
 
 interface CallCardProps {
@@ -174,7 +176,8 @@ export default function CallCard({
         calleeName: call.calleeName,
         phoneNumber: call.phoneNumber,
         subject: call.subject,
-        prompt: call.prompt
+        prompt: call.prompt,
+        aiLanguage: call.aiLanguage || 'en'
       }
       setRescheduleData(rescheduleData)
     }
@@ -222,8 +225,8 @@ export default function CallCard({
 
         {/* Metadata Section */}
         {call.status === 'COMPLETED' && callTiming && callTiming.hasTimingData && call.dialSuccessful === true ? (
-          // 3-column layout for completed calls with duration
-          <div className="grid grid-cols-3 gap-2 text-xs text-gray-600 mb-3">
+          // 4-column layout for completed calls with duration
+          <div className="grid grid-cols-4 gap-2 text-xs text-gray-600 mb-3">
             <div className="flex items-center gap-1 truncate">
               <Calendar className="w-3 h-3 flex-shrink-0" />
               <span className="truncate">{call.callAt ? formatTimestamp(call.callAt).date : createdDate.date}</span>
@@ -236,10 +239,14 @@ export default function CallCard({
               <Timer className="w-3 h-3 flex-shrink-0" />
               <span className="truncate">{callTiming.duration}</span>
             </div>
+            <div className="flex items-center gap-1 truncate">
+              <Languages className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate">{getLanguageName(call.aiLanguage || 'en')}</span>
+            </div>
           </div>
         ) : (
-          // 2-column layout for scheduled calls or completed calls without timing data
-          <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 mb-3">
+          // 3-column layout for scheduled calls or completed calls without timing data
+          <div className="grid grid-cols-3 gap-2 text-xs text-gray-600 mb-3">
             <div className="flex items-center gap-1 truncate">
               <Calendar className="w-3 h-3 flex-shrink-0" />
               <span className="truncate">{scheduledDate ? scheduledDate.date : createdDate.date}</span>
@@ -247,6 +254,10 @@ export default function CallCard({
             <div className="flex items-center gap-1 truncate">
               <Clock className="w-3 h-3 flex-shrink-0" />
               <span className="truncate">{scheduledDate ? scheduledDate.time : createdDate.time}</span>
+            </div>
+            <div className="flex items-center gap-1 truncate">
+              <Languages className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate">{getLanguageName(call.aiLanguage || 'en')}</span>
             </div>
           </div>
         )}

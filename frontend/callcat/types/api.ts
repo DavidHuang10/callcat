@@ -60,7 +60,7 @@ export interface CallRequest {
   subject: string;
   prompt: string;
   scheduledFor?: number;
-  aiLanguage?: string;
+  aiLanguage: string;
   voiceId?: string;
 }
 

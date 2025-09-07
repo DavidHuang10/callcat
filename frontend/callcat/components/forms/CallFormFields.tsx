@@ -4,8 +4,10 @@ import { useState } from "react"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CallRequest } from "@/types"
 import { formatPhoneAsUserTypes, formatPhoneToE164 } from "@/utils/phone"
+import { SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE } from "@/constants"
 
 interface CallFormFieldsProps {
   formData: CallRequest
@@ -109,6 +111,34 @@ export default function CallFormFields({
         )}
         <p className="text-xs text-gray-500">
           Be specific about the call objectives, tone, and any key points to cover.
+        </p>
+      </div>
+
+      {/* AI Language */}
+      <div className="space-y-2">
+        <Label htmlFor="aiLanguage" className="text-sm font-medium text-gray-700">
+          AI Language *
+        </Label>
+        <Select 
+          value={formData.aiLanguage || DEFAULT_LANGUAGE} 
+          onValueChange={(value) => onChange("aiLanguage", value)}
+        >
+          <SelectTrigger className={errors.aiLanguage ? "border-red-500" : ""}>
+            <SelectValue placeholder="Select language" />
+          </SelectTrigger>
+          <SelectContent>
+            {SUPPORTED_LANGUAGES.map((language) => (
+              <SelectItem key={language.code} value={language.code}>
+                {language.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {errors.aiLanguage && (
+          <p className="text-sm text-red-600">{errors.aiLanguage}</p>
+        )}
+        <p className="text-xs text-gray-500">
+          Select the language the AI will speak during the call.
         </p>
       </div>
     </div>
