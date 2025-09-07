@@ -59,13 +59,9 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(List.of(
-            "http://localhost:*", 
+            "http://localhost:3000",  // Specific development port only
             "https://call-cat.com", 
-            "https://*.call-cat.com", 
-            "https://*.ngrok.io",
-            "https://*.elasticbeanstalk.com",
-            "chrome-extension://*",  // For Postman Chrome extension
-            "*"  // Allow Postman native app (temporary for development)
+            "https://*.call-cat.com"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With", "X-API-Key"));
