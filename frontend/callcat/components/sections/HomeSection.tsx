@@ -19,7 +19,7 @@ import { useCallsForDashboard } from "@/hooks/useCallsForDashboard"
 import { useDashboardStats } from "@/hooks/useDashboardStats"
 import { useAuth } from "@/contexts/AuthContext"
 import { apiService } from "@/lib/api"
-import { CallResponse, RescheduleData } from "@/types"
+import { CallResponse, RescheduleData, EditData } from "@/types"
 import { useState } from "react"
 
 interface HomeSectionProps {
@@ -28,6 +28,7 @@ interface HomeSectionProps {
   toggleExpandedTranscript: (id: string) => void
   setActiveSection: (section: string) => void
   setRescheduleData: (data: RescheduleData | null) => void
+  setEditData: (data: EditData | null) => void
 }
 
 export default function HomeSection({ 
@@ -35,7 +36,8 @@ export default function HomeSection({
   expandedTranscripts, 
   toggleExpandedTranscript, 
   setActiveSection,
-  setRescheduleData
+  setRescheduleData,
+  setEditData
 }: HomeSectionProps) {
   const { user } = useAuth()
   const {
@@ -127,6 +129,23 @@ export default function HomeSection({
       // Error will be handled by the user - you might want to add toast notification here
     } finally {
       setIsDeleting(false)
+    }
+  }
+
+  // Handle edit call - extract call data and navigate to edit form
+  const handleEditCall = (callId: string) => {
+    const call = scheduledCalls.find(c => c.callId === callId)
+    if (call) {
+      const editData: EditData = {
+        originalCallId: call.callId,
+        calleeName: call.calleeName,
+        phoneNumber: call.phoneNumber,
+        subject: call.subject,
+        prompt: call.prompt,
+        scheduledFor: call.scheduledFor
+      }
+      setEditData(editData)
+      setActiveSection("make-call")
     }
   }
 
@@ -289,6 +308,7 @@ export default function HomeSection({
                       toggleExpandedTranscript={toggleExpandedTranscript}
                       setActiveSection={setActiveSection}
                       setRescheduleData={setRescheduleData}
+                      onEdit={handleEditCall}
                       onDeleteClick={handleDeleteClick}
                     />
                   ))}
@@ -389,6 +409,7 @@ export default function HomeSection({
                       toggleExpandedTranscript={toggleExpandedTranscript}
                       setActiveSection={setActiveSection}
                       setRescheduleData={setRescheduleData}
+                      onEdit={handleEditCall}
                       onDeleteClick={handleDeleteClick}
                     />
                   ))}

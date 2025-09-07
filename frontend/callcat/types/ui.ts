@@ -32,6 +32,16 @@ export interface RescheduleData {
   prompt: string;
 }
 
+// Edit data interface - for delete + create pattern
+export interface EditData {
+  originalCallId: string;  // Call to delete
+  calleeName: string;
+  phoneNumber: string;
+  subject: string;
+  prompt: string;
+  scheduledFor?: number;
+}
+
 // Dashboard state management
 export interface DashboardState {
   activeSection: string;
@@ -43,6 +53,7 @@ export interface DashboardState {
   completedPage: number;
   searchQuery: string;
   rescheduleData: RescheduleData | null;
+  editData: EditData | null;
 }
 
 // Legacy interface for mock data (can be removed later)

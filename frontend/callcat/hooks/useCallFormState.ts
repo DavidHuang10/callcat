@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { CallRequest, UserPreferencesResponse, RescheduleData } from "@/types"
+import { CallRequest, UserPreferencesResponse, RescheduleData, EditData } from "@/types"
 import apiService from "@/lib/api"
 import { 
   getUserTimezone, 
@@ -21,11 +21,18 @@ interface CallFormState {
   isSubmitting: boolean
   errors: Record<string, string>
   success: boolean
+  originalCallId: string | null  // Store the call ID to delete for edit mode
+  originalScheduledFor: number | null  // Store original scheduled time for edit mode
 }
 
-export function useCallFormState(onCallCreated?: () => void, rescheduleData?: RescheduleData | null, clearRescheduleData?: () => void) {
+export function useCallFormState(onCallCreated?: () => void, rescheduleData?: RescheduleData | null, editData?: EditData | null, clearRescheduleData?: () => void, clearEditData?: () => void) {
   const [state, setState] = useState<CallFormState>({
-    formData: rescheduleData ? {
+    formData: editData ? {
+      calleeName: editData.calleeName,
+      phoneNumber: editData.phoneNumber,
+      subject: editData.subject,
+      prompt: editData.prompt
+    } : rescheduleData ? {
       calleeName: rescheduleData.calleeName,
       phoneNumber: rescheduleData.phoneNumber,
       subject: rescheduleData.subject,
@@ -42,18 +49,23 @@ export function useCallFormState(onCallCreated?: () => void, rescheduleData?: Re
     isLoadingPreferences: true,
     isSubmitting: false,
     errors: {},
-    success: false
+    success: false,
+    originalCallId: editData ? editData.originalCallId : null,
+    originalScheduledFor: editData ? editData.scheduledFor : null
   })
 
   // Get minimum date/time for validation based on selected timezone
   const { minDate, minTime } = getMinimumDateTime(state.selectedTimezone)
 
-  // Clear reschedule data after it has been used for initialization
+  // Clear reschedule/edit data after it has been used for initialization
   useEffect(() => {
     if (rescheduleData && clearRescheduleData) {
       clearRescheduleData()
     }
-  }, [rescheduleData, clearRescheduleData])
+    if (editData && clearEditData) {
+      clearEditData()
+    }
+  }, [rescheduleData, clearRescheduleData, editData, clearEditData])
 
   // Load user preferences and initialize default time on mount
   useEffect(() => {
@@ -71,14 +83,26 @@ export function useCallFormState(onCallCreated?: () => void, rescheduleData?: Re
         // Fallback to browser timezone
         setState(prev => ({ ...prev, selectedTimezone: getUserTimezone() }))
       } finally {
-        // Set initial default time based on final timezone
-        const defaultTime = getTimezoneAwareDefaultTime(finalTimezone)
-        setState(prev => ({
-          ...prev,
-          dateValue: defaultTime.dateValue,
-          timeValue: defaultTime.timeValue,
-          isLoadingPreferences: false
-        }))
+        // Set initial time - use originalScheduledFor from closure if available
+        const originalScheduledTime = editData ? editData.scheduledFor : null
+        if (originalScheduledTime) {
+          const editDateTime = convertUTCToLocal(originalScheduledTime, finalTimezone)
+          setState(prev => ({
+            ...prev,
+            dateValue: editDateTime.dateValue,
+            timeValue: editDateTime.timeValue,
+            isLoadingPreferences: false
+          }))
+        } else {
+          // Set default time for new calls or reschedule
+          const defaultTime = getTimezoneAwareDefaultTime(finalTimezone)
+          setState(prev => ({
+            ...prev,
+            dateValue: defaultTime.dateValue,
+            timeValue: defaultTime.timeValue,
+            isLoadingPreferences: false
+          }))
+        }
       }
     }
 
@@ -217,7 +241,14 @@ export function useCallFormState(onCallCreated?: () => void, rescheduleData?: Re
         callData.scheduledFor = convertLocalToUTC(state.dateValue, state.timeValue, state.selectedTimezone)
       }
 
-      await apiService.createCall(callData)
+      if (state.originalCallId) {
+        // Edit mode: Delete original call then create new one
+        await apiService.deleteCall(state.originalCallId)
+        await apiService.createCall(callData)
+      } else {
+        // Normal create mode
+        await apiService.createCall(callData)
+      }
       
       setState(prev => ({ ...prev, success: true }))
       
@@ -240,10 +271,14 @@ export function useCallFormState(onCallCreated?: () => void, rescheduleData?: Re
         onCallCreated()
       }
     } catch (error) {
-      console.error("Failed to create call:", error)
+      console.error(state.originalCallId ? "Failed to update call:" : "Failed to create call:", error)
       setState(prev => ({
         ...prev,
-        errors: { submit: "Failed to create call. Please try again." }
+        errors: { 
+          submit: state.originalCallId 
+            ? "Failed to update call. Please try again." 
+            : "Failed to create call. Please try again." 
+        }
       }))
     } finally {
       setState(prev => ({ ...prev, isSubmitting: false }))
