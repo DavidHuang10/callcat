@@ -135,7 +135,10 @@ public class RetellService {
         }
         String timeInfo = "The current date is: " + LocalDate.now();
         dynamicVariables.put("time_info", timeInfo);
-
+        String langInfo = "The current language is: " + callRecord.getAiLanguage();
+        dynamicVariables.put("ai_language", langInfo);
+       
+       
         requestBody.put("retell_llm_dynamic_variables", dynamicVariables);
         
         // Add metadata with our internal callId for webhook identification

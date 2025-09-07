@@ -32,12 +32,12 @@ public class HttpClientConfig {
         // Connection pool settings optimized for t3.micro (1GB RAM)
         connectionManager.setMaxTotal(20); // Maximum total connections across all routes
         connectionManager.setDefaultMaxPerRoute(10); // Maximum connections per route (e.g., to retell.ai)
-        connectionManager.setValidateAfterInactivity(TimeValue.ofSeconds(10)); // Validate connections after 10s idle
         
         // Connection timeout settings
         ConnectionConfig connectionConfig = ConnectionConfig.custom()
             .setConnectTimeout(Timeout.ofSeconds(30)) // Connection establishment timeout
             .setSocketTimeout(Timeout.ofSeconds(60))  // Socket read timeout
+            .setValidateAfterInactivity(TimeValue.ofSeconds(10)) // Validate connections after 10s idle
             .build();
         connectionManager.setDefaultConnectionConfig(connectionConfig);
         
