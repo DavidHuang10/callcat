@@ -10,7 +10,6 @@ import { useAuth } from "@/contexts/AuthContext"
 import { apiService } from "@/lib/api"
 import { validateName } from "@/schemas/auth"
 import type { ProfileFormData } from "@/schemas/auth"
-import type { UserResponse } from "@/types"
 
 export function ProfileInfo() {
   const { user, checkAuth } = useAuth()

@@ -36,6 +36,7 @@ export interface UpdatePreferencesRequest {
   defaultVoiceId?: string;
   emailNotifications?: boolean;
   smsNotifications?: boolean;
+  timezone?: string;
 }
 
 // Call interfaces
@@ -45,7 +46,7 @@ export interface Call {
   status: 'SCHEDULED' | 'COMPLETED';
   aiPrompt: string;
   aiLanguage?: string;
-  scheduledFor?: number;
+  scheduledFor: number;
   createdAt: number;
   updatedAt: number;
   completedAt?: number | null;
@@ -72,7 +73,7 @@ export interface CallResponse {
   subject: string;
   prompt: string;
   status: 'SCHEDULED' | 'COMPLETED';
-  scheduledFor?: number | null;
+  scheduledFor: number;
   providerId?: string | null;
   aiLanguage?: string;
   voiceId?: string;

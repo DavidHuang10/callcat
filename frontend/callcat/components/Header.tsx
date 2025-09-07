@@ -17,7 +17,6 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/contexts/AuthContext"
-import Link from "next/link"
 
 interface HeaderProps {
   sidebarOpen: boolean

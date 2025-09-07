@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -12,7 +11,6 @@ import { apiService } from "@/lib/api"
 import { validateSystemPrompt } from "@/schemas/auth"
 import { generateTimezoneOptions } from "@/utils/timezone"
 import type { PreferencesFormData } from "@/schemas/auth"
-import type { UserPreferencesResponse } from "@/types"
 
 const TIMEZONE_OPTIONS = generateTimezoneOptions()
 
@@ -35,7 +33,6 @@ const VOICE_OPTIONS = [
 ]
 
 export function PreferencesForm() {
-  const [preferences, setPreferences] = useState<UserPreferencesResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [formData, setFormData] = useState<PreferencesFormData>({
@@ -55,7 +52,6 @@ export function PreferencesForm() {
   const loadPreferences = async () => {
     try {
       const userPreferences = await apiService.getUserPreferences()
-      setPreferences(userPreferences)
       setFormData({
         systemPrompt: userPreferences.systemPrompt || '',
         timezone: userPreferences.timezone || 'UTC',

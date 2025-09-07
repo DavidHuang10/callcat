@@ -1,8 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { usePathname } from "next/navigation"
-import Link from "next/link"
 import {
   Home,
   Phone,
@@ -16,7 +14,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 interface SidebarProps {
   activeSection: string
   setActiveSection: (section: string) => void
-  sidebarOpen: boolean
   sidebarCollapsed: boolean
   toggleSidebarCollapsed: () => void
 }
@@ -24,7 +21,6 @@ interface SidebarProps {
 export default function Sidebar({ 
   activeSection, 
   setActiveSection, 
-  sidebarOpen, 
   sidebarCollapsed,
   toggleSidebarCollapsed
 }: SidebarProps) {

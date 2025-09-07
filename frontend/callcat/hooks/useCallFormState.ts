@@ -75,7 +75,7 @@ export function useCallFormState(onCallCreated?: () => void) {
     errors: {},
     success: false,
     originalCallId: editData ? editData.originalCallId : null,
-    originalScheduledFor: editData ? editData.scheduledFor : null
+    originalScheduledFor: editData ? (editData.scheduledFor ?? null) : null
   })
 
   // Get minimum date/time for validation based on selected timezone
@@ -100,7 +100,7 @@ export function useCallFormState(onCallCreated?: () => void) {
         const preferences = await apiService.getUserPreferences()
         if (preferences.timezone) {
           finalTimezone = preferences.timezone
-          setState(prev => ({ ...prev, selectedTimezone: preferences.timezone }))
+          setState(prev => ({ ...prev, selectedTimezone: preferences.timezone! }))
         }
       } catch (error) {
         console.warn('Failed to load user preferences:', error)

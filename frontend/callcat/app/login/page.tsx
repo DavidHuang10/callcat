@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react'
+import { Mail, Lock, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { apiService } from '@/lib/api'
 
@@ -19,7 +19,6 @@ export default function LoginPage() {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -57,7 +56,7 @@ export default function LoginPage() {
           <CardHeader>
             <CardTitle className="text-center">Welcome back!</CardTitle>
             <CardDescription className="text-center">
-              Let's get you signed in
+              Let&apos;s get you signed in
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -101,12 +100,6 @@ export default function LoginPage() {
                 </div>
               )}
               
-              {success && (
-                <div className="flex items-center space-x-2 p-3 bg-green-50 border border-green-200 rounded-md">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="text-sm text-green-700">{success}</span>
-                </div>
-              )}
 
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? (

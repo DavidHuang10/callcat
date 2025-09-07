@@ -43,8 +43,6 @@ export default function HomeSection({
     completedError,
     scheduledPage,
     completedPage,
-    hasMoreScheduled,
-    hasMoreCompleted,
     scheduledTotal,
     completedTotal,
     refreshAll,

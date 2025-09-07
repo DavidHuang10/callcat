@@ -89,7 +89,6 @@ export default function CallCatDashboard() {
         <Sidebar
           activeSection={activeSection}
           setActiveSection={setActiveSection}
-          sidebarOpen={sidebarOpen}
           sidebarCollapsed={sidebarCollapsed}
           toggleSidebarCollapsed={toggleSidebarCollapsed}
         />
