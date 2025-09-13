@@ -175,7 +175,7 @@ export default function HomeSection({
       {/* Welcome Section */}
       <div className="text-center mb-8">
         <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
-          Welcome back{user?.fullName ? `, ${user.fullName.split(' ')[0]}` : ''}! 👋
+          Welcome back{user?.fullName ? `, ${user.fullName.split(' ')[0]}` : ''}
         </h1>
         <p className="text-gray-600 text-lg">
           Here&apos;s what&apos;s happening with your calls today

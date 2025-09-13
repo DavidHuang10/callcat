@@ -10,6 +10,7 @@ import { Save, Settings, Volume2, Globe, Bell } from "lucide-react"
 import { apiService } from "@/lib/api"
 import { validateSystemPrompt } from "@/schemas/auth"
 import { generateTimezoneOptions } from "@/utils/timezone"
+import { SUPPORTED_VOICES } from "@/constants/voices"
 import type { PreferencesFormData } from "@/schemas/auth"
 
 const TIMEZONE_OPTIONS = generateTimezoneOptions()
@@ -25,11 +26,6 @@ const LANGUAGE_OPTIONS = [
   { value: 'zh', label: 'Chinese' },
 ]
 
-const VOICE_OPTIONS = [
-  { value: 'default', label: 'Default' },
-  { value: 'friendly', label: 'Friendly' },
-  { value: 'professional', label: 'Professional' },
-]
 
 export function PreferencesForm() {
   const [isLoading, setIsLoading] = useState(true)
@@ -201,7 +197,7 @@ export function PreferencesForm() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {VOICE_OPTIONS.map(option => (
+                {SUPPORTED_VOICES.map(option => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>

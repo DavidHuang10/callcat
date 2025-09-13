@@ -11,6 +11,9 @@ import {
   Trash2,
   Timer,
   Languages,
+  CheckCircle,
+  AlertCircle,
+  PhoneMissed,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -40,32 +43,32 @@ const getStatusConfig = (status: string, dialSuccessful?: boolean | null) => {
     label: string;
     color: string;
     bgGradient: string;
-    icon: string;
+    IconComponent: any;
   }> = {
     SCHEDULED: {
       label: "Scheduled",
       color: "bg-blue-100 text-blue-800 border-blue-200",
       bgGradient: "from-blue-50 via-indigo-50 to-purple-50",
-      icon: "⏰",
+      IconComponent: Clock,
     },
     COMPLETED: {
       // Default completed status (when dialSuccessful is true)
       label: "Connected", 
       color: "bg-green-100 text-green-800 border-green-200",
       bgGradient: "from-green-50 via-emerald-50 to-teal-50",
-      icon: "✓",
+      IconComponent: CheckCircle,
     },
     NO_ANSWER: {
       label: "No Answer",
       color: "bg-yellow-100 text-yellow-800 border-yellow-200",
       bgGradient: "from-yellow-50 via-amber-50 to-orange-50",
-      icon: "!",
+      IconComponent: PhoneMissed,
     },
     FAILED: {
       label: "Failed",
       color: "bg-red-100 text-red-800 border-red-200",
       bgGradient: "from-red-50 via-pink-50 to-rose-50",
-      icon: "⚠️",
+      IconComponent: AlertCircle,
     },
   }
   
@@ -216,7 +219,7 @@ export default function CallCard({
 
   return (
     <Card
-      className={`bg-gradient-to-br ${statusConfig.bgGradient} border-0 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group h-fit rounded-xl`}
+      className={`bg-gradient-to-br ${statusConfig.bgGradient} border-0 shadow-md hover:shadow-xl transition-all duration-500 hover:scale-[1.03] hover:-translate-y-1 group h-fit rounded-xl overflow-hidden relative before:absolute before:inset-0 before:bg-white/20 before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300`}
     >
       <CardContent className="p-4">
         {/* Header Section */}
@@ -227,8 +230,8 @@ export default function CallCard({
               <p className="text-xs text-gray-600 truncate">{formatPhoneNumber(call.phoneNumber)}</p>
             </div>
           </div>
-          <Badge variant="outline" className={`${statusConfig.color} font-medium px-3 py-1.5 text-xs flex-shrink-0 ml-2 rounded-full shadow-sm`}>
-            <span className="mr-1">{statusConfig.icon}</span>
+          <Badge variant="outline" className={`${statusConfig.color} font-medium px-3 py-1.5 text-xs flex-shrink-0 ml-2 rounded-full shadow-sm flex items-center gap-1.5`}>
+            <statusConfig.IconComponent className="w-3 h-3" />
             {statusConfig.label}
           </Badge>
         </div>

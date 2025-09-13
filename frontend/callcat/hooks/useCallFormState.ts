@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { CallRequest, UserPreferencesResponse, RescheduleData, EditData } from "@/types"
 import apiService from "@/lib/api"
 import { DEFAULT_LANGUAGE } from "@/constants"
+import { DEFAULT_VOICE } from "@/constants/voices"
 import { 
   getUserTimezone, 
   convertLocalToUTC, 
@@ -53,19 +54,22 @@ export function useCallFormState(onCallCreated?: () => void) {
       phoneNumber: editData.phoneNumber,
       subject: editData.subject,
       prompt: editData.prompt,
-      aiLanguage: editData.aiLanguage
+      aiLanguage: editData.aiLanguage,
+      voiceId: editData.voiceId || DEFAULT_VOICE
     } : rescheduleData ? {
       calleeName: rescheduleData.calleeName,
       phoneNumber: rescheduleData.phoneNumber,
       subject: rescheduleData.subject,
       prompt: rescheduleData.prompt,
-      aiLanguage: rescheduleData.aiLanguage
+      aiLanguage: rescheduleData.aiLanguage,
+      voiceId: rescheduleData.voiceId || DEFAULT_VOICE
     } : {
       calleeName: "",
       phoneNumber: "",
       subject: "",
       prompt: "",
-      aiLanguage: DEFAULT_LANGUAGE
+      aiLanguage: DEFAULT_LANGUAGE,
+      voiceId: DEFAULT_VOICE
     },
     selectedTimezone: getUserTimezone(),
     dateValue: "",
@@ -315,7 +319,8 @@ export function useCallFormState(onCallCreated?: () => void) {
           phoneNumber: "",
           subject: "",
           prompt: "",
-          aiLanguage: DEFAULT_LANGUAGE
+          aiLanguage: DEFAULT_LANGUAGE,
+          voiceId: DEFAULT_VOICE
         },
         dateValue: newDefaultDateTime.dateValue,
         timeValue: newDefaultDateTime.timeValue,
@@ -375,7 +380,8 @@ export function useCallFormState(onCallCreated?: () => void) {
           phoneNumber: "",
           subject: "",
           prompt: "",
-          aiLanguage: DEFAULT_LANGUAGE
+          aiLanguage: DEFAULT_LANGUAGE,
+          voiceId: DEFAULT_VOICE
         },
         dateValue: newDefaultDateTime.dateValue,
         timeValue: newDefaultDateTime.timeValue,
