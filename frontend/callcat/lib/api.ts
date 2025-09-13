@@ -77,6 +77,13 @@ class ApiService {
         });
     }
 
+    async createInstantCall(data: CallRequest): Promise<CallResponse> {
+        return this.request<CallResponse>("/api/calls/instant", {
+            method: "POST",
+            body: JSON.stringify(data),
+        });
+    }
+
     async getCalls(
         status?: string,
         limit: number = 20,

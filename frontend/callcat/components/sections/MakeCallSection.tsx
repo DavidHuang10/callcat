@@ -29,7 +29,8 @@ export default function MakeCallSection({ onCallCreated }: MakeCallSectionProps)
     handleTimeChange,
     handleTimezoneChange,
     clearDateTimeError,
-    handleSubmit
+    handleSubmit,
+    handleInstantCall
   } = useCallFormState(onCallCreated)
 
   return (
@@ -53,7 +54,7 @@ export default function MakeCallSection({ onCallCreated }: MakeCallSectionProps)
             <div className="flex items-center gap-2 text-green-700">
               <CheckCircle className="h-5 w-5" />
               <span className="font-medium">
-                Call scheduled successfully!
+                Call created successfully!
               </span>
             </div>
           </CardContent>
@@ -119,12 +120,35 @@ export default function MakeCallSection({ onCallCreated }: MakeCallSectionProps)
               </div>
             </div>
 
-            {/* Submit Button */}
-            <div className="flex justify-end pt-4">
+            {/* Submit Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-end pt-4">
+              {/* Instant Call Button */}
+              {!originalCallId && (
+                <Button
+                  type="button"
+                  onClick={handleInstantCall}
+                  disabled={isSubmitting}
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-3 order-2 sm:order-1"
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 animate-spin" />
+                      Calling...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4" />
+                      Call Now
+                    </div>
+                  )}
+                </Button>
+              )}
+
+              {/* Schedule Call Button */}
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-3"
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-3 order-1 sm:order-2"
               >
                 {isSubmitting ? (
                   <div className="flex items-center gap-2">

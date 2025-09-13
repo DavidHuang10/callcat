@@ -70,6 +70,40 @@ public class CallService {
         return response;
     }
 
+    public CallResponse createInstantCall(String userEmail, CallRequest request) {
+        User user = userRepository.findByEmailAndIsActive(userEmail, true)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        PhoneNumberValidator.validatePhoneNumber(request.getPhoneNumber());
+
+        long currentTime = System.currentTimeMillis();
+        
+        CallRecord callRecord = new CallRecord();
+        BeanUpdateUtils.copyNonNullProperties(request, callRecord);
+        
+        // Set scheduledFor to current time for DynamoDB consistency
+        callRecord.setScheduledFor(currentTime);
+        
+        // Default AI language to English if not provided
+        if (callRecord.getAiLanguage() == null) {
+            callRecord.setAiLanguage("en");
+        }
+        
+        callRecord.setUserId(user.getId().toString());
+        callRecord.setCallId(UUID.randomUUID().toString());
+        callRecord.setStatus("SCHEDULED");
+        callRecord.setCreatedAt(currentTime);
+        callRecord.setUpdatedAt(currentTime);
+
+        // Save to DynamoDB first
+        callRecordRepository.save(callRecord);
+        
+        // Return the call record - controller will handle immediate triggering
+        CallResponse response = new CallResponse();
+        BeanUtils.copyProperties(callRecord, response);
+        return response;
+    }
+
     public CallListResponse getCalls(String userEmail, String status, Integer limit) {
         User user = userRepository.findByEmailAndIsActive(userEmail, true)
                 .orElseThrow(() -> new RuntimeException("User not found"));

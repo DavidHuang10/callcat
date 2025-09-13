@@ -259,6 +259,85 @@ export function useCallFormState(onCallCreated?: () => void) {
     return Object.keys(newErrors).length === 0
   }
 
+  const validateBasicForm = (): boolean => {
+    const newErrors: Record<string, string> = {}
+
+    if (!state.formData.calleeName.trim()) {
+      newErrors.calleeName = "Callee name is required"
+    }
+
+    if (!state.formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = "Phone number is required"
+    } else if (!/^\+1\d{10}$/.test(state.formData.phoneNumber)) {
+      newErrors.phoneNumber = "Phone number must be in format +1XXXXXXXXXX"
+    }
+
+    if (!state.formData.subject.trim()) {
+      newErrors.subject = "Subject is required"
+    }
+
+    if (!state.formData.prompt.trim()) {
+      newErrors.prompt = "AI instructions are required"
+    }
+
+    if (!state.formData.aiLanguage) {
+      newErrors.aiLanguage = "Language is required"
+    }
+
+    setState(prev => ({ ...prev, errors: newErrors }))
+    return Object.keys(newErrors).length === 0
+  }
+
+  const handleInstantCall = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setState(prev => ({ ...prev, success: false }))
+
+    if (!validateBasicForm()) {
+      return
+    }
+
+    setState(prev => ({ ...prev, isSubmitting: true }))
+
+    try {
+      const callData = { ...state.formData }
+      // No scheduledFor needed - backend will set current time
+      
+      await apiService.createInstantCall(callData)
+      
+      setState(prev => ({ ...prev, success: true }))
+      
+      // Reset form after successful submission
+      const newDefaultDateTime = getTimezoneAwareDefaultTime(state.selectedTimezone)
+      setState(prev => ({
+        ...prev,
+        formData: {
+          calleeName: "",
+          phoneNumber: "",
+          subject: "",
+          prompt: "",
+          aiLanguage: DEFAULT_LANGUAGE
+        },
+        dateValue: newDefaultDateTime.dateValue,
+        timeValue: newDefaultDateTime.timeValue,
+        errors: {}
+      }))
+
+      if (onCallCreated) {
+        onCallCreated()
+      }
+    } catch (error) {
+      console.error("Failed to create instant call:", error)
+      setState(prev => ({
+        ...prev,
+        errors: { 
+          submit: "Failed to create instant call. Please try again." 
+        }
+      }))
+    } finally {
+      setState(prev => ({ ...prev, isSubmitting: false }))
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setState(prev => ({ ...prev, success: false }))
@@ -330,6 +409,7 @@ export function useCallFormState(onCallCreated?: () => void) {
     handleTimeChange,
     handleTimezoneChange,
     clearDateTimeError,
-    handleSubmit
+    handleSubmit,
+    handleInstantCall
   }
 }

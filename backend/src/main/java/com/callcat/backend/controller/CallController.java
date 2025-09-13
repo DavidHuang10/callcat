@@ -99,6 +99,25 @@ public class CallController {
         }
     }
     
+    @PostMapping("/instant")
+    public ResponseEntity<?> createInstantCall(
+            Authentication authentication,
+            @Valid @RequestBody CallRequest request) {
+        try {
+            String email = authentication.getName();
+            CallResponse response = callService.createInstantCall(email, request);
+            
+            // Immediately trigger the call (no EventBridge/Lambda)
+            retellService.makeCall(response.getCallId());
+            
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage(), false));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage(), false));
+        }
+    }
+    
     @PostMapping("/{callId}/trigger")
     public ResponseEntity<?> triggerCall(
             @PathVariable String callId,

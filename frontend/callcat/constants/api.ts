@@ -17,6 +17,7 @@ export const API_ENDPOINTS = {
   },
   CALLS: {
     BASE: '/api/calls',
+    INSTANT: '/api/calls/instant',
     TRANSCRIPT: (callId: string) => `/api/calls/${callId}/transcript`,
   },
 } as const;
