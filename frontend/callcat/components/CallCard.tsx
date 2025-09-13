@@ -14,6 +14,7 @@ import {
   CheckCircle,
   AlertCircle,
   PhoneMissed,
+  LucideIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -43,7 +44,7 @@ const getStatusConfig = (status: string, dialSuccessful?: boolean | null) => {
     label: string;
     color: string;
     bgGradient: string;
-    IconComponent: any;
+    IconComponent: LucideIcon;
   }> = {
     SCHEDULED: {
       label: "Scheduled",

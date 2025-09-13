@@ -4,7 +4,7 @@ export type LoadingState = 'idle' | 'loading' | 'success' | 'error';
 
 export type CallStatus = "successful" | "failed" | "scheduled" | "needs_attention";
 
-export interface FormState<T = any> {
+export interface FormState<T = unknown> {
   data: T;
   errors: Record<string, string>;
   isSubmitting: boolean;
@@ -31,6 +31,7 @@ export interface RescheduleData {
   subject: string;
   prompt: string;
   aiLanguage: string;
+  voiceId?: string;
 }
 
 // Edit data interface - for delete + create pattern
@@ -42,6 +43,7 @@ export interface EditData {
   prompt: string;
   scheduledFor?: number;
   aiLanguage: string;
+  voiceId?: string;
 }
 
 // Dashboard state management
@@ -68,12 +70,12 @@ export interface CallRecord {
   language: string;
   transcript: import('./api').CallTranscript[];
   result: string;
-  icon: any; // Lucide icon component
+  icon: import('lucide-react').LucideIcon; // Lucide icon component
 }
 
 export interface StatusConfig {
   label: string;
   color: string;
   bgGradient: string;
-  icon: any;
+  icon: import('lucide-react').LucideIcon;
 }
