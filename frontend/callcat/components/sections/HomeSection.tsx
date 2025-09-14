@@ -288,8 +288,7 @@ export default function HomeSection({
           </Card>
         )}
 
-        <div className={`transition-opacity duration-300 ${scheduledLoading ? 'opacity-50' : 'opacity-100'}`}>
-          {!scheduledError && (
+        {!scheduledError && (
             <>
               {(filteredScheduledCalls.length > 0) ? (
                 <>
@@ -324,8 +323,7 @@ export default function HomeSection({
                 </Card>
               )}
             </>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Completed Calls Section */}
@@ -390,8 +388,7 @@ export default function HomeSection({
           </Card>
         )}
 
-        <div className={`transition-opacity duration-300 ${completedLoading ? 'opacity-50' : 'opacity-100'}`}>
-          {!completedError && (
+        {!completedError && (
             <>
               {(filteredCompletedCalls.length > 0) ? (
                 <>
@@ -426,8 +423,7 @@ export default function HomeSection({
                 </Card>
               )}
             </>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Delete Confirmation Dialog */}
