@@ -119,6 +119,10 @@ class ApiService {
         });
     }
 
+    async getCallTranscript(callId: string): Promise<{ transcriptText: string }> {
+        return this.request<{ transcriptText: string }>(`/api/calls/${callId}/transcript`);
+    }
+
 
     // User Management
     async getUserProfile(): Promise<UserResponse> {

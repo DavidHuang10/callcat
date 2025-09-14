@@ -89,7 +89,7 @@ export default function Header({ sidebarOpen, setSidebarOpen, searchQuery, setSe
               className="relative h-10 w-10 rounded-full hover:bg-purple-100 transition-colors duration-200"
             >
               <Avatar className="h-10 w-10 border-2 border-purple-200">
-                <AvatarImage src="/placeholder.svg?height=40&width=40" alt={user?.fullName} />
+                <AvatarImage src="" alt={user?.fullName} />
                 <AvatarFallback className="bg-gradient-to-br from-purple-400 to-pink-500 text-white font-semibold">
                   {userInitials}
                 </AvatarFallback>
