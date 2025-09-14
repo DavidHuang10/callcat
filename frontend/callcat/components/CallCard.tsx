@@ -19,7 +19,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { CallResponse, RescheduleData, EditData } from "@/types"
 import { useCallDetails } from "@/hooks/useCallDetails"
 import { hasAvailableTranscript, TranscriptMessage } from "@/utils/transcript"
@@ -154,10 +153,12 @@ export default function CallCard({
   const transcriptAvailable = hasAvailableTranscript(call)
 
   const handleToggleExpanded = () => {
+    console.log('Transcript toggle clicked', { call: call.callId })
     toggleExpandedTranscript(call.callId)
   }
 
   const handleEdit = () => {
+    console.log('Edit button clicked', { call: call.callId, onEdit: !!onEdit })
     if (onEdit) {
       onEdit(call.callId)
     } else {
@@ -179,10 +180,13 @@ export default function CallCard({
   }
 
   const handleDelete = () => {
+    console.log('Delete button clicked', { call: call.callId, onDeleteClick: !!onDeleteClick, onDelete: !!onDelete })
     if (onDeleteClick) {
       onDeleteClick(call)
     } else if (onDelete) {
       onDelete(call.callId)
+    } else {
+      console.warn('No delete handler provided')
     }
   }
 
@@ -220,7 +224,7 @@ export default function CallCard({
 
   return (
     <Card
-      className={`bg-gradient-to-br ${statusConfig.bgGradient} border-0 shadow-md hover:shadow-xl transition-all duration-500 hover:scale-[1.03] hover:-translate-y-1 group h-fit rounded-xl overflow-hidden relative before:absolute before:inset-0 before:bg-white/20 before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300`}
+      className={`bg-gradient-to-br ${statusConfig.bgGradient} border-0 shadow-md hover:shadow-xl transition-all duration-500 hover:scale-[1.03] hover:-translate-y-1 group h-fit rounded-xl overflow-hidden relative`}
     >
       <CardContent className="p-4">
         {/* Header Section */}
@@ -297,7 +301,7 @@ export default function CallCard({
         )}
 
         {/* Actions Section */}
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-2 relative z-10">
           {/* Scheduled calls: Edit, Delete, and Transcript/Reschedule if available */}
           {call.status === "SCHEDULED" && (
             <>
@@ -324,19 +328,16 @@ export default function CallCard({
 
           {/* Transcript Button - show for calls with available transcripts */}
           {transcriptAvailable && (
-            <Collapsible open={isExpanded} onOpenChange={handleToggleExpanded}>
-              <CollapsibleTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-300 h-8 px-3 text-xs rounded-lg hover:scale-105"
-                >
-                  {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                  <MessageCircle className="w-3 h-3 ml-1" />
-                  <span className="ml-1 hidden sm:inline">Transcript</span>
-                </Button>
-              </CollapsibleTrigger>
-            </Collapsible>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-300 h-8 px-3 text-xs rounded-lg hover:scale-105"
+              onClick={handleToggleExpanded}
+            >
+              {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+              <MessageCircle className="w-3 h-3 ml-1" />
+              <span className="ml-1 hidden sm:inline">Transcript</span>
+            </Button>
           )}
 
           {/* Delete and Reschedule buttons for completed calls */}
@@ -365,53 +366,51 @@ export default function CallCard({
         </div>
 
         {/* Transcript Section */}
-        {transcriptAvailable && (
-          <Collapsible open={isExpanded} onOpenChange={handleToggleExpanded}>
-            <CollapsibleContent className="mt-3 animate-in slide-in-from-top-2 duration-300">
-              <div className="bg-white/80 rounded-2xl p-5 border border-white/60 backdrop-blur-sm shadow-lg">
-                <div className="flex items-center gap-2 mb-4">
-                  <MessageCircle className="w-4 h-4 text-blue-500" />
-                  <span className="font-medium text-gray-800 text-sm">Call Transcript</span>
-                </div>
+        {transcriptAvailable && isExpanded && (
+          <div className="mt-3 animate-in slide-in-from-top-2 duration-300">
+            <div className="bg-white/80 rounded-2xl p-5 border border-white/60 backdrop-blur-sm shadow-lg">
+              <div className="flex items-center gap-2 mb-4">
+                <MessageCircle className="w-4 h-4 text-blue-500" />
+                <span className="font-medium text-gray-800 text-sm">Call Transcript</span>
+              </div>
+              
+              {/* Scrollable Conversation Container */}
+              <div className="h-[300px] overflow-y-auto space-y-3 pr-2" style={{ scrollbarWidth: 'thin' }}>
+                {transcriptLoading && (
+                  <div className="text-center text-gray-500 text-sm py-8">
+                    Loading transcript...
+                  </div>
+                )}
                 
-                {/* Scrollable Conversation Container */}
-                <div className="h-[300px] overflow-y-auto space-y-3 pr-2" style={{ scrollbarWidth: 'thin' }}>
-                  {transcriptLoading && (
-                    <div className="text-center text-gray-500 text-sm py-8">
-                      Loading transcript...
-                    </div>
-                  )}
-                  
-                  {!transcriptLoading && transcript.length > 0 && (
-                    <>
-                      {transcript.map((message: TranscriptMessage, index: number) => (
-                        <div key={index} className={`flex ${message.speaker === 'user' ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[75%] rounded-lg px-3 py-2 ${
-                            message.speaker === 'agent'
-                              ? 'bg-blue-50 text-blue-800 border border-blue-100'
-                              : 'bg-green-50 text-green-800 border border-green-100'
-                          }`}>
-                            <div className="text-xs font-medium mb-1 opacity-75">
-                              {message.speaker === 'agent' ? 'AI Assistant' : 'Caller'}
-                            </div>
-                            <div className="text-sm leading-relaxed">
-                              {message.text}
-                            </div>
+                {!transcriptLoading && transcript.length > 0 && (
+                  <>
+                    {transcript.map((message: TranscriptMessage, index: number) => (
+                      <div key={index} className={`flex ${message.speaker === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[75%] rounded-lg px-3 py-2 ${
+                          message.speaker === 'agent'
+                            ? 'bg-blue-50 text-blue-800 border border-blue-100'
+                            : 'bg-green-50 text-green-800 border border-green-100'
+                        }`}>
+                          <div className="text-xs font-medium mb-1 opacity-75">
+                            {message.speaker === 'agent' ? 'AI Assistant' : 'Caller'}
+                          </div>
+                          <div className="text-sm leading-relaxed">
+                            {message.text}
                           </div>
                         </div>
-                      ))}
-                    </>
-                  )}
-                  
-                  {!transcriptLoading && transcript.length === 0 && (
-                    <div className="text-center text-gray-500 text-sm py-8">
-                      Transcript unavailable
-                    </div>
-                  )}
-                </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+                
+                {!transcriptLoading && transcript.length === 0 && (
+                  <div className="text-center text-gray-500 text-sm py-8">
+                    Transcript unavailable
+                  </div>
+                )}
               </div>
-            </CollapsibleContent>
-          </Collapsible>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>

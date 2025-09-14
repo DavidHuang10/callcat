@@ -303,8 +303,10 @@ export function useCallFormState(onCallCreated?: () => void) {
     setState(prev => ({ ...prev, isSubmitting: true }))
 
     try {
-      const callData = { ...state.formData }
-      // No scheduledFor needed - backend will set current time
+      const callData = { 
+        ...state.formData,
+        scheduledFor: Date.now() // Send current timestamp for instant calls
+      }
       
       await apiService.createInstantCall(callData)
       
