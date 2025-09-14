@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiService } from '@/lib/api';
 import { CallResponse, CallListResponse } from '@/types';
 
@@ -33,10 +33,14 @@ export function useCallList({
   const [page, setPageState] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [total, setTotal] = useState(0);
+  const isPaginatingRef = useRef(false);
 
   const fetchCalls = useCallback(async (pageNum: number = 0, append: boolean = false) => {
     try {
-      setLoading(true);
+      // Only show loading for initial fetch or when no existing data
+      if (pageNum === 0 && calls.length === 0) {
+        setLoading(true);
+      }
       setError(null);
 
       const offset = pageNum * limit;
@@ -57,7 +61,7 @@ export function useCallList({
     } finally {
       setLoading(false);
     }
-  }, [status, limit]);
+  }, [status, limit, calls.length]);
 
   const refresh = useCallback(async () => {
     await fetchCalls(0, false);
@@ -72,8 +76,23 @@ export function useCallList({
   }, [hasMore, loading, page, fetchCalls]);
 
   const setPage = useCallback((newPage: number) => {
+    // Store current scroll position
+    const scrollY = window.scrollY;
+
+    // Mark that we're paginating to prevent visibility change refresh
+    isPaginatingRef.current = true;
+
     setPageState(newPage);
-    fetchCalls(newPage, false);
+    fetchCalls(newPage, false).then(() => {
+      // Restore scroll position after the content loads
+      requestAnimationFrame(() => {
+        window.scrollTo(0, scrollY);
+        // Reset pagination flag after scroll restoration
+        setTimeout(() => {
+          isPaginatingRef.current = false;
+        }, 100);
+      });
+    });
   }, [fetchCalls]);
 
   // Initial fetch
@@ -92,8 +111,9 @@ export function useCallList({
   // Smart refresh on page visibility change (when user returns to tab/page)
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === 'visible' && !isPaginatingRef.current) {
         // User returned to the tab - refresh to check for any status changes
+        // Only refresh if not currently paginating to avoid scroll jump
         refresh();
       }
     };

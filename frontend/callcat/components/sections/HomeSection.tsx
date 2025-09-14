@@ -288,42 +288,44 @@ export default function HomeSection({
           </Card>
         )}
 
-        {!scheduledLoading && !scheduledError && (
-          <>
-            {(filteredScheduledCalls.length > 0) ? (
-              <>
-                <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4`}>
-                  {filteredScheduledCalls.map((call) => (
-                    <CallCard
-                      key={call.callId}
-                      call={call}
-                      expandedTranscripts={expandedTranscripts}
-                      toggleExpandedTranscript={toggleExpandedTranscript}
-                      setActiveSection={setActiveSection}
-                      onEdit={handleEditCall}
-                      onDeleteClick={handleDeleteClick}
-                    />
-                  ))}
-                </div>
+        <div className={`transition-opacity duration-300 ${scheduledLoading ? 'opacity-50' : 'opacity-100'}`}>
+          {!scheduledError && (
+            <>
+              {(filteredScheduledCalls.length > 0) ? (
+                <>
+                  <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 transition-all duration-300`}>
+                    {filteredScheduledCalls.map((call) => (
+                      <CallCard
+                        key={call.callId}
+                        call={call}
+                        expandedTranscripts={expandedTranscripts}
+                        toggleExpandedTranscript={toggleExpandedTranscript}
+                        setActiveSection={setActiveSection}
+                        onEdit={handleEditCall}
+                        onDeleteClick={handleDeleteClick}
+                      />
+                    ))}
+                  </div>
 
-              </>
-            ) : (
-              <Card className="text-center py-12">
-                <CardContent>
-                  <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-600 mb-2">No scheduled calls</h3>
-                  <p className="text-gray-500 mb-4">Schedule your first call to get started!</p>
-                  <Button 
-                    onClick={() => setActiveSection("make-call")}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600"
-                  >
-                    Schedule a Call
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </>
-        )}
+                </>
+              ) : (
+                <Card className="text-center py-12">
+                  <CardContent>
+                    <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-600 mb-2">No scheduled calls</h3>
+                    <p className="text-gray-500 mb-4">Schedule your first call to get started!</p>
+                    <Button
+                      onClick={() => setActiveSection("make-call")}
+                      className="bg-gradient-to-r from-purple-600 to-pink-600"
+                    >
+                      Schedule a Call
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Completed Calls Section */}
@@ -388,42 +390,44 @@ export default function HomeSection({
           </Card>
         )}
 
-        {!completedLoading && !completedError && (
-          <>
-            {(filteredCompletedCalls.length > 0) ? (
-              <>
-                <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4`}>
-                  {filteredCompletedCalls.map((call) => (
-                    <CallCard
-                      key={call.callId}
-                      call={call}
-                      expandedTranscripts={expandedTranscripts}
-                      toggleExpandedTranscript={toggleExpandedTranscript}
-                      setActiveSection={setActiveSection}
-                      onEdit={handleEditCall}
-                      onDeleteClick={handleDeleteClick}
-                    />
-                  ))}
-                </div>
+        <div className={`transition-opacity duration-300 ${completedLoading ? 'opacity-50' : 'opacity-100'}`}>
+          {!completedError && (
+            <>
+              {(filteredCompletedCalls.length > 0) ? (
+                <>
+                  <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 transition-all duration-300`}>
+                    {filteredCompletedCalls.map((call) => (
+                      <CallCard
+                        key={call.callId}
+                        call={call}
+                        expandedTranscripts={expandedTranscripts}
+                        toggleExpandedTranscript={toggleExpandedTranscript}
+                        setActiveSection={setActiveSection}
+                        onEdit={handleEditCall}
+                        onDeleteClick={handleDeleteClick}
+                      />
+                    ))}
+                  </div>
 
-              </>
-            ) : (
-              <Card className="text-center py-12">
-                <CardContent>
-                  <Coffee className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-600 mb-2">No calls yet</h3>
-                  <p className="text-gray-500 mb-4">Start by making your first call!</p>
-                  <Button 
-                    onClick={() => setActiveSection("make-call")}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600"
-                  >
-                    Make a Call
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </>
-        )}
+                </>
+              ) : (
+                <Card className="text-center py-12">
+                  <CardContent>
+                    <Coffee className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-600 mb-2">No calls yet</h3>
+                    <p className="text-gray-500 mb-4">Start by making your first call!</p>
+                    <Button
+                      onClick={() => setActiveSection("make-call")}
+                      className="bg-gradient-to-r from-purple-600 to-pink-600"
+                    >
+                      Make a Call
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Delete Confirmation Dialog */}
