@@ -8,6 +8,8 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
+import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.List;
 import java.util.Optional;
@@ -87,12 +89,29 @@ public class CallRecordRepository {
     public Optional<CallRecord> findByProviderId(String providerId) {
         QueryConditional queryConditional = QueryConditional.keyEqualTo(
                 Key.builder().partitionValue(providerId).build());
-        
+
         return byProviderIndex.query(r -> r.queryConditional(queryConditional))
                 .stream()
                 .flatMap(page -> page.items().stream())
                 .findFirst();
     }
-    
 
+    /**
+     * Find all calls with specific status across all users.
+     * This method uses a table scan which is expensive - use sparingly for admin operations only.
+     */
+    public List<CallRecord> findAllByStatus(String status) {
+        ScanEnhancedRequest scanRequest = ScanEnhancedRequest.builder()
+                .filterExpression(software.amazon.awssdk.enhanced.dynamodb.Expression.builder()
+                        .expression("#status = :status")
+                        .putExpressionName("#status", "status")
+                        .putExpressionValue(":status", AttributeValue.builder().s(status).build())
+                        .build())
+                .build();
+
+        return table.scan(scanRequest)
+                .stream()
+                .flatMap(page -> page.items().stream())
+                .collect(Collectors.toList());
+    }
 }
