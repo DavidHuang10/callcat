@@ -1,6 +1,6 @@
-# CallCat 🐱
+# [call-cat.com](https://call-cat.com) 🐱
 
-![CallCat](imgs/callcat.jpg)
+<img src="imgs/callcat.jpg" alt="CallCat" width="400">
 
 ## What is CallCat?
 
