@@ -1,10 +1,23 @@
+"use client"
+
 import CallCatDashboard from "@/components/Dashboard"
-import ProtectedRoute from "@/components/ProtectedRoute"
+import LandingPage from "@/components/LandingPage"
+import { useAuth } from "@/contexts/AuthContext"
 
 export default function Home() {
-  return (
-    <ProtectedRoute>
-      <CallCatDashboard />
-    </ProtectedRoute>
-  )
+  const { isAuthenticated, isLoading } = useAuth()
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading...</div>
+      </div>
+    )
+  }
+
+  if (isAuthenticated) {
+    return <CallCatDashboard />
+  }
+
+  return <LandingPage />
 }
