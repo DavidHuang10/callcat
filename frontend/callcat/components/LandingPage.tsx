@@ -31,8 +31,7 @@ export default function LandingPage() {
       <div
         className="fixed inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage:
-            "url('https://hebbkx1anhila5yf.public.blob.vercel-storage.com/cafe.jpg-K3GSFZVrcvSAeQPabPkF0tdc2dPuJK.jpeg')",
+          backgroundImage: "url('/cafe.jpg')",
         }}
       />
 

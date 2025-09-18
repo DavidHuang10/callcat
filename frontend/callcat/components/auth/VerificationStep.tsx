@@ -22,7 +22,7 @@ export function VerificationStep({
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="verificationCode">Verification Code</Label>
+        <Label htmlFor="verificationCode" className="!text-white">Verification Code</Label>
         <Input
           id="verificationCode"
           type="text"
@@ -30,13 +30,14 @@ export function VerificationStep({
           value={verificationCode}
           onChange={(e) => onVerificationCodeChange(e.target.value)}
           maxLength={6}
+          className="bg-white/5 border-white/40 !text-white !placeholder-white focus:ring-amber-400 focus:border-amber-400 focus:bg-white/10"
           required
         />
-        <p className="text-sm text-gray-500">
+        <p className="text-sm !text-white/70">
           We&apos;ve sent a verification code to {email}
         </p>
       </div>
-      <Button type="submit" className="w-full" disabled={loading}>
+      <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700 text-white" disabled={loading}>
         {loading ? (
           <div className="flex items-center gap-2">
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -46,8 +47,8 @@ export function VerificationStep({
       </Button>
       <Button 
         type="button" 
-        variant="outline" 
-        className="w-full"
+        variant="outline"
+        className="w-full border-white/30 text-white hover:bg-white/10"
         onClick={onBack}
       >
         Back to Email

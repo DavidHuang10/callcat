@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Phone } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { apiService } from '@/lib/api'
 import { getUserTimezone } from '@/utils/timezone'
@@ -176,24 +177,41 @@ function AuthPageContent() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {authMode === 'reset' ? 'Forgot your password?' : 'Join CallCat! ✨'}
-          </h1>
-          <p className="text-gray-600">
-            {authMode === 'reset' ? "No worries, let's get you back in" : 'Ready to start making amazing calls?'}
-          </p>
-        </div>
+    <div className="min-h-screen relative">
+      <div
+        className="fixed inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: "url('/cafe.jpg')",
+        }}
+      />
 
-        <Card className="border-0 shadow-lg shadow-slate-200/50 bg-white/90 backdrop-blur-sm">
+      <div className="fixed inset-0 bg-black/20" />
+
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          {/* CallCat Header */}
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <div className="w-10 h-10 bg-amber-600 rounded-full flex items-center justify-center">
+                <Phone className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-2xl font-bold text-white">CallCat</span>
+            </div>
+            <h1 className="text-3xl font-bold text-white mb-2">
+              {authMode === 'reset' ? 'Forgot your password?' : 'Join CallCat! ✨'}
+            </h1>
+            <p className="text-white/90">
+              {authMode === 'reset' ? "No worries, let's get you back in" : 'Ready to start making amazing calls?'}
+            </p>
+          </div>
+
+          <Card className="border border-white/20 shadow-lg bg-white/3 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="text-center">
+            <CardTitle className="text-center text-white">
               {authMode === 'reset' ? 'Reset Password' : 'Create Your Account'}
             </CardTitle>
-            <CardDescription className="text-center">
-              {authMode === 'reset' 
+            <CardDescription className="text-center text-white/80">
+              {authMode === 'reset'
                 ? "We'll help you get back in"
                 : "Just a few quick steps and you'll be ready to go"
               }
@@ -261,30 +279,31 @@ function AuthPageContent() {
           </CardContent>
         </Card>
 
-        <div className="text-center mt-6">
-          <p className="text-sm text-gray-600">
-            {authMode === 'reset' ? (
-              <>
-                Remember your password?{' '}
-                <button 
-                  onClick={() => router.push('/login')}
-                  className="text-blue-600 hover:text-blue-800 font-medium"
-                >
-                  Sign in
-                </button>
-              </>
-            ) : (
-              <>
-                Already have an account?{' '}
-                <button 
-                  onClick={() => router.push('/login')}
-                  className="text-blue-600 hover:text-blue-800 font-medium"
-                >
-                  Sign in
-                </button>
-              </>
-            )}
-          </p>
+          <div className="text-center mt-6">
+            <p className="text-sm text-white/80">
+              {authMode === 'reset' ? (
+                <>
+                  Remember your password?{' '}
+                  <button
+                    onClick={() => router.push('/login')}
+                    className="text-amber-400 hover:text-amber-300 font-medium transition-colors"
+                  >
+                    Sign in
+                  </button>
+                </>
+              ) : (
+                <>
+                  Already have an account?{' '}
+                  <button
+                    onClick={() => router.push('/login')}
+                    className="text-amber-400 hover:text-amber-300 font-medium transition-colors"
+                  >
+                    Sign in
+                  </button>
+                </>
+              )}
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -293,7 +312,15 @@ function AuthPageContent() {
 
 export default function AuthPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>}>
+    <Suspense fallback={
+      <div className="min-h-screen relative">
+        <div className="fixed inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('/cafe.jpg')" }} />
+        <div className="fixed inset-0 bg-black/20" />
+        <div className="relative z-10 min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400"></div>
+        </div>
+      </div>
+    }>
       <AuthPageContent />
     </Suspense>
   )
