@@ -5,9 +5,10 @@ import { Phone } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 
+const phrases = ["Business Calls", "Boring Calls", "Awkward Calls", "Stressful Calls", "Tedious Calls"]
+
 export default function LandingPage() {
   const [currentPhrase, setCurrentPhrase] = useState(0)
-  const phrases = ["Business Calls", "Boring Calls", "Awkward Calls", "Stressful Calls", "Tedious Calls"]
   const router = useRouter()
 
   useEffect(() => {
@@ -118,15 +119,15 @@ export default function LandingPage() {
               <div className="backdrop-blur-sm bg-white/3 rounded-2xl p-8 border border-white/20">
                 <h2 className="text-3xl md:text-4xl font-bold mb-6 text-balance text-white">About David</h2>
                 <p className="text-xl text-white/90 mb-6 text-pretty leading-relaxed">
-                  Hi! I'm David, the creator of CallCat. I'm currently studying Computer Science and Mathematics at Duke
+                  Hi! I&apos;m David, the creator of CallCat. I&apos;m currently studying Computer Science and Mathematics at Duke
                   University, where I spend most of my time diving deep into algorithms, machine learning, and building
                   cool projects like this one.
                 </p>
                 <p className="text-lg text-white/80 text-pretty leading-relaxed">
                   I built CallCat because I noticed how many people (including myself sometimes) feel anxious about
-                  making phone calls to businesses. Whether it's booking a restaurant reservation or scheduling an
+                  making phone calls to businesses. Whether it&apos;s booking a restaurant reservation or scheduling an
                   appointment, these simple tasks can feel overwhelming. So I created a friendly AI assistant that
-                  handles these conversations with the warmth and care you'd want from a helpful friend.
+                  handles these conversations with the warmth and care you&apos;d want from a helpful friend.
                 </p>
               </div>
             </div>
