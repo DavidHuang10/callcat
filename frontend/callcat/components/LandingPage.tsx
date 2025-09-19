@@ -5,7 +5,7 @@ import { Phone } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 
-const phrases = ["Business Calls", "Boring Calls", "Awkward Calls", "Stressful Calls", "Tedious Calls"]
+const phrases = ["Business Calls", "Routine Calls", "Time-Consuming Calls", "Repetitive Tasks", "Daily Errands"]
 
 export default function LandingPage() {
   const [currentPhrase, setCurrentPhrase] = useState(0)
@@ -80,8 +80,8 @@ export default function LandingPage() {
                   </span>
                 </h1>
                 <p className="text-xl text-white/90 mb-8 text-pretty max-w-2xl mx-auto leading-relaxed">
-                  Schedule calls to any business and let our friendly AI assistant handle the conversation for you. From
-                  restaurant reservations to appointment bookings, CallCat makes it cozy and simple.
+                  Save time and boost your productivity by letting our AI assistant handle business calls for you. From
+                  restaurant reservations to appointment bookings, CallCat gets things done efficiently while you focus on what matters most.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-2xl mx-auto">
                   <Button
@@ -123,10 +123,10 @@ export default function LandingPage() {
                   cool projects like this one.
                 </p>
                 <p className="text-lg text-white/80 text-pretty leading-relaxed">
-                  I built CallCat because I noticed how many people (including myself sometimes) feel anxious about
-                  making phone calls to businesses. Whether it&apos;s booking a restaurant reservation or scheduling an
-                  appointment, these simple tasks can feel overwhelming. So I created a friendly AI assistant that
-                  handles these conversations with the warmth and care you&apos;d want from a helpful friend.
+                  I built CallCat because I realized how much time we spend on routine phone calls that could be automated.
+                  Whether it&apos;s booking a restaurant reservation or scheduling an appointment, these tasks take valuable time
+                  away from more important work. So I created an intelligent AI assistant that handles these conversations
+                  efficiently and professionally, giving you back hours in your week.
                 </p>
               </div>
             </div>
@@ -154,7 +154,7 @@ export default function LandingPage() {
             </div>
 
             <div className="text-center mt-6 pt-6 border-t border-white/20">
-              <p className="text-sm text-white/70">© 2024 CallCat. Made with ❤️ for stress-free calling.</p>
+              <p className="text-sm text-white/70">© 2024 CallCat. Made with ❤️ for efficient, time-saving automation.</p>
             </div>
           </div>
         </footer>
