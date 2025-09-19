@@ -12,12 +12,12 @@ export function AuthStepIndicator({ currentStep, authMode }: AuthStepIndicatorPr
       <div className="flex items-center justify-center space-x-4 mb-8">
         <div className="flex items-center space-x-2">
           <Badge variant={currentStep === 'forgot-email' ? 'default' : 'secondary'}>1</Badge>
-          <span className="text-sm">Enter Email</span>
+          <span className="text-sm text-white">Enter Email</span>
         </div>
-        <div className="w-8 h-px bg-gray-300" />
+        <div className="w-8 h-px bg-white/30" />
         <div className="flex items-center space-x-2">
           <Badge variant={currentStep === 'reset-password' ? 'default' : 'secondary'}>2</Badge>
-          <span className="text-sm">Reset Password</span>
+          <span className="text-sm text-white">Reset Password</span>
         </div>
       </div>
     )
@@ -27,17 +27,17 @@ export function AuthStepIndicator({ currentStep, authMode }: AuthStepIndicatorPr
     <div className="flex items-center justify-center space-x-4 mb-8">
       <div className="flex items-center space-x-2">
         <Badge variant={currentStep === 'email' ? 'default' : 'secondary'}>1</Badge>
-        <span className="text-sm">Email Verification</span>
+        <span className="text-sm text-white">Email Verification</span>
       </div>
-      <div className="w-8 h-px bg-gray-300" />
+      <div className="w-8 h-px bg-white/30" />
       <div className="flex items-center space-x-2">
         <Badge variant={currentStep === 'verification' ? 'default' : 'secondary'}>2</Badge>
-        <span className="text-sm">Verify Code</span>
+        <span className="text-sm text-white">Verify Code</span>
       </div>
-      <div className="w-8 h-px bg-gray-300" />
+      <div className="w-8 h-px bg-white/30" />
       <div className="flex items-center space-x-2">
         <Badge variant={currentStep === 'registration' ? 'default' : 'secondary'}>3</Badge>
-        <span className="text-sm">Registration</span>
+        <span className="text-sm text-white">Registration</span>
       </div>
     </div>
   )
