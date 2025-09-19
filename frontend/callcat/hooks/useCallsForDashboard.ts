@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useCallList } from './useCallList';
 import { CallResponse, PaginatedCallsResponse } from '@/types';
+import { PAGINATION } from '@/constants/ui';
 
 interface UseCallsForDashboardReturn {
   scheduledCalls: CallResponse[];
@@ -33,7 +34,7 @@ export function useCallsForDashboard(): UseCallsForDashboardReturn {
     setPage: setScheduledPage,
   } = useCallList({
     status: 'SCHEDULED',
-    limit: 6,
+    limit: PAGINATION.CALLS_PER_PAGE,
     autoRefresh: false, // Only refresh on user action, page reload, or navigation
   });
 
@@ -49,7 +50,7 @@ export function useCallsForDashboard(): UseCallsForDashboardReturn {
     setPage: setCompletedPage,
   } = useCallList({
     status: 'COMPLETED',
-    limit: 6,
+    limit: PAGINATION.CALLS_PER_PAGE,
     autoRefresh: false, // Don't auto-refresh completed calls as frequently
   });
 

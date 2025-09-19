@@ -1,12 +1,14 @@
 "use client"
 
-import { useDashboard } from "@/hooks/useDashboard"
 import { usePathname, useRouter } from "next/navigation"
+
 import Header from "@/components/Header"
 import Sidebar from "@/components/Sidebar"
 import HomeSection from "@/components/sections/HomeSection"
 import MakeCallSection from "@/components/sections/MakeCallSection"
 import { ProfileSection } from "@/components/sections/ProfileSection"
+
+import { useDashboard } from "@/hooks/useDashboard"
 
 export default function CallCatDashboard() {
   const pathname = usePathname()
@@ -44,23 +46,15 @@ export default function CallCatDashboard() {
 
   const renderSection = () => {
     switch (activeSection) {
-      case "home":
-        return (
-          <HomeSection
-            searchQuery={searchQuery}
-            expandedTranscripts={expandedTranscripts}
-            toggleExpandedTranscript={toggleExpandedTranscript}
-            setActiveSection={setActiveSection}
-          />
-        )
       case "make-call":
         return (
-          <MakeCallSection 
+          <MakeCallSection
             onCallCreated={() => router.push('/')}
           />
         )
       case "profile":
         return <ProfileSection />
+      case "home":
       default:
         return (
           <HomeSection

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiService } from '@/lib/api';
 import { CallResponse, CallListResponse } from '@/types';
+import { PAGINATION } from '@/constants/ui';
 
 interface UseCallListOptions {
   status?: 'SCHEDULED' | 'COMPLETED';
@@ -23,7 +24,7 @@ interface UseCallListReturn {
 
 export function useCallList({
   status,
-  limit = 6,
+  limit = PAGINATION.CALLS_PER_PAGE,
   autoRefresh = false,
   refreshInterval = 30000,
 }: UseCallListOptions = {}): UseCallListReturn {
@@ -38,7 +39,7 @@ export function useCallList({
   const fetchCalls = useCallback(async (pageNum: number = 0, append: boolean = false) => {
     try {
       // Only show loading for initial fetch or when no existing data
-      if (pageNum === 0 && calls.length === 0) {
+      if (pageNum === 0) {
         setLoading(true);
       }
       setError(null);
@@ -61,7 +62,7 @@ export function useCallList({
     } finally {
       setLoading(false);
     }
-  }, [status, limit, calls.length]);
+  }, [status, limit]);
 
   const refresh = useCallback(async () => {
     await fetchCalls(0, false);

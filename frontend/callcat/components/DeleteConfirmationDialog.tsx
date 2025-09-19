@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { CallResponse } from "@/types"
+import { formatPhoneForDisplay } from "@/utils/phone"
 
 interface DeleteConfirmationDialogProps {
   open: boolean
@@ -20,17 +21,6 @@ interface DeleteConfirmationDialogProps {
   isDeleting?: boolean
 }
 
-const formatPhoneNumber = (phone: string) => {
-  // Format +1XXXXXXXXXX to (XXX) XXX-XXXX
-  const cleaned = phone.replace(/\D/g, '')
-  if (cleaned.length === 11 && cleaned.startsWith('1')) {
-    const areaCode = cleaned.slice(1, 4)
-    const first = cleaned.slice(4, 7)
-    const last = cleaned.slice(7, 11)
-    return `(${areaCode}) ${first}-${last}`
-  }
-  return phone
-}
 
 const formatTimestamp = (timestamp: number) => {
   const date = new Date(timestamp)
@@ -77,7 +67,7 @@ export default function DeleteConfirmationDialog({
           
           <div className="flex items-center gap-2">
             <Phone className="w-4 h-4 text-gray-500" />
-            <span className="text-sm text-gray-700">{formatPhoneNumber(call.phoneNumber)}</span>
+            <span className="text-sm text-gray-700">{formatPhoneForDisplay(call.phoneNumber)}</span>
           </div>
 
           <div className="flex items-center gap-2">

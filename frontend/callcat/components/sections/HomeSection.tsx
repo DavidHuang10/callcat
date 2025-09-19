@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import {
   Phone,
   Clock,
@@ -8,17 +9,21 @@ import {
   Plus,
   TrendingUp,
 } from "lucide-react"
+
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import CallCard from "@/components/CallCard"
 import DeleteConfirmationDialog from "@/components/DeleteConfirmationDialog"
+
 import { useCallsForDashboard } from "@/hooks/useCallsForDashboard"
 import { useDashboardStats } from "@/hooks/useDashboardStats"
+import { usePagination } from "@/hooks/usePagination"
 import { useAuth } from "@/contexts/AuthContext"
+
 import { apiService } from "@/lib/api"
 import { CallResponse } from "@/types"
-import { useState } from "react"
+import { GRID_LAYOUTS } from "@/constants/ui"
 
 interface HomeSectionProps {
   searchQuery: string
@@ -66,28 +71,30 @@ export default function HomeSection({
   // Pagination simplified: no transition/fade state
 
   // Filter calls by search query if provided
-  const allFilteredScheduledCalls = scheduledCalls.filter(call => 
-    !searchQuery || 
+  const allFilteredScheduledCalls = scheduledCalls.filter(call =>
+    !searchQuery ||
     call.calleeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     call.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
     call.callId.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const allFilteredCompletedCalls = completedCalls.filter(call => 
-    !searchQuery || 
+  const allFilteredCompletedCalls = completedCalls.filter(call =>
+    !searchQuery ||
     call.calleeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     call.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
     call.callId.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  // Apply pagination to filtered calls (6 per page)
-  const startIndexScheduled = scheduledPage * 6
-  const endIndexScheduled = startIndexScheduled + 6
-  const filteredScheduledCalls = allFilteredScheduledCalls.slice(startIndexScheduled, endIndexScheduled)
+  // Apply pagination using custom hook
+  const scheduledPagination = usePagination({
+    items: allFilteredScheduledCalls,
+    currentPage: scheduledPage,
+  })
 
-  const startIndexCompleted = completedPage * 6
-  const endIndexCompleted = startIndexCompleted + 6
-  const filteredCompletedCalls = allFilteredCompletedCalls.slice(startIndexCompleted, endIndexCompleted)
+  const completedPagination = usePagination({
+    items: allFilteredCompletedCalls,
+    currentPage: completedPage,
+  })
 
   // No transition buffering of previous calls
 
@@ -183,7 +190,7 @@ export default function HomeSection({
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className={GRID_LAYOUTS.STATS_GRID}>
         {stats.map((stat, index) => {
           const Icon = stat.icon
           return (
@@ -227,13 +234,13 @@ export default function HomeSection({
               {scheduledTotal} total
             </Badge>
             {/* Scheduled Calls Pagination */}
-            {(allFilteredScheduledCalls.length > 6) && (
+            {scheduledPagination.showPagination && (
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => handleScheduledPageChange(scheduledPage - 1)}
-                  disabled={scheduledPage === 0 || scheduledLoading}
+                  disabled={!scheduledPagination.hasPrevPage || scheduledLoading}
                   className="h-8 w-8 p-0 hover:bg-gray-100"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -241,13 +248,13 @@ export default function HomeSection({
                   </svg>
                 </Button>
                 <span className="text-xs text-gray-500 min-w-[60px] text-center">
-                  {scheduledPage + 1} of {Math.ceil(allFilteredScheduledCalls.length / 6)}
+                  {scheduledPage + 1} of {scheduledPagination.totalPages}
                 </span>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => handleScheduledPageChange(scheduledPage + 1)}
-                  disabled={endIndexScheduled >= allFilteredScheduledCalls.length || scheduledLoading}
+                  disabled={!scheduledPagination.hasNextPage || scheduledLoading}
                   className="h-8 w-8 p-0 hover:bg-gray-100"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -290,10 +297,10 @@ export default function HomeSection({
 
         {!scheduledError && (
             <>
-              {(filteredScheduledCalls.length > 0) ? (
+              {(scheduledPagination.paginatedItems.length > 0) ? (
                 <>
-                  <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 transition-all duration-300`}>
-                    {filteredScheduledCalls.map((call) => (
+                  <div className={`${GRID_LAYOUTS.CALL_CARDS} transition-all duration-300`}>
+                    {scheduledPagination.paginatedItems.map((call) => (
                       <CallCard
                         key={call.callId}
                         call={call}
@@ -335,13 +342,13 @@ export default function HomeSection({
               {completedTotal} total
             </Badge>
             {/* Completed Calls Pagination */}
-            {(allFilteredCompletedCalls.length > 6) && (
+            {completedPagination.showPagination && (
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => handleCompletedPageChange(completedPage - 1)}
-                  disabled={completedPage === 0 || completedLoading}
+                  disabled={!completedPagination.hasPrevPage || completedLoading}
                   className="h-8 w-8 p-0 hover:bg-gray-100"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -349,13 +356,13 @@ export default function HomeSection({
                   </svg>
                 </Button>
                 <span className="text-xs text-gray-500 min-w-[60px] text-center">
-                  {completedPage + 1} of {Math.ceil(allFilteredCompletedCalls.length / 6)}
+                  {completedPage + 1} of {completedPagination.totalPages}
                 </span>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => handleCompletedPageChange(completedPage + 1)}
-                  disabled={endIndexCompleted >= allFilteredCompletedCalls.length || completedLoading}
+                  disabled={!completedPagination.hasNextPage || completedLoading}
                   className="h-8 w-8 p-0 hover:bg-gray-100"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -390,10 +397,10 @@ export default function HomeSection({
 
         {!completedError && (
             <>
-              {(filteredCompletedCalls.length > 0) ? (
+              {(completedPagination.paginatedItems.length > 0) ? (
                 <>
-                  <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 transition-all duration-300`}>
-                    {filteredCompletedCalls.map((call) => (
+                  <div className={`${GRID_LAYOUTS.CALL_CARDS} transition-all duration-300`}>
+                    {completedPagination.paginatedItems.map((call) => (
                       <CallCard
                         key={call.callId}
                         call={call}

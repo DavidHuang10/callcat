@@ -22,3 +22,14 @@ export const DEFAULT_CALL_SETTINGS = {
   AI_LANGUAGE: 'en',
   MAX_CALL_DURATION: 300, // 5 minutes in seconds
 } as const;
+
+export const PAGINATION = {
+  CALLS_PER_PAGE: 6,
+  DEFAULT_LIMIT: 20,
+} as const;
+
+export const GRID_LAYOUTS = {
+  CALL_CARDS: 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4',
+  RESPONSIVE_2_3: 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4',
+  STATS_GRID: 'grid grid-cols-1 md:grid-cols-3 gap-4',
+} as const;

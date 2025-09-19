@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import {
   Clock,
   Calendar,
@@ -11,20 +12,21 @@ import {
   Trash2,
   Timer,
   Languages,
-  CheckCircle,
-  AlertCircle,
-  PhoneMissed,
-  LucideIcon,
 } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CallResponse, RescheduleData, EditData } from "@/types"
+
 import { useCallDetails } from "@/hooks/useCallDetails"
-import { hasAvailableTranscript, TranscriptMessage } from "@/utils/transcript"
+
 import { formatCallTiming } from "@/utils/duration"
+import { formatPhoneForDisplay } from "@/utils/phone"
+import { getStatusConfig } from "@/utils/callStatus"
+import { hasAvailableTranscript, TranscriptMessage } from "@/utils/transcript"
+
+import { CallResponse, RescheduleData, EditData } from "@/types"
 import { getLanguageName } from "@/constants"
-import { useState } from "react"
 
 interface CallCardProps {
   call: CallResponse
@@ -37,54 +39,7 @@ interface CallCardProps {
   onDeleteClick?: (call: CallResponse) => void
 }
 
-// Helper functions for formatting and status
-const getStatusConfig = (status: string, dialSuccessful?: boolean | null) => {
-  const configs: Record<string, {
-    label: string;
-    color: string;
-    bgGradient: string;
-    IconComponent: LucideIcon;
-  }> = {
-    SCHEDULED: {
-      label: "Scheduled",
-      color: "bg-blue-100 text-blue-800 border-blue-200",
-      bgGradient: "from-blue-50 via-indigo-50 to-purple-50",
-      IconComponent: Clock,
-    },
-    COMPLETED: {
-      // Default completed status (when dialSuccessful is true)
-      label: "Connected", 
-      color: "bg-green-100 text-green-800 border-green-200",
-      bgGradient: "from-green-50 via-emerald-50 to-teal-50",
-      IconComponent: CheckCircle,
-    },
-    NO_ANSWER: {
-      label: "No Answer",
-      color: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      bgGradient: "from-yellow-50 via-amber-50 to-orange-50",
-      IconComponent: PhoneMissed,
-    },
-    FAILED: {
-      label: "Failed",
-      color: "bg-red-100 text-red-800 border-red-200",
-      bgGradient: "from-red-50 via-pink-50 to-rose-50",
-      IconComponent: AlertCircle,
-    },
-  }
-  
-  // Handle the 3-tier status logic based on dialSuccessful
-  if (status === "COMPLETED") {
-    if (dialSuccessful === true) {
-      return configs.COMPLETED
-    } else if (dialSuccessful === null) {
-      return configs.NO_ANSWER
-    } else if (dialSuccessful === false) {
-      return configs.FAILED
-    }
-  }
-  
-  return configs[status] || configs.COMPLETED
-}
+// Helper functions for formatting
 
 const formatTimestamp = (timestamp: number) => {
   const date = new Date(timestamp)
@@ -101,17 +56,6 @@ const formatTimestamp = (timestamp: number) => {
   }
 }
 
-const formatPhoneNumber = (phone: string) => {
-  // Format +1XXXXXXXXXX to (XXX) XXX-XXXX
-  const cleaned = phone.replace(/\D/g, '')
-  if (cleaned.length === 11 && cleaned.startsWith('1')) {
-    const areaCode = cleaned.slice(1, 4)
-    const first = cleaned.slice(4, 7)
-    const last = cleaned.slice(7, 11)
-    return `(${areaCode}) ${first}-${last}`
-  }
-  return phone
-}
 
 export default function CallCard({ 
   call, 
@@ -153,12 +97,10 @@ export default function CallCard({
   const transcriptAvailable = hasAvailableTranscript(call)
 
   const handleToggleExpanded = () => {
-    console.log('Transcript toggle clicked', { call: call.callId })
     toggleExpandedTranscript(call.callId)
   }
 
   const handleEdit = () => {
-    console.log('Edit button clicked', { call: call.callId, onEdit: !!onEdit })
     if (onEdit) {
       onEdit(call.callId)
     } else {
@@ -180,7 +122,6 @@ export default function CallCard({
   }
 
   const handleDelete = () => {
-    console.log('Delete button clicked', { call: call.callId, onDeleteClick: !!onDeleteClick, onDelete: !!onDelete })
     if (onDeleteClick) {
       onDeleteClick(call)
     } else if (onDelete) {
@@ -232,7 +173,7 @@ export default function CallCard({
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="min-w-0 flex-1">
               <h3 className="font-semibold text-gray-800 text-base truncate">{call.calleeName}</h3>
-              <p className="text-xs text-gray-600 truncate">{formatPhoneNumber(call.phoneNumber)}</p>
+              <p className="text-xs text-gray-600 truncate">{formatPhoneForDisplay(call.phoneNumber)}</p>
             </div>
           </div>
           <Badge variant="outline" className={`${statusConfig.color} font-medium px-3 py-1.5 text-xs flex-shrink-0 ml-2 rounded-full shadow-sm flex items-center gap-1.5`}>
