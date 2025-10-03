@@ -6,6 +6,7 @@ import {
   Search,
   LogOut,
 } from "lucide-react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -56,11 +57,20 @@ export default function Header({ sidebarOpen, setSidebarOpen, searchQuery, setSe
         </Button>
 
         <div className="hidden lg:block">
-          <button 
+          <button
             onClick={() => setActiveSection('home')}
-            className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent hover:opacity-80 transition-opacity duration-200 cursor-pointer"
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity duration-200 cursor-pointer"
           >
-            CallCat
+            <Image
+              src="/logo.svg"
+              alt="CallCat"
+              width={32}
+              height={32}
+              className="w-8 h-8"
+            />
+            <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              CallCat
+            </span>
           </button>
         </div>
       </div>
