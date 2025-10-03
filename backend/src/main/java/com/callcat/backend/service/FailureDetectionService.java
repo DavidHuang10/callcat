@@ -37,26 +37,20 @@ public class FailureDetectionService {
         try {
             long currentTime = System.currentTimeMillis();
             long timeoutMillis = failureTimeoutMinutes * 60 * 1000L;
+            long thresholdTime = currentTime - timeoutMillis;
 
             logger.debug("Starting failure detection check at {}", currentTime);
 
-            // Get all scheduled calls that are overdue
-            List<CallRecord> scheduledCalls = callRecordRepository.findAllByStatus("SCHEDULED");
+            // Optimized: Only fetch calls that are actually overdue
+            List<CallRecord> overdueCalls = callRecordRepository.findOverdueScheduledCalls(thresholdTime);
 
-            int failedCount = 0;
-            for (CallRecord call : scheduledCalls) {
-                if (call.getScheduledFor() != null) {
-                    long overdueTime = currentTime - call.getScheduledFor();
-
-                    if (overdueTime > timeoutMillis) {
-                        markCallAsFailed(call, overdueTime);
-                        failedCount++;
-                    }
-                }
+            for (CallRecord call : overdueCalls) {
+                long overdueTime = currentTime - (call.getScheduledFor() != null ? call.getScheduledFor() : currentTime);
+                markCallAsFailed(call, overdueTime);
             }
 
-            if (failedCount > 0) {
-                logger.info("Marked {} overdue calls as failed (COMPLETED with dialSuccessful=false)", failedCount);
+            if (!overdueCalls.isEmpty()) {
+                logger.info("Marked {} overdue calls as failed (COMPLETED with dialSuccessful=false)", overdueCalls.size());
             } else {
                 logger.debug("No overdue calls found");
             }

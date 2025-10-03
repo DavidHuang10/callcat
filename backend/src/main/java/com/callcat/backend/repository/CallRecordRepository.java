@@ -114,4 +114,26 @@ public class CallRecordRepository {
                 .flatMap(page -> page.items().stream())
                 .collect(Collectors.toList());
     }
+
+    /**
+     * Find scheduled calls that are overdue (scheduledFor before threshold).
+     * Optimized with filter expression to reduce data transfer.
+     */
+    public List<CallRecord> findOverdueScheduledCalls(long thresholdTimestamp) {
+        ScanEnhancedRequest scanRequest = ScanEnhancedRequest.builder()
+                .filterExpression(software.amazon.awssdk.enhanced.dynamodb.Expression.builder()
+                        .expression("#status = :status AND #scheduledFor < :threshold")
+                        .putExpressionName("#status", "status")
+                        .putExpressionName("#scheduledFor", "scheduledFor")
+                        .putExpressionValue(":status", AttributeValue.builder().s("SCHEDULED").build())
+                        .putExpressionValue(":threshold", AttributeValue.builder().n(String.valueOf(thresholdTimestamp)).build())
+                        .build())
+                .limit(100) // Limit to prevent excessive scans
+                .build();
+
+        return table.scan(scanRequest)
+                .stream()
+                .flatMap(page -> page.items().stream())
+                .collect(Collectors.toList());
+    }
 }
