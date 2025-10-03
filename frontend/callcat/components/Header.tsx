@@ -44,7 +44,7 @@ export default function Header({ sidebarOpen, setSidebarOpen, searchQuery, setSe
     .join('')
     .toUpperCase() || 'U'
   return (
-    <header className="bg-white/80 backdrop-blur-sm border-b-2 border-purple-200 px-4 lg:px-6 py-3 flex items-center justify-between sticky top-0 z-10">
+    <header className="bg-white/80 backdrop-blur-sm border-b-2 border-purple-200 px-4 lg:px-6 py-3 flex items-center justify-between sticky top-0 z-50">
       {/* Left Section */}
       <div className="flex items-center gap-3">
         <Button
@@ -62,7 +62,7 @@ export default function Header({ sidebarOpen, setSidebarOpen, searchQuery, setSe
             className="flex items-center gap-2 hover:opacity-80 transition-opacity duration-200 cursor-pointer"
           >
             <Image
-              src="/logo.svg"
+              src="/logo-192.png"
               alt="CallCat"
               width={32}
               height={32}
