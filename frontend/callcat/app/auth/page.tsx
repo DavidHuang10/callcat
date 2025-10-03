@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
 import { apiService } from '@/lib/api'
 import { getUserTimezone } from '@/utils/timezone'
@@ -187,28 +188,42 @@ function AuthPageContent() {
 
       <div className="fixed inset-0 bg-black/40" />
 
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          {/* CallCat Header */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Image
-                src="/logo.png"
-                alt="CallCat Logo"
-                width={40}
-                height={40}
-                className="drop-shadow-lg"
-              />
-              <span className="text-2xl font-bold text-white">CallCat</span>
-            </div>
-            <h1 className="text-3xl font-bold text-white mb-2">
-              {authMode === 'reset' ? 'Forgot your password?' : 'Join CallCat!'}
-            </h1>
-            <p className="text-white/90">
-              {authMode === 'reset' ? "No worries, let's get you back in" : 'Ready to start making amazing calls?'}
-            </p>
+      {/* Header */}
+      <header className="relative z-20 backdrop-blur-sm bg-white/5 border-b border-white/20 sticky top-0">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <button
+            onClick={() => router.push('/')}
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+          >
+            <Image
+              src="/logo.png"
+              alt="CallCat Logo"
+              width={40}
+              height={40}
+              className="drop-shadow-lg"
+            />
+            <span className="text-xl font-bold text-white">CallCat</span>
+          </button>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              className="text-white hover:bg-white/20 hover:text-white"
+              onClick={() => router.push('/login')}
+            >
+              Log In
+            </Button>
+            <Button
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+              onClick={() => router.push('/auth')}
+            >
+              Sign Up
+            </Button>
           </div>
+        </div>
+      </header>
 
+      <div className="relative z-10 min-h-[calc(100vh-73px)] flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
           <Card className="border border-white/20 shadow-lg bg-white/3 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-center text-white">
@@ -292,7 +307,7 @@ function AuthPageContent() {
                     onClick={() => router.push('/login')}
                     className="text-amber-400 hover:text-amber-300 font-medium transition-colors"
                   >
-                    Sign in
+                    Log in
                   </button>
                 </>
               ) : (
@@ -302,7 +317,7 @@ function AuthPageContent() {
                     onClick={() => router.push('/login')}
                     className="text-amber-400 hover:text-amber-300 font-medium transition-colors"
                   >
-                    Sign in
+                    Log in
                   </button>
                 </>
               )}
@@ -320,7 +335,15 @@ export default function AuthPage() {
       <div className="min-h-screen relative">
         <div className="fixed inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('/business-cats.jpeg')" }} />
         <div className="fixed inset-0 bg-black/40" />
-        <div className="relative z-10 min-h-screen flex items-center justify-center">
+        <header className="relative z-20 backdrop-blur-sm bg-white/5 border-b border-white/20 sticky top-0">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 bg-white/20 rounded-lg animate-pulse"></div>
+              <div className="h-6 w-24 bg-white/20 rounded animate-pulse"></div>
+            </div>
+          </div>
+        </header>
+        <div className="relative z-10 min-h-[calc(100vh-73px)] flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400"></div>
         </div>
       </div>

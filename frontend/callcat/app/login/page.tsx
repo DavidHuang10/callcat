@@ -56,27 +56,47 @@ export default function LoginPage() {
 
       <div className="fixed inset-0 bg-black/40" />
 
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          {/* CallCat Header */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Image
-                src="/logo.png"
-                alt="CallCat Logo"
-                width={40}
-                height={40}
-                className="drop-shadow-lg"
-              />
-              <span className="text-2xl font-bold text-white">CallCat</span>
-            </div>
+      {/* Header */}
+      <header className="relative z-20 backdrop-blur-sm bg-white/5 border-b border-white/20 sticky top-0">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <button
+            onClick={() => router.push('/')}
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+          >
+            <Image
+              src="/logo.png"
+              alt="CallCat Logo"
+              width={40}
+              height={40}
+              className="drop-shadow-lg"
+            />
+            <span className="text-xl font-bold text-white">CallCat</span>
+          </button>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              className="text-white hover:bg-white/20 hover:text-white"
+              onClick={() => router.push('/login')}
+            >
+              Log In
+            </Button>
+            <Button
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+              onClick={() => router.push('/auth')}
+            >
+              Sign Up
+            </Button>
           </div>
+        </div>
+      </header>
 
+      <div className="relative z-10 min-h-[calc(100vh-73px)] flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
           <Card className="border border-white/20 shadow-lg bg-white/3 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-center text-white">Welcome back!</CardTitle>
             <CardDescription className="text-center text-white/80">
-              Let&apos;s get you signed in
+              Let&apos;s get you logged in
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -125,9 +145,9 @@ export default function LoginPage() {
                 {loading ? (
                   <div className="flex items-center gap-2">
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Signing In...
+                    Logging In...
                   </div>
-                ) : 'Sign In'}
+                ) : 'Log In'}
               </Button>
             </form>
 

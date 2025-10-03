@@ -57,7 +57,7 @@ export default function LandingPage() {
                 className="text-white hover:bg-white/20 hover:text-white"
                 onClick={handleSignIn}
               >
-                Sign In
+                Log In
               </Button>
               <Button
                 className="bg-amber-600 hover:bg-amber-700 text-white"
