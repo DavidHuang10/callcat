@@ -36,7 +36,7 @@ export function ResetPasswordStep({
           placeholder="Enter the token from your email"
           value={resetToken}
           onChange={(e) => onResetTokenChange(e.target.value)}
-          className="bg-white/5 border-white/40 !text-white !placeholder-white focus:ring-amber-400 focus:border-amber-400 focus:bg-white/10"
+          className="bg-white/5 border-white/40 !text-white !placeholder-white focus:ring-blue-400 focus:border-blue-400 focus:bg-white/10"
           required
         />
         <p className="text-sm !text-white/70">
@@ -53,7 +53,7 @@ export function ResetPasswordStep({
             placeholder="Enter your new password"
             value={password}
             onChange={(e) => onPasswordChange(e.target.value)}
-            className="pl-10 bg-white/5 border-white/40 !text-white !placeholder-white focus:ring-amber-400 focus:border-amber-400 focus:bg-white/10"
+            className="pl-10 bg-white/5 border-white/40 !text-white !placeholder-white focus:ring-blue-400 focus:border-blue-400 focus:bg-white/10"
             required
           />
         </div>
@@ -69,11 +69,11 @@ export function ResetPasswordStep({
           placeholder="Confirm your new password"
           value={confirmPassword}
           onChange={(e) => onConfirmPasswordChange(e.target.value)}
-          className="bg-white/5 border-white/40 !text-white !placeholder-white focus:ring-amber-400 focus:border-amber-400 focus:bg-white/10"
+          className="bg-white/5 border-white/40 !text-white !placeholder-white focus:ring-blue-400 focus:border-blue-400 focus:bg-white/10"
           required
         />
       </div>
-      <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700 text-white" disabled={loading}>
+      <Button type="submit" className="w-full bg-blue-800 hover:bg-blue-900 text-white" disabled={loading}>
         {loading ? 'Resetting Password...' : 'Reset Password'}
       </Button>
       <Button 

@@ -23,7 +23,7 @@ export function ForgotEmailStep({ email, loading, onEmailChange, onSubmit }: For
             placeholder="Enter your email address"
             value={email}
             onChange={(e) => onEmailChange(e.target.value)}
-            className="pl-10 bg-white/5 border-white/40 !text-white !placeholder-white focus:ring-amber-400 focus:border-amber-400 focus:bg-white/10"
+            className="pl-10 bg-white/5 border-white/40 !text-white !placeholder-white focus:ring-blue-400 focus:border-blue-400 focus:bg-white/10"
             required
           />
         </div>
@@ -31,7 +31,7 @@ export function ForgotEmailStep({ email, loading, onEmailChange, onSubmit }: For
           We&apos;ll send you a password reset token
         </p>
       </div>
-      <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700 text-white" disabled={loading}>
+      <Button type="submit" className="w-full bg-blue-800 hover:bg-blue-900 text-white" disabled={loading}>
         {loading ? 'Sending...' : 'Send Reset Instructions'}
       </Button>
     </form>

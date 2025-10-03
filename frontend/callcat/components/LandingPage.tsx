@@ -95,7 +95,7 @@ export default function LandingPage() {
                 Log In
               </Button>
               <Button
-                className="bg-amber-600 hover:bg-amber-700 text-white"
+                className="bg-blue-800 hover:bg-blue-900 text-white"
                 onClick={handleSignUp}
               >
                 Sign Up
@@ -113,7 +113,7 @@ export default function LandingPage() {
                   Let CallCat Handle Your{" "}
                   <span
                     key={currentPhrase}
-                    className="text-amber-400 inline-block animate-in slide-in-from-top-2 fade-in duration-700"
+                    className="text-blue-400 inline-block animate-in slide-in-from-top-2 fade-in duration-700"
                   >
                     {phrases[currentPhrase]}
                   </span>
@@ -138,7 +138,7 @@ export default function LandingPage() {
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
                         disabled={loading}
-                        className="px-4 py-3 rounded-lg bg-white/10 border border-white/30 text-white placeholder-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-amber-400 flex-1 min-w-0 disabled:opacity-50"
+                        className="px-4 py-3 rounded-lg bg-white/10 border border-white/30 text-white placeholder-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-400 flex-1 min-w-0 disabled:opacity-50"
                       />
                       <Button
                         variant="outline"

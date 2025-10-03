@@ -213,7 +213,7 @@ function AuthPageContent() {
               Log In
             </Button>
             <Button
-              className="bg-amber-600 hover:bg-amber-700 text-white"
+              className="bg-blue-800 hover:bg-blue-900 text-white"
               onClick={() => router.push('/auth')}
             >
               Sign Up
@@ -305,7 +305,7 @@ function AuthPageContent() {
                   Remember your password?{' '}
                   <button
                     onClick={() => router.push('/login')}
-                    className="text-amber-400 hover:text-amber-300 font-medium transition-colors"
+                    className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
                   >
                     Log in
                   </button>
@@ -315,7 +315,7 @@ function AuthPageContent() {
                   Already have an account?{' '}
                   <button
                     onClick={() => router.push('/login')}
-                    className="text-amber-400 hover:text-amber-300 font-medium transition-colors"
+                    className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
                   >
                     Log in
                   </button>
@@ -344,7 +344,7 @@ export default function AuthPage() {
           </div>
         </header>
         <div className="relative z-10 min-h-[calc(100vh-73px)] flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400"></div>
         </div>
       </div>
     }>

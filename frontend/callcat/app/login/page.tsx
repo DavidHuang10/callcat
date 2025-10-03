@@ -81,7 +81,7 @@ export default function LoginPage() {
               Log In
             </Button>
             <Button
-              className="bg-amber-600 hover:bg-amber-700 text-white"
+              className="bg-blue-800 hover:bg-blue-900 text-white"
               onClick={() => router.push('/auth')}
             >
               Sign Up
@@ -111,7 +111,7 @@ export default function LoginPage() {
                     placeholder="Enter your email address"
                     value={formData.email}
                     onChange={(e) => updateFormData('email', e.target.value)}
-                    className="pl-10 bg-white/5 border-white/40 !text-white !placeholder-white focus:ring-amber-400 focus:border-amber-400 focus:bg-white/10"
+                    className="pl-10 bg-white/5 border-white/40 !text-white !placeholder-white focus:ring-blue-400 focus:border-blue-400 focus:bg-white/10"
                     required
                   />
                 </div>
@@ -127,7 +127,7 @@ export default function LoginPage() {
                     placeholder="Enter your password"
                     value={formData.password}
                     onChange={(e) => updateFormData('password', e.target.value)}
-                    className="pl-10 bg-white/5 border-white/40 !text-white !placeholder-white focus:ring-amber-400 focus:border-amber-400 focus:bg-white/10"
+                    className="pl-10 bg-white/5 border-white/40 !text-white !placeholder-white focus:ring-blue-400 focus:border-blue-400 focus:bg-white/10"
                     required
                   />
                 </div>
@@ -141,7 +141,7 @@ export default function LoginPage() {
               )}
               
 
-              <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700 text-white" disabled={loading}>
+              <Button type="submit" className="w-full bg-blue-800 hover:bg-blue-900 text-white" disabled={loading}>
                 {loading ? (
                   <div className="flex items-center gap-2">
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -154,7 +154,7 @@ export default function LoginPage() {
             <div className="mt-6 text-center">
               <button
                 onClick={() => router.push('/auth?mode=reset')}
-                className="text-sm text-amber-400 hover:text-amber-300 font-medium transition-colors"
+                className="text-sm text-blue-400 hover:text-blue-300 font-medium transition-colors"
               >
                 Forgot your password?
               </button>
@@ -167,7 +167,7 @@ export default function LoginPage() {
               Don&apos;t have an account?{' '}
               <button
                 onClick={() => router.push('/auth?mode=register')}
-                className="text-amber-400 hover:text-amber-300 font-medium transition-colors"
+                className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
               >
                 Create one
               </button>

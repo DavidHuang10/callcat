@@ -30,14 +30,14 @@ export function VerificationStep({
           value={verificationCode}
           onChange={(e) => onVerificationCodeChange(e.target.value)}
           maxLength={6}
-          className="bg-white/5 border-white/40 !text-white !placeholder-white focus:ring-amber-400 focus:border-amber-400 focus:bg-white/10"
+          className="bg-white/5 border-white/40 !text-white !placeholder-white focus:ring-blue-400 focus:border-blue-400 focus:bg-white/10"
           required
         />
         <p className="text-sm !text-white/70">
           We&apos;ve sent a verification code to {email}
         </p>
       </div>
-      <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700 text-white" disabled={loading}>
+      <Button type="submit" className="w-full bg-blue-800 hover:bg-blue-900 text-white" disabled={loading}>
         {loading ? (
           <div className="flex items-center gap-2">
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
