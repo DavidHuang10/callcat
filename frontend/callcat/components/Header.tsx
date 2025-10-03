@@ -64,9 +64,9 @@ export default function Header({ sidebarOpen, setSidebarOpen, searchQuery, setSe
             <Image
               src="/logo-192.png"
               alt="CallCat"
-              width={32}
-              height={32}
-              className="w-8 h-8"
+              width={40}
+              height={40}
+              className="w-10 h-10"
             />
             <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
               CallCat

@@ -306,8 +306,7 @@ export default function HomeSection({
                 <Card className="text-center py-12">
                   <CardContent>
                     <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-600 mb-2">No scheduled calls</h3>
-                    <p className="text-gray-500 mb-4">Schedule your first call to get started!</p>
+                    <h3 className="text-lg font-medium text-gray-600 mb-4">No calls right now...</h3>
                     <Button
                       onClick={() => setActiveSection("make-call")}
                       className="bg-gradient-to-r from-purple-600 to-pink-600"
@@ -406,8 +405,7 @@ export default function HomeSection({
                 <Card className="text-center py-12">
                   <CardContent>
                     <Coffee className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-600 mb-2">No calls yet</h3>
-                    <p className="text-gray-500 mb-4">Start by making your first call!</p>
+                    <h3 className="text-lg font-medium text-gray-600 mb-4">Schedule a call!</h3>
                     <Button
                       onClick={() => setActiveSection("make-call")}
                       className="bg-gradient-to-r from-purple-600 to-pink-600"
