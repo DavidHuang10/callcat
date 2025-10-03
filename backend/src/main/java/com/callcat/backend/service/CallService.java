@@ -70,25 +70,53 @@ public class CallService {
         return response;
     }
 
-    public CallResponse createInstantCall(String userEmail, CallRequest request) {
+    /**
+     * Result object for instant call creation containing both the call record and user
+     * This allows the controller to access both objects without re-fetching from database
+     */
+    public static class InstantCallResult {
+        private final CallRecord callRecord;
+        private final User user;
+
+        public InstantCallResult(CallRecord callRecord, User user) {
+            this.callRecord = callRecord;
+            this.user = user;
+        }
+
+        public CallRecord getCallRecord() {
+            return callRecord;
+        }
+
+        public User getUser() {
+            return user;
+        }
+
+        public CallResponse toCallResponse() {
+            CallResponse response = new CallResponse();
+            BeanUtils.copyProperties(callRecord, response);
+            return response;
+        }
+    }
+
+    public InstantCallResult createInstantCall(String userEmail, CallRequest request) {
         User user = userRepository.findByEmailAndIsActive(userEmail, true)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         PhoneNumberValidator.validatePhoneNumber(request.getPhoneNumber());
 
         long currentTime = System.currentTimeMillis();
-        
+
         CallRecord callRecord = new CallRecord();
         BeanUpdateUtils.copyNonNullProperties(request, callRecord);
-        
+
         // Set scheduledFor to current time for DynamoDB consistency
         callRecord.setScheduledFor(currentTime);
-        
+
         // Default AI language to English if not provided
         if (callRecord.getAiLanguage() == null) {
             callRecord.setAiLanguage("en");
         }
-        
+
         callRecord.setUserId(user.getId().toString());
         callRecord.setCallId(UUID.randomUUID().toString());
         callRecord.setStatus("SCHEDULED");
@@ -97,11 +125,9 @@ public class CallService {
 
         // Save to DynamoDB first
         callRecordRepository.save(callRecord);
-        
-        // Return the call record - controller will handle immediate triggering
-        CallResponse response = new CallResponse();
-        BeanUtils.copyProperties(callRecord, response);
-        return response;
+
+        // Return both call record and user for controller to use
+        return new InstantCallResult(callRecord, user);
     }
 
     public CallListResponse getCalls(String userEmail, String status, Integer limit) {

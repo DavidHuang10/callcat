@@ -1,8 +1,10 @@
 package com.callcat.backend.controller;
 
 import com.callcat.backend.dto.*;
+import com.callcat.backend.entity.CallRecord;
 import com.callcat.backend.service.CallService;
 import com.callcat.backend.service.RetellService;
+import com.callcat.backend.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -10,20 +12,23 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/calls")
 public class CallController {
-    
+
     private final CallService callService;
     private final RetellService retellService;
-    
+    private final UserService userService;
+
     @Value("${lambda.api.key}")
     private String expectedApiKey;
-    
-    public CallController(CallService callService, RetellService retellService) {
+
+    public CallController(CallService callService, RetellService retellService, UserService userService) {
         this.callService = callService;
         this.retellService = retellService;
+        this.userService = userService;
     }
     
     @PostMapping
@@ -105,17 +110,42 @@ public class CallController {
     public ResponseEntity<?> createInstantCall(
             Authentication authentication,
             @Valid @RequestBody CallRequest request) {
+        CallService.InstantCallResult result = null;
         try {
             String email = authentication.getName();
-            CallResponse response = callService.createInstantCall(email, request);
-            
-            // Immediately trigger the call (no EventBridge/Lambda)
-            retellService.makeCall(response.getCallId());
-            
-            return ResponseEntity.ok(response);
+            result = callService.createInstantCall(email, request);
+
+            // Get user preferences to pass to Retell service
+            String systemPrompt = userService.getUserPreferences(email).getSystemPrompt();
+
+            // Immediately trigger the call using the already-loaded CallRecord
+            // This avoids race conditions with DynamoDB eventual consistency
+            retellService.makeCall(result.getCallRecord(), systemPrompt);
+
+            return ResponseEntity.ok(result.toCallResponse());
         } catch (IllegalArgumentException e) {
+            // Mark call as failed if it was created
+            if (result != null) {
+                callService.updateCallStatusWithRetellData(
+                    result.getCallRecord().getCallId(),
+                    "FAILED",
+                    System.currentTimeMillis(),
+                    null,
+                    false
+                );
+            }
             return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage(), false));
         } catch (RuntimeException e) {
+            // Mark call as failed if it was created
+            if (result != null) {
+                callService.updateCallStatusWithRetellData(
+                    result.getCallRecord().getCallId(),
+                    "FAILED",
+                    System.currentTimeMillis(),
+                    null,
+                    false
+                );
+            }
             return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage(), false));
         }
     }
@@ -157,22 +187,21 @@ public class CallController {
             // Normalize phone number to E.164 format
             String normalizedPhone = normalizePhoneNumber(phoneNumber);
 
-            // Create demo call request with hardcoded values
-            CallRequest demoRequest = new CallRequest();
-            demoRequest.setCalleeName("Demo User");
-            demoRequest.setPhoneNumber(normalizedPhone);
-            demoRequest.setSubject("CallCat Demo");
-            demoRequest.setPrompt("Hello! This is CallCat, an AI phone assistant that automates routine calls. You can schedule calls to anyone, customize the AI's voice and message, and get full transcripts. CallCat saves you time on restaurant reservations, appointment confirmations, and follow-ups. Thanks for trying our demo!");
-            demoRequest.setAiLanguage("en");
-            demoRequest.setVoiceId("default");
+            // Create temporary CallRecord (not saved to database - demo calls are ephemeral)
+            CallRecord tempRecord = new CallRecord();
+            tempRecord.setCallId(UUID.randomUUID().toString());
+            tempRecord.setPhoneNumber(normalizedPhone);
+            tempRecord.setCalleeName("Demo User");
+            tempRecord.setSubject("CallCat Demo");
+            tempRecord.setPrompt("Hello! This is CallCat, an AI phone assistant that automates routine calls. You can schedule calls to anyone, customize the AI's voice and message, and get full transcripts. CallCat saves you time on restaurant reservations, appointment confirmations, and follow-ups. Thanks for trying our demo!");
+            tempRecord.setAiLanguage("en");
+            tempRecord.setVoiceId("default");
 
-            // Create instant call for demo account
-            CallResponse response = callService.createInstantCall("demo@call-cat.com", demoRequest);
+            // Call Retell API directly without saving to database
+            // No user account needed - demo calls are completely ephemeral
+            retellService.makeCall(tempRecord, null);
 
-            // Immediately trigger the call
-            retellService.makeCall(response.getCallId());
-
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(new ApiResponse("Demo call initiated successfully", true));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage(), false));
         } catch (RuntimeException e) {

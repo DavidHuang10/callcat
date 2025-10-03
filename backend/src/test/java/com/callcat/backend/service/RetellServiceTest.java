@@ -124,7 +124,13 @@ class RetellServiceTest {
         });
 
         assertEquals("Failed to create call", exception.getMessage());
-        assertTrue(exception.getCause().getMessage().contains("API call failed"));
+        // The exception is wrapped twice by makeCall(String) -> makeCall(CallRecord, String)
+        // So we need to check the nested cause
+        assertNotNull(exception.getCause());
+        Throwable rootCause = exception.getCause().getCause();
+        assertNotNull(rootCause, "Root cause should not be null");
+        assertTrue(rootCause.getMessage().contains("API call failed"),
+            "Expected root cause message to contain 'API call failed' but was: " + rootCause.getMessage());
 
         // Verify services were called but call was not saved
         verify(callService).findCallByCallId(callId);

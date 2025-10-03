@@ -63,11 +63,17 @@ public class RetellService {
     }
 
 
-    public CallResponse makeCall(String callId) {
+    /**
+     * Make a call using Retell API - optimized version that accepts CallRecord directly
+     * This version is used for instant calls to avoid race conditions with DynamoDB eventual consistency
+     *
+     * @param callRecord The call record with all necessary data
+     * @param systemPrompt The user's system prompt from preferences
+     * @return CallResponse with updated provider information
+     */
+    public CallResponse makeCall(CallRecord callRecord, String systemPrompt) {
         try {
-            CallRecord callRecord = callService.findCallByCallId(callId);
-            String systemPrompt = userService.getUserPreferences(Long.parseLong(callRecord.getUserId())).getSystemPrompt();
-            
+            String callId = callRecord.getCallId();
             Map<String, Object> requestBody = buildRetellRequestBody(callRecord, systemPrompt, callId);
             logger.info("Making POST request to Retell API for phone: {}", callRecord.getPhoneNumber());
 
@@ -76,12 +82,12 @@ public class RetellService {
                 .body(requestBody)
                 .retrieve()
                 .body(String.class);
-            
+
             logger.info("Retell API call successful");
-            
+
             // Parse Retell response
             JsonNode retellResponse = objectMapper.readTree(responseBody);
-            
+
             // Convert to CallResponse DTO
             CallResponse response = convertToCallResponse(callRecord, retellResponse);
 
@@ -91,7 +97,28 @@ public class RetellService {
             callService.saveCallRecord(callRecord);
 
             return response;
-            
+
+        } catch (Exception e) {
+            logger.error("Retell API call failed for callId {}: {}", callRecord.getCallId(), e.getMessage());
+            throw new RuntimeException("Failed to create call", e);
+        }
+    }
+
+    /**
+     * Make a call using Retell API - fetches CallRecord from database
+     * This version is used by Lambda/scheduled calls that only have the callId
+     *
+     * @param callId The ID of the call to make
+     * @return CallResponse with updated provider information
+     */
+    public CallResponse makeCall(String callId) {
+        try {
+            CallRecord callRecord = callService.findCallByCallId(callId);
+            String systemPrompt = userService.getUserPreferences(Long.parseLong(callRecord.getUserId())).getSystemPrompt();
+
+            // Delegate to the optimized method
+            return makeCall(callRecord, systemPrompt);
+
         } catch (Exception e) {
             logger.error("Retell API call failed for callId {}: {}", callId, e.getMessage());
             throw new RuntimeException("Failed to create call", e);

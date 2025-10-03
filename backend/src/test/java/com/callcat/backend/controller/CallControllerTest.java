@@ -35,15 +35,18 @@ class CallControllerTest {
 
     @MockitoBean
     private CallService callService;
-    
+
     @MockitoBean
     private JwtService jwtService;
-    
+
     @MockitoBean
     private com.callcat.backend.service.TokenBlacklistService tokenBlacklistService;
 
     @MockitoBean
     private com.callcat.backend.service.RetellService retellService;
+
+    @MockitoBean
+    private com.callcat.backend.service.UserService userService;
 
     @Autowired
     private ObjectMapper objectMapper;
