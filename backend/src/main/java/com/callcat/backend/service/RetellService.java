@@ -94,7 +94,15 @@ public class RetellService {
             // Update the CallRecord with the providerId from Retell
             callRecord.setProviderId(retellResponse.get("call_id").asText());
             callRecord.setRetellCallData(objectMapper.writeValueAsString(retellResponse));
-            callService.saveCallRecord(callRecord);
+            
+            // Only save if this has a userId (not a demo call)
+            // Demo calls are ephemeral and should not be persisted
+            if (callRecord.getUserId() != null) {
+                callService.saveCallRecord(callRecord);
+                logger.info("Updated call record with providerId: {}", callRecord.getProviderId());
+            } else {
+                logger.info("Demo call - skipping database save (ephemeral)");
+            }
 
             return response;
 

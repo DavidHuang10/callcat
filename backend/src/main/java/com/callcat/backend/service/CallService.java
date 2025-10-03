@@ -123,8 +123,11 @@ public class CallService {
         callRecord.setCreatedAt(currentTime);
         callRecord.setUpdatedAt(currentTime);
 
-        // Save to DynamoDB first
-        callRecordRepository.save(callRecord);
+
+        // callRecordRepository.save(callRecord);
+        // DO NOT save here - let RetellService save after getting providerId
+        // This prevents double-save race condition with DynamoDB
+        // The record will be saved with all data (including providerId) in one atomic write
 
         // Return both call record and user for controller to use
         return new InstantCallResult(callRecord, user);

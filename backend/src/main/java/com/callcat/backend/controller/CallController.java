@@ -119,32 +119,28 @@ public class CallController {
             String systemPrompt = userService.getUserPreferences(email).getSystemPrompt();
 
             // Immediately trigger the call using the already-loaded CallRecord
-            // This avoids race conditions with DynamoDB eventual consistency
+            // RetellService will save the record with providerId in one atomic write
             retellService.makeCall(result.getCallRecord(), systemPrompt);
 
             return ResponseEntity.ok(result.toCallResponse());
         } catch (IllegalArgumentException e) {
-            // Mark call as failed if it was created
+            // Save the call record with FAILED status if it was created but Retell call failed
             if (result != null) {
-                callService.updateCallStatusWithRetellData(
-                    result.getCallRecord().getCallId(),
-                    "FAILED",
-                    System.currentTimeMillis(),
-                    null,
-                    false
-                );
+                CallRecord failedCall = result.getCallRecord();
+                failedCall.setStatus("FAILED");
+                failedCall.setCompletedAt(System.currentTimeMillis());
+                failedCall.setDialSuccessful(false);
+                callService.saveCallRecord(failedCall);
             }
             return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage(), false));
         } catch (RuntimeException e) {
-            // Mark call as failed if it was created
+            // Save the call record with FAILED status if it was created but Retell call failed
             if (result != null) {
-                callService.updateCallStatusWithRetellData(
-                    result.getCallRecord().getCallId(),
-                    "FAILED",
-                    System.currentTimeMillis(),
-                    null,
-                    false
-                );
+                CallRecord failedCall = result.getCallRecord();
+                failedCall.setStatus("FAILED");
+                failedCall.setCompletedAt(System.currentTimeMillis());
+                failedCall.setDialSuccessful(false);
+                callService.saveCallRecord(failedCall);
             }
             return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage(), false));
         }
