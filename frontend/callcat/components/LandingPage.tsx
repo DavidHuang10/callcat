@@ -1,9 +1,9 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Phone } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 
 const phrases = ["Business Calls", "Routine Calls", "Time-Consuming Calls", "Repetitive Tasks", "Daily Errands"]
 
@@ -31,20 +31,24 @@ export default function LandingPage() {
       <div
         className="fixed inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: "url('/cafe.jpg')",
+          backgroundImage: "url('/business-cats.jpeg')",
         }}
       />
 
-      <div className="fixed inset-0 bg-black/20" />
+      <div className="fixed inset-0 bg-black/40" />
 
       <div className="relative z-10">
         {/* Header */}
         <header className="backdrop-blur-sm bg-white/5 border-b border-white/20 sticky top-0 z-50">
           <div className="container mx-auto px-4 py-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center">
-                <Phone className="w-4 h-4 text-white" />
-              </div>
+              <Image
+                src="/logo.png"
+                alt="CallCat Logo"
+                width={40}
+                height={40}
+                className="drop-shadow-lg"
+              />
               <span className="text-xl font-bold text-white">CallCat</span>
             </div>
             <div className="flex items-center gap-3">
@@ -137,9 +141,13 @@ export default function LandingPage() {
           <div className="container mx-auto">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center">
-                  <Phone className="w-4 h-4 text-white" />
-                </div>
+                <Image
+                  src="/logo.png"
+                  alt="CallCat Logo"
+                  width={32}
+                  height={32}
+                  className="drop-shadow-lg"
+                />
                 <span className="text-xl font-bold text-white">CallCat</span>
               </div>
 

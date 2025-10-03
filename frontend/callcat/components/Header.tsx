@@ -62,11 +62,11 @@ export default function Header({ sidebarOpen, setSidebarOpen, searchQuery, setSe
             className="flex items-center gap-2 hover:opacity-80 transition-opacity duration-200 cursor-pointer"
           >
             <Image
-              src="/logo-192.png"
+              src="/logo.png"
               alt="CallCat"
               width={40}
               height={40}
-              className="w-10 h-10"
+              className="w-10 h-10 drop-shadow-lg"
             />
             <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
               CallCat

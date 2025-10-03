@@ -3,10 +3,10 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Phone } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { apiService } from '@/lib/api'
 import { getUserTimezone } from '@/utils/timezone'
+import Image from 'next/image'
 import {
   AuthStepIndicator,
   AuthAlerts,
@@ -181,24 +181,28 @@ function AuthPageContent() {
       <div
         className="fixed inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: "url('/cafe.jpg')",
+          backgroundImage: "url('/business-cats.jpeg')",
         }}
       />
 
-      <div className="fixed inset-0 bg-black/20" />
+      <div className="fixed inset-0 bg-black/40" />
 
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           {/* CallCat Header */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-amber-600 rounded-full flex items-center justify-center">
-                <Phone className="w-5 h-5 text-white" />
-              </div>
+              <Image
+                src="/logo.png"
+                alt="CallCat Logo"
+                width={40}
+                height={40}
+                className="drop-shadow-lg"
+              />
               <span className="text-2xl font-bold text-white">CallCat</span>
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">
-              {authMode === 'reset' ? 'Forgot your password?' : 'Join CallCat! ✨'}
+              {authMode === 'reset' ? 'Forgot your password?' : 'Join CallCat!'}
             </h1>
             <p className="text-white/90">
               {authMode === 'reset' ? "No worries, let's get you back in" : 'Ready to start making amazing calls?'}
@@ -314,8 +318,8 @@ export default function AuthPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen relative">
-        <div className="fixed inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('/cafe.jpg')" }} />
-        <div className="fixed inset-0 bg-black/20" />
+        <div className="fixed inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('/business-cats.jpeg')" }} />
+        <div className="fixed inset-0 bg-black/40" />
         <div className="relative z-10 min-h-screen flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400"></div>
         </div>

@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Mail, Lock, AlertCircle, Phone } from 'lucide-react'
+import { Mail, Lock, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { apiService } from '@/lib/api'
+import Image from 'next/image'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -49,24 +50,26 @@ export default function LoginPage() {
       <div
         className="fixed inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: "url('/cafe.jpg')",
+          backgroundImage: "url('/business-cats.jpeg')",
         }}
       />
 
-      <div className="fixed inset-0 bg-black/20" />
+      <div className="fixed inset-0 bg-black/40" />
 
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           {/* CallCat Header */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-amber-600 rounded-full flex items-center justify-center">
-                <Phone className="w-5 h-5 text-white" />
-              </div>
+              <Image
+                src="/logo.png"
+                alt="CallCat Logo"
+                width={40}
+                height={40}
+                className="drop-shadow-lg"
+              />
               <span className="text-2xl font-bold text-white">CallCat</span>
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">Welcome back</h1>
-            <p className="text-white/90">Ready to make some calls?</p>
           </div>
 
           <Card className="border border-white/20 shadow-lg bg-white/3 backdrop-blur-sm">
