@@ -4,12 +4,17 @@ import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
+import { apiService } from "@/lib/api"
 
 const phrases = ["Business Calls", "Routine Calls", "Time-Consuming Calls", "Repetitive Tasks", "Daily Errands"]
 
 export default function LandingPage() {
   const [currentPhrase, setCurrentPhrase] = useState(0)
   const router = useRouter()
+  const [phoneNumber, setPhoneNumber] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState(false)
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -24,6 +29,36 @@ export default function LandingPage() {
 
   const handleSignUp = () => {
     router.push('/auth')
+  }
+
+  const handleDemoCall = async () => {
+    setError("")
+    setSuccess(false)
+
+    if (!phoneNumber.trim()) {
+      setError("Please enter a phone number")
+      return
+    }
+
+    // Basic validation - must contain at least some digits
+    const hasDigits = /\d/.test(phoneNumber)
+    if (!hasDigits) {
+      setError("Please enter a valid phone number")
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      await apiService.createDemoCall(phoneNumber)
+      setSuccess(true)
+      setPhoneNumber("")
+      setTimeout(() => setSuccess(false), 5000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create demo call")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -95,19 +130,36 @@ export default function LandingPage() {
                   >
                     Make an Account
                   </Button>
-                  <div className="flex gap-2 items-center w-full sm:w-auto">
-                    <input
-                      type="tel"
-                      placeholder="Phone (optional for demo)"
-                      className="px-4 py-3 rounded-lg bg-white/10 border border-white/30 text-white placeholder-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-amber-400 flex-1 min-w-0"
-                    />
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="px-6 py-3 text-lg border-white/30 hover:bg-white/20 bg-transparent text-white whitespace-nowrap"
-                    >
-                      Get Demo
-                    </Button>
+                  <div className="flex flex-col gap-2 w-full sm:w-auto">
+                    <div className="flex gap-2 items-center w-full sm:w-auto">
+                      <input
+                        type="tel"
+                        placeholder="Enter your phone number"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        disabled={loading}
+                        className="px-4 py-3 rounded-lg bg-white/10 border border-white/30 text-white placeholder-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-amber-400 flex-1 min-w-0 disabled:opacity-50"
+                      />
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        onClick={handleDemoCall}
+                        disabled={loading}
+                        className="px-6 py-3 text-lg border-white/30 hover:bg-white/20 bg-transparent text-white whitespace-nowrap disabled:opacity-50"
+                      >
+                        {loading ? "Calling..." : "Get Demo"}
+                      </Button>
+                    </div>
+                    {error && (
+                      <p className="text-sm text-red-400 backdrop-blur-sm bg-red-900/20 px-3 py-2 rounded">
+                        {error}
+                      </p>
+                    )}
+                    {success && (
+                      <p className="text-sm text-green-400 backdrop-blur-sm bg-green-900/20 px-3 py-2 rounded">
+                        Demo call sent! You should receive it shortly.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -149,15 +201,6 @@ export default function LandingPage() {
                   className="drop-shadow-lg"
                 />
                 <span className="text-xl font-bold text-white">CallCat</span>
-              </div>
-
-              <div className="flex gap-6 text-sm">
-                <a href="#" className="text-white/70 hover:text-white transition-colors">
-                  Help Center
-                </a>
-                <a href="#" className="text-white/70 hover:text-white transition-colors">
-                  Contact Us
-                </a>
               </div>
             </div>
 

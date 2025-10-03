@@ -123,6 +123,30 @@ class ApiService {
         return this.request<{ transcriptText: string }>(`/api/calls/${callId}/transcript`);
     }
 
+    async createDemoCall(phoneNumber: string): Promise<CallResponse> {
+        const url = `${API_BASE_URL}/api/calls/demo`;
+
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ phoneNumber }),
+        });
+
+        if (!response.ok) {
+            let errorMessage = `HTTP error! status: ${response.status}`;
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorMessage;
+            } catch {
+                errorMessage = `Server error (${response.status}): ${response.statusText}`;
+            }
+            throw new Error(errorMessage);
+        }
+
+        return await response.json();
+    }
 
     // User Management
     async getUserProfile(): Promise<UserResponse> {

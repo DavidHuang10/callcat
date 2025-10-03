@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/calls")
 public class CallController {
@@ -141,5 +143,60 @@ public class CallController {
     
     private boolean isValidApiKey(String providedKey) {
         return expectedApiKey != null && expectedApiKey.equals(providedKey);
+    }
+
+    @PostMapping("/demo")
+    public ResponseEntity<?> createDemoCall(@RequestBody Map<String, String> request) {
+        try {
+            String phoneNumber = request.get("phoneNumber");
+
+            if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(new ApiResponse("Phone number is required", false));
+            }
+
+            // Normalize phone number to E.164 format
+            String normalizedPhone = normalizePhoneNumber(phoneNumber);
+
+            // Create demo call request with hardcoded values
+            CallRequest demoRequest = new CallRequest();
+            demoRequest.setCalleeName("Demo User");
+            demoRequest.setPhoneNumber(normalizedPhone);
+            demoRequest.setSubject("CallCat Demo");
+            demoRequest.setPrompt("Hello! This is CallCat, an AI phone assistant that automates routine calls. You can schedule calls to anyone, customize the AI's voice and message, and get full transcripts. CallCat saves you time on restaurant reservations, appointment confirmations, and follow-ups. Thanks for trying our demo!");
+            demoRequest.setAiLanguage("en");
+            demoRequest.setVoiceId("default");
+
+            // Create instant call for demo account
+            CallResponse response = callService.createInstantCall("demo@call-cat.com", demoRequest);
+
+            // Immediately trigger the call
+            retellService.makeCall(response.getCallId());
+
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage(), false));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage(), false));
+        }
+    }
+
+    private String normalizePhoneNumber(String phone) {
+        // Remove all non-digit characters
+        String digits = phone.replaceAll("[^0-9]", "");
+
+        // Handle common US formats
+        if (digits.length() == 10) {
+            return "+1" + digits;
+        }
+        if (digits.length() == 11 && digits.startsWith("1")) {
+            return "+" + digits;
+        }
+
+        // For international numbers or other formats, just prepend +
+        if (!digits.isEmpty() && !phone.startsWith("+")) {
+            return "+" + digits;
+        }
+
+        return digits.isEmpty() ? phone : "+" + digits;
     }
 }
