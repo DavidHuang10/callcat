@@ -19,7 +19,6 @@ import DeleteConfirmationDialog from "@/components/DeleteConfirmationDialog"
 import { useCallsForDashboard } from "@/hooks/useCallsForDashboard"
 import { useDashboardStats } from "@/hooks/useDashboardStats"
 import { usePagination } from "@/hooks/usePagination"
-import { useAuth } from "@/contexts/AuthContext"
 
 import { apiService } from "@/lib/api"
 import { CallResponse } from "@/types"
@@ -32,13 +31,12 @@ interface HomeSectionProps {
   setActiveSection: (section: string) => void
 }
 
-export default function HomeSection({ 
-  searchQuery, 
-  expandedTranscripts, 
-  toggleExpandedTranscript, 
+export default function HomeSection({
+  searchQuery,
+  expandedTranscripts,
+  toggleExpandedTranscript,
   setActiveSection
 }: HomeSectionProps) {
-  const { user } = useAuth()
   const {
     scheduledCalls,
     completedCalls,
@@ -56,7 +54,7 @@ export default function HomeSection({
   } = useCallsForDashboard()
 
   const {
-    totalCallsThisMonth,
+    totalCallsPast30Days,
     successRate,
     totalTimeSaved,
     loading: statsLoading,
@@ -152,8 +150,8 @@ export default function HomeSection({
   // Generate dynamic stats based on real data (3 cards instead of 4)
   const stats = [
     {
-      title: "Calls This Month",
-      value: statsLoading ? "..." : totalCallsThisMonth.toString(),
+      title: "Calls in Past 30 Days",
+      value: statsLoading ? "..." : totalCallsPast30Days.toString(),
       subtitle: "Total scheduled & completed",
       icon: Phone,
       color: "text-blue-600",
@@ -162,7 +160,7 @@ export default function HomeSection({
     {
       title: "Success Rate",
       value: statsLoading ? "..." : `${successRate}%`,
-      subtitle: "Successfully completed calls",
+      subtitle: "All-time successful calls",
       icon: CheckCircle,
       color: "text-green-600",
       bgColor: "bg-green-50",
@@ -170,7 +168,7 @@ export default function HomeSection({
     {
       title: "Time Saved",
       value: statsLoading ? "..." : totalTimeSaved,
-      subtitle: "Total time from successful calls",
+      subtitle: "All-time total from successful calls",
       icon: Clock,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
@@ -179,16 +177,6 @@ export default function HomeSection({
 
   return (
     <div className="space-y-6 p-4 lg:p-6">
-      {/* Welcome Section */}
-      <div className="text-center mb-8">
-        <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
-          Welcome back{user?.fullName ? `, ${user.fullName.split(' ')[0]}` : ''}
-        </h1>
-        <p className="text-gray-600 text-lg">
-          Here&apos;s what&apos;s happening with your calls today
-        </p>
-      </div>
-
       {/* Stats Grid */}
       <div className={GRID_LAYOUTS.STATS_GRID}>
         {stats.map((stat, index) => {

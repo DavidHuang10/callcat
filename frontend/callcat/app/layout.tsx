@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "CallCat - AI-Powered Call Management",
   description: "Manage your calls with AI-powered transcription and insights",
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({

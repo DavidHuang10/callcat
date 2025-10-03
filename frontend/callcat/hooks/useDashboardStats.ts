@@ -4,7 +4,7 @@ import { CallResponse } from '@/types'
 import { extractCallDuration, formatDuration } from '@/utils/duration'
 
 export interface DashboardStats {
-  totalCallsThisMonth: number
+  totalCallsPast30Days: number
   successRate: number
   totalTimeSaved: string
   loading: boolean
@@ -13,7 +13,7 @@ export interface DashboardStats {
 
 export function useDashboardStats() {
   const [stats, setStats] = useState<DashboardStats>({
-    totalCallsThisMonth: 0,
+    totalCallsPast30Days: 0,
     successRate: 0,
     totalTimeSaved: '0m 0s',
     loading: true,
@@ -25,12 +25,12 @@ export function useDashboardStats() {
       try {
         setStats(prev => ({ ...prev, loading: true, error: null }))
 
-        // Get current date boundaries for this month
+        // Get current date boundaries for past 30 days
         const now = new Date()
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-        const startOfMonthTimestamp = startOfMonth.getTime()
+        const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000))
+        const thirtyDaysAgoTimestamp = thirtyDaysAgo.getTime()
 
-        // Fetch both scheduled and completed calls (we'll filter by date)
+        // Fetch both scheduled and completed calls
         const [scheduledResponse, completedResponse] = await Promise.all([
           apiService.getCalls('SCHEDULED', 100), // Increased limit to get more data
           apiService.getCalls('COMPLETED', 100)
@@ -39,26 +39,26 @@ export function useDashboardStats() {
         const scheduledCalls = scheduledResponse.calls || []
         const completedCalls = completedResponse.calls || []
 
-        // Filter calls from this month
-        const thisMonthScheduled = scheduledCalls.filter(call => 
-          call.createdAt >= startOfMonthTimestamp
+        // Filter calls from past 30 days
+        const past30DaysScheduled = scheduledCalls.filter(call =>
+          call.createdAt >= thirtyDaysAgoTimestamp
         )
-        const thisMonthCompleted = completedCalls.filter(call => 
-          call.createdAt >= startOfMonthTimestamp
+        const past30DaysCompleted = completedCalls.filter(call =>
+          call.createdAt >= thirtyDaysAgoTimestamp
         )
 
-        // Calculate total calls this month
-        const totalCallsThisMonth = thisMonthScheduled.length + thisMonthCompleted.length
+        // Calculate total calls in past 30 days
+        const totalCallsPast30Days = past30DaysScheduled.length + past30DaysCompleted.length
 
-        // Calculate success rate (completed calls with dialSuccessful: true)
-        const successfulCalls = thisMonthCompleted.filter(call => call.dialSuccessful === true)
-        const totalAttemptedCalls = thisMonthCompleted.length
-        const successRate = totalAttemptedCalls > 0 
+        // Calculate all-time success rate (completed calls with dialSuccessful: true)
+        const successfulCalls = completedCalls.filter(call => call.dialSuccessful === true)
+        const totalAttemptedCalls = completedCalls.length
+        const successRate = totalAttemptedCalls > 0
           ? Math.round((successfulCalls.length / totalAttemptedCalls) * 100)
           : 0
 
-        // Calculate total time saved from successful calls
-        const durations = thisMonthCompleted
+        // Calculate all-time total time saved from successful calls
+        const durations = completedCalls
           .filter(call => call.dialSuccessful === true)
           .map(call => {
             // Use scheduledFor as fallback for callAt (same logic as CallCard)
@@ -66,13 +66,13 @@ export function useDashboardStats() {
             return extractCallDuration(call.durationSec, call.retellCallData, actualCallAt, call.completedAt)
           })
           .filter(duration => duration > 0)
-        
+
         const totalTimeSaved = durations.length > 0
           ? formatDuration(durations.reduce((sum, duration) => sum + duration, 0))
           : '0m 0s'
 
         setStats({
-          totalCallsThisMonth,
+          totalCallsPast30Days,
           successRate,
           totalTimeSaved,
           loading: false,
