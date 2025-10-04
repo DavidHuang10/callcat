@@ -189,7 +189,7 @@ public class CallController {
             tempRecord.setPhoneNumber(normalizedPhone);
             tempRecord.setCalleeName("Demo User");
             tempRecord.setSubject("CallCat Demo");
-            tempRecord.setPrompt("Hello! This is CallCat, an AI phone assistant that automates routine calls. You can schedule calls to anyone, customize the AI's voice and message, and get full transcripts. CallCat saves you time on restaurant reservations, appointment confirmations, and follow-ups. Thanks for trying our demo!");
+            tempRecord.setPrompt("You are a sales representative for CallCat, a service that allows you to schedule and automate phone calls. It can be useful for routine calls, follow-ups, and other tasks. Be firm with sales, but friendly with the customer. Don't get off track.");
             tempRecord.setAiLanguage("en");
             tempRecord.setVoiceId("default");
 
