@@ -49,8 +49,7 @@ Built for people who have better things to do than sit on hold or waiting for bu
 
 **Real-time Coordination**: Getting live transcripts from third-party APIs while managing concurrent calls was tricky. I ended up building a multi-threaded polling system that checks for transcript updates every few seconds without overwhelming the external service. Unfortunately, after switching providers for call services (VAPI was too expensive), I am no longer able to provide live transcripts, but the infrastructure that used to exist is still present for live transcript handling.
 
-
-**Spring Boot Learning Curve**: Coming from simpler frameworks, Spring's dependency injection and auto-configuration felt magical but opaque. I spent a lot of time understanding how @Autowired actually works and when to use @Service vs @Component, and different syntaxes to use. Also, I found spring boot's database functionality especially with Relational Databases to be incredibly easy to program.
+**Spring Boot*: Coming from simpler frameworks, Spring's dependency injection and auto-configuration felt magical but opaque. I spent a lot of time understanding how @Autowired actually works and when to use @Service vs @Component, and different syntaxes to use. Also, I found spring boot's database functionality especially with Relational Databases to be incredibly easy to program.
  
 **AWS Service Orchestration**: Coordinating Lambda, DynamoDB, RDS, and Elastic Beanstalk was like conducting an orchestra where each instrument speaks a different language. Planning was definitely important here.
 
