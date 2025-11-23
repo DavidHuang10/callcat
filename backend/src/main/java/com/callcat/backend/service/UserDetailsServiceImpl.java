@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
     
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(UserDetailsServiceImpl.class);
+
     private final UserRepositoryDynamoDb userRepository;
     
     public UserDetailsServiceImpl(UserRepositoryDynamoDb userRepository) {
@@ -20,10 +22,16 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         String lowerCaseEmail = email.toLowerCase();
+        logger.debug("Loading user by username (email): {}", lowerCaseEmail);
+        
         UserDynamoDb userDynamo = userRepository.findByEmail(lowerCaseEmail)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + lowerCaseEmail));
+                .orElseThrow(() -> {
+                    logger.error("User not found in DynamoDB: {}", lowerCaseEmail);
+                    return new UsernameNotFoundException("User not found: " + lowerCaseEmail);
+                });
                 
         if (!Boolean.TRUE.equals(userDynamo.getIsActive())) {
+             logger.warn("User found but not active: {}", lowerCaseEmail);
              throw new UsernameNotFoundException("User not active: " + email);
         }
 
@@ -37,6 +45,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         user.setIsActive(userDynamo.getIsActive());
         // ID is not available in DynamoDB, but we use email as identifier now
         
+        logger.debug("User loaded successfully: {}", lowerCaseEmail);
         return user;
     }
 }

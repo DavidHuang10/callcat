@@ -33,6 +33,8 @@ public class AuthenticationService {
     private static final Pattern passwordPattern = Pattern.compile(PASSWORD_PATTERN);
     private static final Pattern emailPattern = Pattern.compile(EMAIL_PATTERN, Pattern.CASE_INSENSITIVE);
     
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(AuthenticationService.class);
+
     public AuthenticationService(
             UserRepositoryDynamoDb userRepository,
             PasswordEncoder passwordEncoder,
@@ -101,17 +103,23 @@ public class AuthenticationService {
     
     public AuthResponse authenticate(String email, String password) {
         String lowerCaseEmail = email.toLowerCase();
+        logger.info("Attempting authentication for email: {}", lowerCaseEmail);
         try {
             // Authenticate user
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(lowerCaseEmail, password)
             );
+            logger.info("AuthenticationManager success for email: {}", lowerCaseEmail);
             
             // Find user
             UserDynamoDb userDynamo = userRepository.findByEmail(lowerCaseEmail)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
+                    .orElseThrow(() -> {
+                        logger.error("User not found in DynamoDB after successful auth: {}", lowerCaseEmail);
+                        return new RuntimeException("User not found");
+                    });
             
             if (!Boolean.TRUE.equals(userDynamo.getIsActive())) {
+                logger.warn("User is inactive: {}", lowerCaseEmail);
                 throw new RuntimeException("User is inactive");
             }
             
@@ -121,6 +129,7 @@ public class AuthenticationService {
                     null,
                     userDynamo.getFullName()
             );
+            logger.info("JWT token generated successfully for email: {}", lowerCaseEmail);
             
             return new AuthResponse(
                     token,
@@ -131,7 +140,11 @@ public class AuthenticationService {
             );
             
         } catch (AuthenticationException e) {
+            logger.error("Authentication failed for email: {}", lowerCaseEmail, e);
             throw new RuntimeException("Invalid email or password");
+        } catch (Exception e) {
+            logger.error("Unexpected error during authentication for email: {}", lowerCaseEmail, e);
+            throw new RuntimeException("Authentication failed");
         }
     }
     
