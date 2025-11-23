@@ -142,9 +142,6 @@ public class AuthenticationService {
         } catch (AuthenticationException e) {
             logger.error("Authentication failed for email: {}", lowerCaseEmail, e);
             throw new RuntimeException("Invalid email or password");
-        } catch (Exception e) {
-            logger.error("Unexpected error during authentication for email: {}", lowerCaseEmail, e);
-            throw new RuntimeException("Authentication failed");
         }
     }
     
