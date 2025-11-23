@@ -454,4 +454,108 @@ class UserServiceTest {
         verify(passwordEncoder, times(validPasswords.length)).encode(anyString());
         verify(userRepository, times(validPasswords.length)).save(testUser);
     }
+    // Tests case-insensitive email handling for profile retrieval
+    // Verifies that mixed-case emails are converted to lowercase
+    @Test
+    void getUserProfile_WithMixedCaseEmail_ShouldReturnProfile() {
+        // Arrange
+        String email = "MixedCase@Example.com";
+        String lowerEmail = "mixedcase@example.com";
+        when(userRepository.findByEmail(lowerEmail)).thenReturn(Optional.of(testUser));
+
+        // Act
+        UserResponse result = userService.getUserProfile(email);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(testUser.getEmail(), result.getEmail());
+        verify(userRepository).findByEmail(lowerEmail);
+    }
+
+    // Tests case-insensitive email handling for profile updates
+    // Verifies that mixed-case emails are converted to lowercase
+    @Test
+    void updateProfile_WithMixedCaseEmail_ShouldUpdateProfile() {
+        // Arrange
+        String email = "MixedCase@Example.com";
+        String lowerEmail = "mixedcase@example.com";
+        UpdateProfileRequest request = new UpdateProfileRequest("Jane", "Smith");
+        
+        when(userRepository.findByEmail(lowerEmail)).thenReturn(Optional.of(testUser));
+
+        // Act
+        UserResponse result = userService.updateProfile(email, request);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("Jane", result.getFirstName());
+        verify(userRepository).findByEmail(lowerEmail);
+        verify(userRepository).save(testUser);
+    }
+
+    // Tests case-insensitive email handling for password changes
+    // Verifies that mixed-case emails are converted to lowercase
+    @Test
+    void changePassword_WithMixedCaseEmail_ShouldChangePassword() {
+        // Arrange
+        String email = "MixedCase@Example.com";
+        String lowerEmail = "mixedcase@example.com";
+        String currentPassword = "oldPassword";
+        String newPassword = "NewStrongPass123";
+        
+        when(userRepository.findByEmail(lowerEmail)).thenReturn(Optional.of(testUser));
+        when(passwordEncoder.matches(currentPassword, testUser.getPassword())).thenReturn(true);
+        when(passwordEncoder.encode(newPassword)).thenReturn("encodedNewPassword");
+
+        // Act
+        userService.changePassword(email, currentPassword, newPassword);
+
+        // Assert
+        verify(userRepository).findByEmail(lowerEmail);
+        verify(userRepository).save(testUser);
+    }
+
+    // Tests case-insensitive email handling for preferences retrieval
+    // Verifies that mixed-case emails are converted to lowercase
+    @Test
+    void getUserPreferences_WithMixedCaseEmail_ShouldReturnPreferences() {
+        // Arrange
+        String email = "MixedCase@Example.com";
+        String lowerEmail = "mixedcase@example.com";
+        
+        when(userRepository.findByEmail(lowerEmail)).thenReturn(Optional.of(testUser));
+        when(userPreferencesRepository.findByEmail(lowerEmail)).thenReturn(Optional.of(testPreferences));
+
+        // Act
+        UserPreferencesResponse result = userService.getUserPreferences(email);
+
+        // Assert
+        assertNotNull(result);
+        verify(userRepository).findByEmail(lowerEmail);
+        verify(userPreferencesRepository).findByEmail(lowerEmail);
+    }
+
+    // Tests case-insensitive email handling for preferences updates
+    // Verifies that mixed-case emails are converted to lowercase
+    @Test
+    void updateUserPreferences_WithMixedCaseEmail_ShouldUpdatePreferences() {
+        // Arrange
+        String email = "MixedCase@Example.com";
+        String lowerEmail = "mixedcase@example.com";
+        UpdatePreferencesRequest request = new UpdatePreferencesRequest(
+                "America/New_York", false, "voice456", "Be more formal"
+        );
+        
+        when(userRepository.findByEmail(lowerEmail)).thenReturn(Optional.of(testUser));
+        when(userPreferencesRepository.findByEmail(lowerEmail)).thenReturn(Optional.of(testPreferences));
+
+        // Act
+        UserPreferencesResponse result = userService.updateUserPreferences(email, request);
+
+        // Assert
+        assertNotNull(result);
+        verify(userRepository).findByEmail(lowerEmail);
+        verify(userPreferencesRepository).findByEmail(lowerEmail);
+        verify(userPreferencesRepository).save(testPreferences);
+    }
 }

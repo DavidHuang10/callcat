@@ -261,4 +261,164 @@ class AuthenticationServiceTest {
         assertEquals("User not found", exception.getMessage());
     }
 
+    // Tests case-insensitive email handling during registration
+    // Verifies that emails are converted to lowercase before storage
+    @Test
+    void register_WithMixedCaseEmail_ShouldSaveLowerCase() {
+        // Arrange
+        String email = "MixedCase@Example.com";
+        String lowerEmail = "mixedcase@example.com";
+        String password = "Password123";
+        
+        when(verificationService.isEmailVerified(lowerEmail)).thenReturn(true);
+        when(userRepository.findByEmail(lowerEmail)).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(password)).thenReturn("encodedPassword");
+        when(jwtService.generateToken(eq(lowerEmail), any(), anyString())).thenReturn("token");
+        when(jwtService.getExpirationTime()).thenReturn(86400000L);
+
+        // Act
+        AuthResponse result = authenticationService.register(email, password, "John", "Doe");
+
+        // Assert
+        assertEquals(lowerEmail, result.getEmail());
+        verify(userRepository).findByEmail(lowerEmail);
+        verify(userRepository).save(argThat(user -> user.getEmail().equals(lowerEmail)));
+    }
+
+    // Tests case-insensitive email handling during authentication
+    // Verifies that login works regardless of email casing
+    @Test
+    void authenticate_WithMixedCaseEmail_ShouldAuthenticate() {
+        // Arrange
+        String email = "MixedCase@Example.com";
+        String lowerEmail = "mixedcase@example.com";
+        String password = "password";
+        
+        when(userRepository.findByEmail(lowerEmail)).thenReturn(Optional.of(testUser));
+        when(jwtService.generateToken(any(), any(), any())).thenReturn("token");
+        when(jwtService.getExpirationTime()).thenReturn(86400000L);
+
+        // Act
+        AuthResponse result = authenticationService.authenticate(email, password);
+
+        // Assert
+        assertEquals(testUser.getEmail(), result.getEmail());
+        verify(authenticationManager).authenticate(argThat(auth -> 
+            auth.getPrincipal().equals(lowerEmail) && auth.getCredentials().equals(password)
+        ));
+        verify(userRepository).findByEmail(lowerEmail);
+    }
+
+    // Tests forgot password flow initiation
+    // Verifies that a reset token is generated and email is sent
+    @Test
+    void forgotPassword_WithValidEmail_ShouldSendEmail() {
+        // Arrange
+        String email = "test@example.com";
+        String token = "generated-token";
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+        when(emailService.generateResetToken()).thenReturn(token);
+        
+        // Act
+        authenticationService.forgotPassword(email);
+
+        // Assert
+        verify(userRepository).save(testUser); // Should save token
+        verify(emailService).sendPasswordResetEmail(eq(email), eq(token));
+        assertEquals(token, testUser.getPasswordResetToken());
+        assertNotNull(testUser.getResetTokenExpires());
+    }
+
+    // Tests forgot password flow with non-existent user
+    // Ensures exception is thrown when user is not found
+    @Test
+    void forgotPassword_WithNonExistentUser_ShouldThrowException() {
+        // Arrange
+        String email = "nonexistent@example.com";
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> authenticationService.forgotPassword(email));
+        
+        assertEquals("No account found with this email address", exception.getMessage());
+        verify(userRepository, never()).save(any());
+        verify(emailService, never()).sendPasswordResetEmail(anyString(), anyString());
+    }
+
+    // Tests password reset with valid token
+    // Verifies that password is updated and token is cleared
+    @Test
+    void resetPassword_WithValidToken_ShouldUpdatePassword() {
+        // Arrange
+        String token = "valid-token";
+        String newPassword = "NewStrongPass123";
+        testUser.setPasswordResetToken(token);
+        testUser.setResetTokenExpires(System.currentTimeMillis() / 1000 + 3600); // Valid expiry (seconds)
+        
+        when(userRepository.findByPasswordResetToken(token)).thenReturn(Optional.of(testUser));
+        when(passwordEncoder.encode(newPassword)).thenReturn("encodedNewPassword");
+
+        // Act
+        authenticationService.resetPassword(token, newPassword);
+
+        // Assert
+        verify(userRepository).save(testUser);
+        assertEquals("encodedNewPassword", testUser.getPassword());
+        assertNull(testUser.getPasswordResetToken());
+        assertNull(testUser.getResetTokenExpires());
+    }
+
+    // Tests password reset with invalid token
+    // Ensures exception is thrown for invalid tokens
+    @Test
+    void resetPassword_WithInvalidToken_ShouldThrowException() {
+        // Arrange
+        String token = "invalid-token";
+        String newPassword = "NewStrongPass123";
+        
+        when(userRepository.findByPasswordResetToken(token)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> authenticationService.resetPassword(token, newPassword));
+        
+        assertEquals("Invalid reset token", exception.getMessage());
+    }
+
+    // Tests password reset with expired token
+    // Ensures exception is thrown for expired tokens
+    @Test
+    void resetPassword_WithExpiredToken_ShouldThrowException() {
+        // Arrange
+        String token = "expired-token";
+        String newPassword = "NewStrongPass123";
+        testUser.setPasswordResetToken(token);
+        testUser.setResetTokenExpires(System.currentTimeMillis() / 1000 - 3600); // Expired (seconds)
+        
+        when(userRepository.findByPasswordResetToken(token)).thenReturn(Optional.of(testUser));
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> authenticationService.resetPassword(token, newPassword));
+        
+        assertEquals("Reset token has expired", exception.getMessage());
+    }
+
+    // Tests password reset with weak password
+    // Ensures password strength validation applies to resets too
+    @Test
+    void resetPassword_WithWeakPassword_ShouldThrowException() {
+        // Arrange
+        String token = "valid-token";
+        String weakPassword = "weak";
+        
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> authenticationService.resetPassword(token, weakPassword));
+        
+        assertTrue(exception.getMessage().contains("Password must be at least 8 characters"));
+        verify(userRepository, never()).findByPasswordResetToken(anyString());
+        verify(userRepository, never()).save(any());
+    }
 }

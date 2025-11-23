@@ -472,4 +472,47 @@ class CallServiceTest {
         verify(callRecordRepository).save(testCall);
     }
 
+    // Tests case-insensitive email handling for call creation
+    // Verifies that mixed-case emails are converted to lowercase
+    @Test
+    void createCall_WithMixedCaseEmail_ShouldCreateCall() {
+        // Arrange
+        String email = "MixedCase@Example.com";
+        String lowerEmail = "mixedcase@example.com";
+        
+        when(userRepository.findByEmail(lowerEmail)).thenReturn(Optional.of(testUser));
+        when(callRecordRepository.save(any(CallRecord.class))).thenReturn(testCall);
+
+        // Act
+        CallResponse result = callService.createCall(email, createRequest);
+
+        // Assert
+        assertNotNull(result);
+        verify(userRepository).findByEmail(lowerEmail);
+        verify(callRecordRepository).save(any(CallRecord.class));
+    }
+
+    // Tests case-insensitive email handling for retrieving calls
+    // Verifies that mixed-case emails are converted to lowercase
+    @Test
+    void getCalls_WithMixedCaseEmail_ShouldReturnCalls() {
+        // Arrange
+        String email = "MixedCase@Example.com";
+        String lowerEmail = "mixedcase@example.com";
+        List<CallRecord> scheduledCalls = Arrays.asList(testCall);
+        
+        when(userRepository.findByEmail(lowerEmail)).thenReturn(Optional.of(testUser));
+        when(callRecordRepository.findByUserIdAndStatus(testUser.getEmail(), "SCHEDULED", 20))
+                .thenReturn(scheduledCalls);
+
+        // Act
+        CallListResponse result = callService.getCalls(email, "SCHEDULED", 20);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getCalls().size());
+        verify(userRepository).findByEmail(lowerEmail);
+        verify(callRecordRepository).findByUserIdAndStatus(testUser.getEmail(), "SCHEDULED", 20);
+    }
+
 }
