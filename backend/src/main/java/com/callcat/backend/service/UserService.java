@@ -37,7 +37,8 @@ public class UserService {
     }
     
     public UserResponse getUserProfile(String email) {
-        UserDynamoDb user = userRepository.findByEmail(email)
+        String lowerCaseEmail = email.toLowerCase();
+        UserDynamoDb user = userRepository.findByEmail(lowerCaseEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         if (!Boolean.TRUE.equals(user.getIsActive())) {
@@ -53,7 +54,8 @@ public class UserService {
     }
     
     public UserResponse updateProfile(String email, UpdateProfileRequest request) {
-        UserDynamoDb user = userRepository.findByEmail(email)
+        String lowerCaseEmail = email.toLowerCase();
+        UserDynamoDb user = userRepository.findByEmail(lowerCaseEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         if (!Boolean.TRUE.equals(user.getIsActive())) {
@@ -76,7 +78,8 @@ public class UserService {
     }
     
     public void changePassword(String email, String currentPassword, String newPassword) {
-        UserDynamoDb user = userRepository.findByEmail(email)
+        String lowerCaseEmail = email.toLowerCase();
+        UserDynamoDb user = userRepository.findByEmail(lowerCaseEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         if (!Boolean.TRUE.equals(user.getIsActive())) {
@@ -100,12 +103,13 @@ public class UserService {
     }
     
     public UserPreferencesResponse getUserPreferences(String email) {
+        String lowerCaseEmail = email.toLowerCase();
         // Verify user exists first
-        UserDynamoDb user = userRepository.findByEmail(email)
+        UserDynamoDb user = userRepository.findByEmail(lowerCaseEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
-        UserPreferencesDynamoDb preferences = userPreferencesRepository.findByEmail(email)
-                .orElseGet(() -> createDefaultPreferences(email));
+        UserPreferencesDynamoDb preferences = userPreferencesRepository.findByEmail(lowerCaseEmail)
+                .orElseGet(() -> createDefaultPreferences(lowerCaseEmail));
         
         return new UserPreferencesResponse(
                 preferences.getTimezone(),
@@ -116,12 +120,13 @@ public class UserService {
     }
     
     public UserPreferencesResponse updateUserPreferences(String email, UpdatePreferencesRequest request) {
+        String lowerCaseEmail = email.toLowerCase();
         // Verify user exists
-        UserDynamoDb user = userRepository.findByEmail(email)
+        UserDynamoDb user = userRepository.findByEmail(lowerCaseEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
-        UserPreferencesDynamoDb preferences = userPreferencesRepository.findByEmail(email)
-                .orElseGet(() -> createDefaultPreferences(email));
+        UserPreferencesDynamoDb preferences = userPreferencesRepository.findByEmail(lowerCaseEmail)
+                .orElseGet(() -> createDefaultPreferences(lowerCaseEmail));
         
         // Update only non-null fields
         if (request.getTimezone() != null) {

@@ -50,18 +50,19 @@ public class AuthenticationService {
     }
     
     public AuthResponse register(String email, String password, String firstName, String lastName) {
+        String lowerCaseEmail = email.toLowerCase();
         // Validate email format
-        if (!isValidEmail(email)) {
+        if (!isValidEmail(lowerCaseEmail)) {
             throw new RuntimeException("Invalid email format. Email must contain @ and a valid domain (e.g., .com, .org, .net)");
         }
         
         // Check if email is verified through verification service
-        if (!verificationService.isEmailVerified(email)) {
+        if (!verificationService.isEmailVerified(lowerCaseEmail)) {
             throw new RuntimeException("Email must be verified before registration. Please verify your email first.");
         }
         
         // Check if user already exists
-        if (userRepository.findByEmail(email).isPresent()) {
+        if (userRepository.findByEmail(lowerCaseEmail).isPresent()) {
             throw new RuntimeException("Email already registered");
         }
         
@@ -72,7 +73,7 @@ public class AuthenticationService {
         
         // Create new user with verified email
         UserDynamoDb userDynamo = new UserDynamoDb();
-        userDynamo.setEmail(email);
+        userDynamo.setEmail(lowerCaseEmail);
         userDynamo.setPassword(passwordEncoder.encode(password));
         userDynamo.setFirstName(firstName);
         userDynamo.setLastName(lastName);
@@ -99,14 +100,15 @@ public class AuthenticationService {
     }
     
     public AuthResponse authenticate(String email, String password) {
+        String lowerCaseEmail = email.toLowerCase();
         try {
             // Authenticate user
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(email, password)
+                    new UsernamePasswordAuthenticationToken(lowerCaseEmail, password)
             );
             
             // Find user
-            UserDynamoDb userDynamo = userRepository.findByEmail(email)
+            UserDynamoDb userDynamo = userRepository.findByEmail(lowerCaseEmail)
                     .orElseThrow(() -> new RuntimeException("User not found"));
             
             if (!Boolean.TRUE.equals(userDynamo.getIsActive())) {
@@ -134,7 +136,8 @@ public class AuthenticationService {
     }
     
     public User getCurrentUser(String email) {
-        UserDynamoDb userDynamo = userRepository.findByEmail(email)
+        String lowerCaseEmail = email.toLowerCase();
+        UserDynamoDb userDynamo = userRepository.findByEmail(lowerCaseEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         if (!Boolean.TRUE.equals(userDynamo.getIsActive())) {
@@ -167,8 +170,9 @@ public class AuthenticationService {
      * Now uses shorter, secure tokens with proper expiration
      */
     public void forgotPassword(String email) {
+        String lowerCaseEmail = email.toLowerCase();
         // Find user by email
-        UserDynamoDb userDynamo = userRepository.findByEmail(email)
+        UserDynamoDb userDynamo = userRepository.findByEmail(lowerCaseEmail)
                 .orElseThrow(() -> new RuntimeException("No account found with this email address"));
         
         if (!Boolean.TRUE.equals(userDynamo.getIsActive())) {
@@ -185,7 +189,7 @@ public class AuthenticationService {
         userRepository.save(userDynamo);
         
         // Send reset email
-        emailService.sendPasswordResetEmail(email, resetToken);
+        emailService.sendPasswordResetEmail(lowerCaseEmail, resetToken);
     }
     
     /**

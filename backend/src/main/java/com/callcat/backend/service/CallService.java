@@ -35,7 +35,8 @@ public class CallService {
     }
 
     public CallResponse createCall(String userEmail, CallRequest request) {
-        UserDynamoDb user = userRepository.findByEmail(userEmail)
+        String lowerCaseEmail = userEmail.toLowerCase();
+        UserDynamoDb user = userRepository.findByEmail(lowerCaseEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         if (!Boolean.TRUE.equals(user.getIsActive())) {
@@ -104,7 +105,8 @@ public class CallService {
     }
 
     public InstantCallResult createInstantCall(String userEmail, CallRequest request) {
-        UserDynamoDb userDynamo = userRepository.findByEmail(userEmail)
+        String lowerCaseEmail = userEmail.toLowerCase();
+        UserDynamoDb userDynamo = userRepository.findByEmail(lowerCaseEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!Boolean.TRUE.equals(userDynamo.getIsActive())) {
@@ -151,7 +153,8 @@ public class CallService {
     }
 
     public CallListResponse getCalls(String userEmail, String status, Integer limit) {
-        UserDynamoDb user = userRepository.findByEmail(userEmail)
+        String lowerCaseEmail = userEmail.toLowerCase();
+        UserDynamoDb user = userRepository.findByEmail(lowerCaseEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         if (!Boolean.TRUE.equals(user.getIsActive())) {

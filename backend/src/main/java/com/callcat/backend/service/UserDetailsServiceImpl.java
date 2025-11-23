@@ -19,8 +19,9 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        UserDynamoDb userDynamo = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+        String lowerCaseEmail = email.toLowerCase();
+        UserDynamoDb userDynamo = userRepository.findByEmail(lowerCaseEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + lowerCaseEmail));
                 
         if (!Boolean.TRUE.equals(userDynamo.getIsActive())) {
              throw new UsernameNotFoundException("User not active: " + email);

@@ -26,13 +26,14 @@ public class VerificationService {
      * Sends verification code to email. Clean approach - no user creation until registration.
      */
     public void sendVerificationCode(String email) {
+        String lowerCaseEmail = email.toLowerCase();
         // Validate email format first
-        if (!isValidEmail(email)) {
+        if (!isValidEmail(lowerCaseEmail)) {
             throw new RuntimeException("Invalid email format");
         }
         
         // Check if email already registered
-        Optional<UserDynamoDb> existingUser = userRepository.findByEmail(email);
+        Optional<UserDynamoDb> existingUser = userRepository.findByEmail(lowerCaseEmail);
         if (existingUser.isPresent()) {
             throw new RuntimeException("Email already registered");
         }
@@ -42,7 +43,7 @@ public class VerificationService {
         Long expires = System.currentTimeMillis() / 1000 + (15 * 60);
         
         // Create or update email verification record
-        Optional<EmailVerificationDynamoDb> existingVerification = emailVerificationRepository.findByEmail(email);
+        Optional<EmailVerificationDynamoDb> existingVerification = emailVerificationRepository.findByEmail(lowerCaseEmail);
         EmailVerificationDynamoDb verification;
         
         if (existingVerification.isPresent()) {
@@ -54,7 +55,7 @@ public class VerificationService {
         } else {
             // Create new verification record
             verification = new EmailVerificationDynamoDb();
-            verification.setEmail(email);
+            verification.setEmail(lowerCaseEmail);
             verification.setVerificationCode(code);
             verification.setExpiresAt(expires);
             verification.setVerified(false);
@@ -64,14 +65,15 @@ public class VerificationService {
         emailVerificationRepository.save(verification);
         
         // Send email
-        emailService.sendVerificationEmail(email, code);
+        emailService.sendVerificationEmail(lowerCaseEmail, code);
     }
     
     /**
      * Verifies the email code and marks email as verified
      */
     public boolean verifyEmailCode(String email, String code) {
-        Optional<EmailVerificationDynamoDb> verificationOpt = emailVerificationRepository.findByEmail(email);
+        String lowerCaseEmail = email.toLowerCase();
+        Optional<EmailVerificationDynamoDb> verificationOpt = emailVerificationRepository.findByEmail(lowerCaseEmail);
         if (verificationOpt.isEmpty()) {
             throw new RuntimeException("No verification found for this email");
         }
@@ -99,7 +101,8 @@ public class VerificationService {
      * Checks if email is verified and ready for registration
      */
     public boolean isEmailVerified(String email) {
-        Optional<EmailVerificationDynamoDb> verificationOpt = emailVerificationRepository.findByEmail(email);
+        String lowerCaseEmail = email.toLowerCase();
+        Optional<EmailVerificationDynamoDb> verificationOpt = emailVerificationRepository.findByEmail(lowerCaseEmail);
         return verificationOpt.isPresent() && 
                Boolean.TRUE.equals(verificationOpt.get().getVerified()) && 
                !verificationOpt.get().isExpired();
