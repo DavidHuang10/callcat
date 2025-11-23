@@ -123,7 +123,7 @@ class ApiService {
         return this.request<{ transcriptText: string }>(`/api/calls/${callId}/transcript`);
     }
 
-    async createDemoCall(phoneNumber: string): Promise<CallResponse> {
+    async createDemoCall(phoneNumber: string, prompt?: string): Promise<CallResponse> {
         const url = `${API_BASE_URL}/api/calls/demo`;
 
         const response = await fetch(url, {
@@ -131,7 +131,7 @@ class ApiService {
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ phoneNumber }),
+            body: JSON.stringify({ phoneNumber, prompt }),
         });
 
         if (!response.ok) {

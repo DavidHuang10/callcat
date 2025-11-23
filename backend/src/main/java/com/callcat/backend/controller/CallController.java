@@ -175,6 +175,7 @@ public class CallController {
     public ResponseEntity<?> createDemoCall(@RequestBody Map<String, String> request) {
         try {
             String phoneNumber = request.get("phoneNumber");
+            String prompt = request.get("prompt");
 
             if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body(new ApiResponse("Phone number is required", false));
@@ -189,7 +190,12 @@ public class CallController {
             tempRecord.setPhoneNumber(normalizedPhone);
             tempRecord.setCalleeName("Demo User");
             tempRecord.setSubject("CallCat Demo");
-            tempRecord.setPrompt("You are a sales representative for CallCat, a service that allows you to schedule and automate phone calls. It can be useful for routine calls, follow-ups, and other tasks. Be firm with sales, but friendly with the customer. Don't get off track.");
+            
+            if (prompt != null && !prompt.trim().isEmpty()) {
+                tempRecord.setPrompt(prompt);
+            } else {
+                tempRecord.setPrompt("You are a sales representative for CallCat, a service that allows you to schedule and automate phone calls. It can be useful for routine calls, follow-ups, and other tasks. Be firm with sales, but friendly with the customer. Don't get off track.");
+            }
             tempRecord.setAiLanguage("en");
             tempRecord.setVoiceId("default");
 

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
+import businessCatsBg from "@/assets/business-cats.jpeg"
 import { apiService } from "@/lib/api"
 import { Phone } from "lucide-react"
 
@@ -14,6 +15,7 @@ export default function LandingPage() {
   const [isTransitioning, setIsTransitioning] = useState(false)
   const router = useRouter()
   const [phoneNumber, setPhoneNumber] = useState("")
+  const [prompt, setPrompt] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
@@ -55,9 +57,10 @@ export default function LandingPage() {
     setLoading(true)
 
     try {
-      await apiService.createDemoCall(phoneNumber)
+      await apiService.createDemoCall(phoneNumber, prompt)
       setSuccess(true)
       setPhoneNumber("")
+      setPrompt("")
       setTimeout(() => setSuccess(false), 5000)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create demo call")
@@ -67,15 +70,16 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen relative font-sans text-white selection:bg-indigo-500/30">
+    <div className="min-h-screen relative font-sans text-white selection:bg-indigo-500/30 bg-black">
       {/* Background Image with Overlay */}
       <div className="fixed inset-0 z-0">
         <Image
-          src="/business-cats.jpeg"
+          src={businessCatsBg}
           alt="Background"
           fill
           className="object-cover object-center"
           priority
+          placeholder="blur"
         />
         {/* Gradient Overlay for Readability */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80 backdrop-blur-[2px]" />
@@ -142,24 +146,33 @@ export default function LandingPage() {
 
               {/* Demo Call Input */}
               <div className="w-full max-w-lg space-y-4">
-                <div className="flex flex-col sm:flex-row gap-3 p-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
-                  <input
-                    type="tel"
-                    placeholder="Enter your phone number"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
+                <div className="flex flex-col gap-3 p-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
+                  <textarea
+                    placeholder="What should the AI say? (Optional)"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
                     disabled={loading}
-                    className="flex-1 px-6 py-4 rounded-xl bg-transparent text-white placeholder-white/40 focus:outline-none focus:bg-white/5 transition-all text-lg"
+                    className="w-full px-6 py-4 rounded-xl bg-transparent text-white placeholder-white/40 focus:outline-none focus:bg-white/5 transition-all text-lg resize-none h-24"
                   />
-                  <Button
-                    size="lg"
-                    onClick={handleDemoCall}
-                    disabled={loading}
-                    className="h-auto py-4 px-8 bg-white text-indigo-900 hover:bg-indigo-50 text-lg font-bold rounded-xl shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    {loading ? "Calling..." : "Get Demo"}
-                    {!loading && <Phone className="ml-2 h-5 w-5" />}
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <input
+                      type="tel"
+                      placeholder="Enter your phone number"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      disabled={loading}
+                      className="flex-1 px-6 py-4 rounded-xl bg-transparent text-white placeholder-white/40 focus:outline-none focus:bg-white/5 transition-all text-lg"
+                    />
+                    <Button
+                      size="lg"
+                      onClick={handleDemoCall}
+                      disabled={loading}
+                      className="h-auto py-4 px-8 bg-white text-indigo-900 hover:bg-indigo-50 text-lg font-bold rounded-xl shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      {loading ? "Calling..." : "Get Demo"}
+                      {!loading && <Phone className="ml-2 h-5 w-5" />}
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Status Messages */}
