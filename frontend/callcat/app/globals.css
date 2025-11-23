@@ -45,95 +45,93 @@
 
 :root {
   --radius: 0.625rem;
-  /* Deep Indigo Theme - Light Mode (actually dark/rich by default for this design) */
-  --background: #4F46E5; /* Indigo 600 */
-  --foreground: #FFFFFF;
+  --background: #ffffff;
+  --foreground: #09090b;
   
-  --card: #4338CA; /* Indigo 700 */
-  --card-foreground: #FFFFFF;
+  --card: #ffffff;
+  --card-foreground: #09090b;
   
-  --popover: #4338CA;
-  --popover-foreground: #FFFFFF;
+  --popover: #ffffff;
+  --popover-foreground: #09090b;
   
-  --primary: #FFFFFF;
-  --primary-foreground: #4F46E5;
+  --primary: #18181b;
+  --primary-foreground: #fafafa;
   
-  --secondary: #6366F1; /* Indigo 500 */
-  --secondary-foreground: #FFFFFF;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
   
-  --muted: #6366F1;
-  --muted-foreground: #E0E7FF; /* Indigo 100 */
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
   
-  --accent: #F43F5E; /* Rose 500 - Vibrant accent */
-  --accent-foreground: #FFFFFF;
+  --accent: #f4f4f5;
+  --accent-foreground: #18181b;
   
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
+  --destructive: #ef4444;
+  --destructive-foreground: #fafafa;
   
-  --border: #6366F1;
-  --input: #6366F1;
-  --ring: #A5B4FC; /* Indigo 300 */
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #18181b;
   
-  --chart-1: #F43F5E;
-  --chart-2: #10B981;
-  --chart-3: #F59E0B;
-  --chart-4: #3B82F6;
-  --chart-5: #8B5CF6;
+  --chart-1: #e76e50;
+  --chart-2: #2a9d8f;
+  --chart-3: #e9c46a;
+  --chart-4: #f4a261;
+  --chart-5: #e76e50;
   
-  --sidebar: #4338CA;
-  --sidebar-foreground: #FFFFFF;
-  --sidebar-primary: #FFFFFF;
-  --sidebar-primary-foreground: #4338CA;
-  --sidebar-accent: #6366F1;
-  --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: #6366F1;
-  --sidebar-ring: #A5B4FC;
+  --sidebar: #f4f4f5;
+  --sidebar-foreground: #09090b;
+  --sidebar-primary: #18181b;
+  --sidebar-primary-foreground: #fafafa;
+  --sidebar-accent: #f4f4f5;
+  --sidebar-accent-foreground: #18181b;
+  --sidebar-border: #e4e4e7;
+  --sidebar-ring: #18181b;
 }
 
 .dark {
-  /* Dark mode can be a deeper version or similar since the main design is already "dark" colored */
-  --background: #312E81; /* Indigo 900 */
-  --foreground: #FFFFFF;
+  --background: #09090b;
+  --foreground: #fafafa;
   
-  --card: #1E1B4B; /* Indigo 950 */
-  --card-foreground: #FFFFFF;
+  --card: #09090b;
+  --card-foreground: #fafafa;
   
-  --popover: #1E1B4B;
-  --popover-foreground: #FFFFFF;
+  --popover: #09090b;
+  --popover-foreground: #fafafa;
   
-  --primary: #818CF8; /* Indigo 400 */
-  --primary-foreground: #1E1B4B;
+  --primary: #fafafa;
+  --primary-foreground: #18181b;
   
-  --secondary: #4338CA;
-  --secondary-foreground: #FFFFFF;
+  --secondary: #27272a;
+  --secondary-foreground: #fafafa;
   
-  --muted: #4338CA;
-  --muted-foreground: #A5B4FC;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
   
-  --accent: #F43F5E;
-  --accent-foreground: #FFFFFF;
+  --accent: #27272a;
+  --accent-foreground: #fafafa;
   
-  --destructive: #7F1D1D;
-  --destructive-foreground: #FFFFFF;
+  --destructive: #7f1d1d;
+  --destructive-foreground: #fafafa;
   
-  --border: #4338CA;
-  --input: #4338CA;
-  --ring: #818CF8;
+  --border: #27272a;
+  --input: #27272a;
+  --ring: #d4d4d8;
   
-  --chart-1: #F43F5E;
-  --chart-2: #10B981;
-  --chart-3: #F59E0B;
-  --chart-4: #3B82F6;
-  --chart-5: #8B5CF6;
+  --chart-1: #22005c;
+  --chart-2: #2a9d8f;
+  --chart-3: #e9c46a;
+  --chart-4: #f4a261;
+  --chart-5: #e76e50;
   
-  --sidebar: #1E1B4B;
-  --sidebar-foreground: #FFFFFF;
-  --sidebar-primary: #818CF8;
-  --sidebar-primary-foreground: #1E1B4B;
-  --sidebar-accent: #4338CA;
-  --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: #4338CA;
-  --sidebar-ring: #818CF8;
+  --sidebar: #09090b;
+  --sidebar-foreground: #f4f4f5;
+  --sidebar-primary: #18181b;
+  --sidebar-primary-foreground: #fafafa;
+  --sidebar-accent: #27272a;
+  --sidebar-accent-foreground: #f4f4f5;
+  --sidebar-border: #27272a;
+  --sidebar-ring: #d4d4d8;
 }
 
 @layer base {
