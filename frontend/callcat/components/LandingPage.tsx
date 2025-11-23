@@ -5,11 +5,13 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { apiService } from "@/lib/api"
+import { Phone } from "lucide-react"
 
 const phrases = ["Business Calls", "Routine Calls", "Time-Consuming Calls", "Repetitive Tasks", "Daily Errands"]
 
 export default function LandingPage() {
-  const [currentPhrase, setCurrentPhrase] = useState(0)
+  const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0)
+  const [isTransitioning, setIsTransitioning] = useState(false)
   const router = useRouter()
   const [phoneNumber, setPhoneNumber] = useState("")
   const [loading, setLoading] = useState(false)
@@ -18,8 +20,12 @@ export default function LandingPage() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentPhrase((prev) => (prev + 1) % phrases.length)
-    }, 5000)
+      setIsTransitioning(true)
+      setTimeout(() => {
+        setCurrentPhraseIndex((prev) => (prev + 1) % phrases.length)
+        setIsTransitioning(false)
+      }, 500) // Wait for fade out before changing text
+    }, 4000)
     return () => clearInterval(interval)
   }, [])
 
@@ -40,7 +46,6 @@ export default function LandingPage() {
       return
     }
 
-    // Basic validation - must contain at least some digits
     const hasDigits = /\d/.test(phoneNumber)
     if (!hasDigits) {
       setError("Please enter a valid phone number")
@@ -62,40 +67,46 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen relative">
-      <div
-        className="fixed inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: "url('/business-cats.jpeg')",
-        }}
-      />
+    <div className="min-h-screen relative font-sans text-white selection:bg-indigo-500/30">
+      {/* Background Image with Overlay */}
+      <div className="fixed inset-0 z-0">
+        <Image
+          src="/business-cats.jpeg"
+          alt="Background"
+          fill
+          className="object-cover object-center"
+          priority
+        />
+        {/* Gradient Overlay for Readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80 backdrop-blur-[2px]" />
+      </div>
 
-      <div className="fixed inset-0 bg-black/40" />
-
-      <div className="relative z-10">
-        {/* Header */}
-        <header className="backdrop-blur-sm bg-white/5 border-b border-white/20 sticky top-0 z-50">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Image
-                src="/logo.png"
-                alt="CallCat Logo"
-                width={40}
-                height={40}
-                className="drop-shadow-lg"
-              />
-              <span className="text-xl font-bold text-white">CallCat</span>
-            </div>
+      <div className="relative z-10 flex flex-col min-h-screen">
+        {/* Sticky Header */}
+        <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/20 backdrop-blur-md transition-all duration-300">
+          <div className="container mx-auto px-6 h-20 flex items-center justify-between">
             <div className="flex items-center gap-3">
+              <div className="bg-white/10 p-2 rounded-xl backdrop-blur-sm border border-white/10">
+                <Image
+                  src="/logo.png"
+                  alt="CallCat Logo"
+                  width={32}
+                  height={32}
+                  className="w-8 h-8 drop-shadow-md"
+                />
+              </div>
+              <span className="text-2xl font-bold tracking-tight text-white">CallCat</span>
+            </div>
+            <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
-                className="text-white hover:bg-white/20 hover:text-white"
+                className="text-white/90 hover:text-white hover:bg-white/10 font-medium transition-colors"
                 onClick={handleSignIn}
               >
                 Log In
               </Button>
               <Button
-                className="bg-blue-800 hover:bg-blue-900 text-white"
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-900/20 border border-indigo-500/50 transition-all hover:scale-105"
                 onClick={handleSignUp}
               >
                 Sign Up
@@ -105,108 +116,85 @@ export default function LandingPage() {
         </header>
 
         {/* Hero Section */}
-        <section className="py-20 px-4 text-center">
-          <div className="container mx-auto">
-            <div className="max-w-4xl mx-auto">
-              <div className="backdrop-blur-sm bg-white/3 rounded-2xl p-8 border border-white/20">
-                <h1 className="text-4xl md:text-6xl font-bold mb-6 text-balance leading-tight text-white">
+        <main className="flex-grow flex items-center justify-center px-6 py-20">
+          <div className="container mx-auto max-w-5xl">
+            <div className="flex flex-col items-center text-center space-y-12">
+              
+              {/* Main Heading with Smooth Transition */}
+              <div className="space-y-6 max-w-4xl">
+                <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.1] drop-shadow-xl">
                   Let CallCat Handle Your{" "}
-                  <span
-                    key={currentPhrase}
-                    className="text-blue-400 inline-block animate-in slide-in-from-top-2 fade-in duration-700"
-                  >
-                    {phrases[currentPhrase]}
+                  <span className="block h-[1.2em] overflow-hidden">
+                    <span 
+                      className={`block transition-all duration-500 transform ${
+                        isTransitioning ? 'opacity-0 translate-y-8' : 'opacity-100 translate-y-0'
+                      } text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-white`}
+                    >
+                      {phrases[currentPhraseIndex]}
+                    </span>
                   </span>
                 </h1>
-                <p className="text-xl text-white/90 mb-8 text-pretty max-w-2xl mx-auto leading-relaxed">
-                  Save time and boost your productivity by letting our AI assistant handle business calls for you. From
-                  restaurant reservations to appointment bookings, CallCat gets things done efficiently while you focus on what matters most.
+                
+                <p className="text-xl md:text-2xl text-white/80 leading-relaxed max-w-2xl mx-auto font-light drop-shadow-md">
+                  Save time and boost your productivity. From restaurant reservations to appointment bookings, CallCat gets things done efficiently.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-2xl mx-auto">
+              </div>
+
+              {/* Demo Call Input */}
+              <div className="w-full max-w-lg space-y-4">
+                <div className="flex flex-col sm:flex-row gap-3 p-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
+                  <input
+                    type="tel"
+                    placeholder="Enter your phone number"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    disabled={loading}
+                    className="flex-1 px-6 py-4 rounded-xl bg-transparent text-white placeholder-white/40 focus:outline-none focus:bg-white/5 transition-all text-lg"
+                  />
                   <Button
                     size="lg"
-                    className="bg-amber-600 hover:bg-amber-700 text-white px-8 py-3 text-lg shadow-lg w-full sm:w-auto"
-                    onClick={handleSignUp}
+                    onClick={handleDemoCall}
+                    disabled={loading}
+                    className="h-auto py-4 px-8 bg-white text-indigo-900 hover:bg-indigo-50 text-lg font-bold rounded-xl shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
                   >
-                    Make an Account
+                    {loading ? "Calling..." : "Get Demo"}
+                    {!loading && <Phone className="ml-2 h-5 w-5" />}
                   </Button>
-                  <div className="flex flex-col gap-2 w-full sm:w-auto">
-                    <div className="flex gap-2 items-center w-full sm:w-auto">
-                      <input
-                        type="tel"
-                        placeholder="Enter your phone number"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        disabled={loading}
-                        className="px-4 py-3 rounded-lg bg-white/10 border border-white/30 text-white placeholder-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-400 flex-1 min-w-0 disabled:opacity-50"
-                      />
-                      <Button
-                        variant="outline"
-                        size="lg"
-                        onClick={handleDemoCall}
-                        disabled={loading}
-                        className="px-6 py-3 text-lg border-white/30 hover:bg-white/20 bg-transparent text-white whitespace-nowrap disabled:opacity-50"
-                      >
-                        {loading ? "Calling..." : "Get Demo"}
-                      </Button>
-                    </div>
-                    {error && (
-                      <p className="text-sm text-red-400 backdrop-blur-sm bg-red-900/20 px-3 py-2 rounded">
-                        {error}
-                      </p>
-                    )}
-                    {success && (
-                      <p className="text-sm text-green-400 backdrop-blur-sm bg-green-900/20 px-3 py-2 rounded">
-                        Demo call sent! You should receive it shortly.
-                      </p>
-                    )}
-                  </div>
                 </div>
+
+                {/* Status Messages */}
+                {(error || success) && (
+                  <div className={`p-4 rounded-xl backdrop-blur-md border shadow-lg animate-in fade-in slide-in-from-top-2 ${
+                    error 
+                      ? 'bg-red-500/20 border-red-500/30 text-red-100' 
+                      : 'bg-green-500/20 border-green-500/30 text-green-100'
+                  }`}>
+                    <p className="font-medium text-center">
+                      {error || "Demo call sent! You should receive it shortly."}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        </section>
+        </main>
 
-        {/* About David Section */}
-        <section className="py-20 px-4 text-center">
-          <div className="container mx-auto">
-            <div className="max-w-3xl mx-auto">
-              <div className="backdrop-blur-sm bg-white/3 rounded-2xl p-8 border border-white/20">
-                <h2 className="text-3xl md:text-4xl font-bold mb-6 text-balance text-white">About David</h2>
-                <p className="text-xl text-white/90 mb-6 text-pretty leading-relaxed">
-                  Hi! I&apos;m David, the creator of CallCat. I&apos;m currently studying Computer Science and Mathematics at Duke
-                  University, where I spend most of my time diving deep into algorithms, machine learning, and building
-                  cool projects like this one.
-                </p>
-                <p className="text-lg text-white/80 text-pretty leading-relaxed">
-                  I built CallCat because I realized how much time we spend on routine phone calls that could be automated.
-                  Whether it&apos;s booking a restaurant reservation or scheduling an appointment, these tasks take valuable time
-                  away from more important work. So I created an intelligent AI assistant that handles these conversations
-                  efficiently and professionally, giving you back hours in your week.
-                </p>
-              </div>
+        {/* Footer - Minimal */}
+        <footer className="w-full border-t border-white/10 bg-black/40 backdrop-blur-sm py-8">
+          <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2 opacity-70 hover:opacity-100 transition-opacity">
+              <Image
+                src="/logo.png"
+                alt="CallCat Logo"
+                width={24}
+                height={24}
+                className="w-6 h-6 grayscale brightness-200"
+              />
+              <span className="font-semibold tracking-wide">CallCat</span>
             </div>
-          </div>
-        </section>
-
-        <footer className="backdrop-blur-sm bg-white/3 border-t border-white/20 py-8 px-4">
-          <div className="container mx-auto">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <Image
-                  src="/logo.png"
-                  alt="CallCat Logo"
-                  width={32}
-                  height={32}
-                  className="drop-shadow-lg"
-                />
-                <span className="text-xl font-bold text-white">CallCat</span>
-              </div>
-            </div>
-
-            <div className="text-center mt-6 pt-6 border-t border-white/20">
-              <p className="text-sm text-white/70">© 2024 CallCat. Made with ❤️ for efficient, time-saving automation.</p>
-            </div>
+            <p className="text-sm text-white/50">
+              © 2024 CallCat. Built by David at Duke.
+            </p>
           </div>
         </footer>
       </div>

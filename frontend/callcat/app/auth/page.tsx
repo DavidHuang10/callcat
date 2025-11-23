@@ -2,12 +2,13 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
 import { apiService } from '@/lib/api'
 import { getUserTimezone } from '@/utils/timezone'
 import Image from 'next/image'
+import { ArrowLeft } from 'lucide-react'
 import {
   AuthStepIndicator,
   AuthAlerts,
@@ -144,12 +145,10 @@ function AuthPageContent() {
         fullName: data.fullName
       }, data.token)
       
-      // Auto-set user timezone after successful registration
       try {
         const userTimezone = getUserTimezone()
         await apiService.updateUserPreferences({ timezone: userTimezone })
       } catch (timezoneError) {
-        // Don't block registration flow if timezone update fails
         console.warn('Failed to set user timezone:', timezoneError)
       }
       
@@ -165,164 +164,162 @@ function AuthPageContent() {
     setAuthState(prev => ({ ...prev, [field]: value }))
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
   return (
-    <div className="min-h-screen relative">
-      <div
-        className="fixed inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: "url('/business-cats.jpeg')",
-        }}
-      />
-
-      <div className="fixed inset-0 bg-black/40" />
+    <div className="min-h-screen relative font-sans text-white">
+      {/* Background Image with Overlay */}
+      <div className="fixed inset-0 z-0">
+        <Image
+          src="/business-cats.jpeg"
+          alt="Background"
+          fill
+          className="object-cover object-center"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/80 backdrop-blur-[2px]" />
+      </div>
 
       {/* Header */}
-      <header className="relative z-20 backdrop-blur-sm bg-white/5 border-b border-white/20 sticky top-0">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/20 backdrop-blur-md">
+        <div className="container mx-auto px-6 h-20 flex items-center justify-between">
           <button
             onClick={() => router.push('/')}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+            className="flex items-center gap-3 group"
           >
-            <Image
-              src="/logo.png"
-              alt="CallCat Logo"
-              width={40}
-              height={40}
-              className="drop-shadow-lg"
-            />
-            <span className="text-xl font-bold text-white">CallCat</span>
+            <div className="bg-white/10 p-2 rounded-xl backdrop-blur-sm border border-white/10 group-hover:bg-white/20 transition-colors">
+              <Image
+                src="/logo.png"
+                alt="CallCat Logo"
+                width={32}
+                height={32}
+                className="w-8 h-8 drop-shadow-md"
+              />
+            </div>
+            <span className="text-2xl font-bold tracking-tight text-white">CallCat</span>
           </button>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              className="text-white hover:bg-white/20 hover:text-white"
-              onClick={() => router.push('/login')}
-            >
-              Log In
-            </Button>
-            <Button
-              className="bg-blue-800 hover:bg-blue-900 text-white"
-              onClick={() => router.push('/auth')}
-            >
-              Sign Up
-            </Button>
-          </div>
+          
+          <Button
+            variant="ghost"
+            className="text-white/80 hover:text-white hover:bg-white/10 gap-2"
+            onClick={() => router.push('/')}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Home
+          </Button>
         </div>
       </header>
 
-      <div className="relative z-10 min-h-[calc(100vh-73px)] flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <Card className="border border-white/20 shadow-lg bg-white/3 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-center text-white">
-              {authMode === 'reset' ? 'Reset Password' : 'Create Your Account'}
-            </CardTitle>
-            <CardDescription className="text-center text-white/80">
-              {authMode === 'reset'
-                ? "We'll help you get back in"
-                : "Just a few quick steps and you'll be ready to go"
-              }
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <AuthStepIndicator currentStep={currentStep} authMode={authMode} />
-            
-            <AuthAlerts error={error} success={success} />
+      <div className="relative z-10 min-h-[calc(100vh-80px)] flex items-center justify-center p-4">
+        <div className="w-full max-w-md animate-in fade-in zoom-in-95 duration-500">
+          <Card className="border-white/10 bg-black/40 backdrop-blur-xl shadow-2xl">
+            <CardHeader className="space-y-1 pb-6">
+              <CardTitle className="text-2xl font-bold text-center text-white">
+                {authMode === 'reset' ? 'Reset Password' : 'Create Account'}
+              </CardTitle>
+              <CardDescription className="text-center text-white/60">
+                {authMode === 'reset'
+                  ? "We'll help you get back in"
+                  : "Join CallCat to start automating your calls"
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <AuthStepIndicator currentStep={currentStep} authMode={authMode} />
+              
+              <AuthAlerts error={error} success={success} />
 
-            {currentStep === 'email' && (
-              <EmailStep
-                email={authState.email}
-                loading={loading}
-                onEmailChange={(email) => updateAuthState('email', email)}
-                onSubmit={handleEmailSubmit}
-              />
-            )}
-            {currentStep === 'verification' && (
-              <VerificationStep
-                verificationCode={authState.verificationCode}
-                email={authState.email}
-                loading={loading}
-                onVerificationCodeChange={(code) => updateAuthState('verificationCode', code)}
-                onSubmit={handleVerificationSubmit}
-                onBack={() => setCurrentStep('email')}
-              />
-            )}
-            {currentStep === 'registration' && (
-              <RegistrationStep
-                firstName={authState.firstName}
-                lastName={authState.lastName}
-                password={authState.password}
-                confirmPassword={authState.confirmPassword}
-                loading={loading}
-                onFirstNameChange={(firstName) => updateAuthState('firstName', firstName)}
-                onLastNameChange={(lastName) => updateAuthState('lastName', lastName)}
-                onPasswordChange={(password) => updateAuthState('password', password)}
-                onConfirmPasswordChange={(confirmPassword) => updateAuthState('confirmPassword', confirmPassword)}
-                onSubmit={handleRegistrationSubmit}
-                onBack={() => setCurrentStep('verification')}
-              />
-            )}
-            {currentStep === 'forgot-email' && (
-              <ForgotEmailStep
-                email={authState.email}
-                loading={loading}
-                onEmailChange={(email) => updateAuthState('email', email)}
-                onSubmit={handleForgotPasswordSubmit}
-              />
-            )}
-            {currentStep === 'reset-password' && (
-              <ResetPasswordStep
-                resetToken={authState.resetToken}
-                password={authState.password}
-                confirmPassword={authState.confirmPassword}
-                loading={loading}
-                onResetTokenChange={(token) => updateAuthState('resetToken', token)}
-                onPasswordChange={(password) => updateAuthState('password', password)}
-                onConfirmPasswordChange={(confirmPassword) => updateAuthState('confirmPassword', confirmPassword)}
-                onSubmit={handleResetPasswordSubmit}
-                onBack={() => setCurrentStep('forgot-email')}
-              />
-            )}
-          </CardContent>
-        </Card>
-
-          <div className="text-center mt-6">
-            <p className="text-sm text-white/80">
-              {authMode === 'reset' ? (
-                <>
-                  Remember your password?{' '}
-                  <button
-                    onClick={() => router.push('/login')}
-                    className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
-                  >
-                    Log in
-                  </button>
-                </>
-              ) : (
-                <>
-                  Already have an account?{' '}
-                  <button
-                    onClick={() => router.push('/login')}
-                    className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
-                  >
-                    Log in
-                  </button>
-                </>
+              {currentStep === 'email' && (
+                <EmailStep
+                  email={authState.email}
+                  loading={loading}
+                  onEmailChange={(email) => updateAuthState('email', email)}
+                  onSubmit={handleEmailSubmit}
+                />
               )}
-            </p>
-          </div>
+              {currentStep === 'verification' && (
+                <VerificationStep
+                  verificationCode={authState.verificationCode}
+                  email={authState.email}
+                  loading={loading}
+                  onVerificationCodeChange={(code) => updateAuthState('verificationCode', code)}
+                  onSubmit={handleVerificationSubmit}
+                  onBack={() => setCurrentStep('email')}
+                />
+              )}
+              {currentStep === 'registration' && (
+                <RegistrationStep
+                  firstName={authState.firstName}
+                  lastName={authState.lastName}
+                  password={authState.password}
+                  confirmPassword={authState.confirmPassword}
+                  loading={loading}
+                  onFirstNameChange={(firstName) => updateAuthState('firstName', firstName)}
+                  onLastNameChange={(lastName) => updateAuthState('lastName', lastName)}
+                  onPasswordChange={(password) => updateAuthState('password', password)}
+                  onConfirmPasswordChange={(confirmPassword) => updateAuthState('confirmPassword', confirmPassword)}
+                  onSubmit={handleRegistrationSubmit}
+                  onBack={() => setCurrentStep('verification')}
+                />
+              )}
+              {currentStep === 'forgot-email' && (
+                <ForgotEmailStep
+                  email={authState.email}
+                  loading={loading}
+                  onEmailChange={(email) => updateAuthState('email', email)}
+                  onSubmit={handleForgotPasswordSubmit}
+                />
+              )}
+              {currentStep === 'reset-password' && (
+                <ResetPasswordStep
+                  resetToken={authState.resetToken}
+                  password={authState.password}
+                  confirmPassword={authState.confirmPassword}
+                  loading={loading}
+                  onResetTokenChange={(token) => updateAuthState('resetToken', token)}
+                  onPasswordChange={(password) => updateAuthState('password', password)}
+                  onConfirmPasswordChange={(confirmPassword) => updateAuthState('confirmPassword', confirmPassword)}
+                  onSubmit={handleResetPasswordSubmit}
+                  onBack={() => setCurrentStep('forgot-email')}
+                />
+              )}
+
+              <div className="relative pt-2">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-white/10" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-transparent px-2 text-white/40 backdrop-blur-xl">
+                    Or
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-center">
+                <p className="text-sm text-white/60">
+                  {authMode === 'reset' ? (
+                    <>
+                      Remember your password?{' '}
+                      <button
+                        onClick={() => router.push('/login')}
+                        className="text-indigo-300 hover:text-indigo-200 font-medium transition-colors hover:underline"
+                      >
+                        Log in
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      Already have an account?{' '}
+                      <button
+                        onClick={() => router.push('/login')}
+                        className="text-indigo-300 hover:text-indigo-200 font-medium transition-colors hover:underline"
+                      >
+                        Log in
+                      </button>
+                    </>
+                  )}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
@@ -332,19 +329,9 @@ function AuthPageContent() {
 export default function AuthPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen relative">
-        <div className="fixed inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('/business-cats.jpeg')" }} />
-        <div className="fixed inset-0 bg-black/40" />
-        <header className="relative z-20 backdrop-blur-sm bg-white/5 border-b border-white/20 sticky top-0">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-white/20 rounded-lg animate-pulse"></div>
-              <div className="h-6 w-24 bg-white/20 rounded animate-pulse"></div>
-            </div>
-          </div>
-        </header>
-        <div className="relative z-10 min-h-[calc(100vh-73px)] flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400"></div>
+      <div className="min-h-screen relative bg-black">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
         </div>
       </div>
     }>
