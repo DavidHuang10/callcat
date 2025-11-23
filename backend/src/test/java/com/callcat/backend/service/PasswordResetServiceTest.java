@@ -1,7 +1,7 @@
 package com.callcat.backend.service;
 
-import com.callcat.backend.entity.User;
-import com.callcat.backend.repository.UserRepository;
+import com.callcat.backend.entity.dynamo.UserDynamoDb;
+import com.callcat.backend.repository.dynamo.UserRepositoryDynamoDb;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,7 +23,7 @@ import static org.mockito.Mockito.*;
 class PasswordResetServiceTest {
 
     @Mock
-    private UserRepository userRepository;
+    private UserRepositoryDynamoDb userRepository;
 
     @Mock
     private EmailService emailService;
@@ -31,15 +31,17 @@ class PasswordResetServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private VerificationService verificationService;
+
     @InjectMocks
     private AuthenticationService authenticationService;
 
-    private User testUser;
+    private UserDynamoDb testUser;
 
     @BeforeEach
     void setUp() {
-        testUser = new User();
-        testUser.setId(1L);
+        testUser = new UserDynamoDb();
         testUser.setEmail("test@example.com");
         testUser.setPassword("encodedOldPassword");
         testUser.setFirstName("John");
@@ -55,14 +57,14 @@ class PasswordResetServiceTest {
         String email = "test@example.com";
         String resetToken = "secure-reset-token-123";
         
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(testUser));
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
         when(emailService.generateResetToken()).thenReturn(resetToken);
 
         // Act
         authenticationService.forgotPassword(email);
 
         // Assert
-        verify(userRepository).findByEmailAndIsActive(email, true);
+        verify(userRepository).findByEmail(email);
         verify(emailService).generateResetToken();
         verify(userRepository).save(testUser);
         verify(emailService).sendPasswordResetEmail(email, resetToken);
@@ -78,7 +80,7 @@ class PasswordResetServiceTest {
     void forgotPassword_WithNonExistentEmail_ShouldThrowException() {
         // Arrange
         String email = "nonexistent@example.com";
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class,
@@ -95,13 +97,17 @@ class PasswordResetServiceTest {
     void forgotPassword_WithInactiveUser_ShouldThrowException() {
         // Arrange
         String email = "inactive@example.com";
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.empty());
+        UserDynamoDb inactiveUser = new UserDynamoDb();
+        inactiveUser.setEmail(email);
+        inactiveUser.setIsActive(false);
+        
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(inactiveUser));
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class,
                 () -> authenticationService.forgotPassword(email));
 
-        assertEquals("No account found with this email address", exception.getMessage());
+        assertEquals("User is inactive", exception.getMessage());
         verify(emailService, never()).sendPasswordResetEmail(anyString(), anyString());
     }
 
@@ -149,7 +155,7 @@ class PasswordResetServiceTest {
 
         assertEquals("Invalid reset token", exception.getMessage());
         verify(passwordEncoder, never()).encode(anyString());
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository, never()).save(any(UserDynamoDb.class));
     }
 
     // Tests password reset with expired token
@@ -263,7 +269,7 @@ class PasswordResetServiceTest {
         String resetToken = "test-token";
         long beforeCall = System.currentTimeMillis() / 1000;
         
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(testUser));
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
         when(emailService.generateResetToken()).thenReturn(resetToken);
 
         // Act

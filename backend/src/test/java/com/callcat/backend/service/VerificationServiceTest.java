@@ -1,9 +1,9 @@
 package com.callcat.backend.service;
 
-import com.callcat.backend.entity.EmailVerification;
-import com.callcat.backend.entity.User;
-import com.callcat.backend.repository.EmailVerificationRepository;
-import com.callcat.backend.repository.UserRepository;
+import com.callcat.backend.entity.dynamo.EmailVerificationDynamoDb;
+import com.callcat.backend.entity.dynamo.UserDynamoDb;
+import com.callcat.backend.repository.dynamo.EmailVerificationRepositoryDynamoDb;
+import com.callcat.backend.repository.dynamo.UserRepositoryDynamoDb;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,28 +24,27 @@ import static org.mockito.Mockito.*;
 class VerificationServiceTest {
 
     @Mock
-    private UserRepository userRepository;
+    private UserRepositoryDynamoDb userRepository;
 
     @Mock
     private EmailService emailService;
 
     @Mock
-    private EmailVerificationRepository emailVerificationRepository;
+    private EmailVerificationRepositoryDynamoDb emailVerificationRepository;
 
     @InjectMocks
     private VerificationService verificationService;
 
-    private User testUser;
-    private EmailVerification testVerification;
+    private UserDynamoDb testUser;
+    private EmailVerificationDynamoDb testVerification;
 
     @BeforeEach
     void setUp() {
-        testUser = new User();
-        testUser.setId(1L);
+        testUser = new UserDynamoDb();
         testUser.setEmail("existing@example.com");
         testUser.setIsActive(true);
 
-        testVerification = new EmailVerification();
+        testVerification = new EmailVerificationDynamoDb();
         testVerification.setEmail("test@example.com");
         testVerification.setVerificationCode("123456");
         testVerification.setExpiresAt(System.currentTimeMillis() / 1000 + (15 * 60));
@@ -71,7 +70,7 @@ class VerificationServiceTest {
         verify(userRepository).findByEmail(email);
         verify(emailVerificationRepository).findByEmail(email);
         verify(emailService).generateVerificationCode();
-        verify(emailVerificationRepository).save(any(EmailVerification.class));
+        verify(emailVerificationRepository).save(any(EmailVerificationDynamoDb.class));
         verify(emailService).sendVerificationEmail(email, code);
     }
 
@@ -209,7 +208,7 @@ class VerificationServiceTest {
         String email = "test@example.com";
         testVerification.setVerified(true);
         
-        when(emailVerificationRepository.findVerifiedByEmail(email)).thenReturn(Optional.of(testVerification));
+        when(emailVerificationRepository.findByEmail(email)).thenReturn(Optional.of(testVerification));
 
         // Act
         boolean result = verificationService.isEmailVerified(email);
@@ -225,7 +224,7 @@ class VerificationServiceTest {
         // Arrange
         String email = "test@example.com";
         
-        when(emailVerificationRepository.findVerifiedByEmail(email)).thenReturn(Optional.empty());
+        when(emailVerificationRepository.findByEmail(email)).thenReturn(Optional.empty());
 
         // Act
         boolean result = verificationService.isEmailVerified(email);
@@ -243,7 +242,7 @@ class VerificationServiceTest {
         testVerification.setVerified(true);
         testVerification.setExpiresAt(System.currentTimeMillis() / 1000 - 60); // Expired
         
-        when(emailVerificationRepository.findVerifiedByEmail(email)).thenReturn(Optional.of(testVerification));
+        when(emailVerificationRepository.findByEmail(email)).thenReturn(Optional.of(testVerification));
 
         // Act
         boolean result = verificationService.isEmailVerified(email);

@@ -4,21 +4,20 @@ import com.callcat.backend.dto.UpdatePreferencesRequest;
 import com.callcat.backend.dto.UpdateProfileRequest;
 import com.callcat.backend.dto.UserPreferencesResponse;
 import com.callcat.backend.dto.UserResponse;
-import com.callcat.backend.entity.User;
-import com.callcat.backend.entity.UserPreferences;
-import com.callcat.backend.repository.UserPreferencesRepository;
-import com.callcat.backend.repository.UserRepository;
+import com.callcat.backend.entity.dynamo.UserDynamoDb;
+import com.callcat.backend.entity.dynamo.UserPreferencesDynamoDb;
+import com.callcat.backend.repository.dynamo.UserPreferencesRepositoryDynamoDb;
+import com.callcat.backend.repository.dynamo.UserRepositoryDynamoDb;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.regex.Pattern;
 
 @Service
 public class UserService {
     
-    private final UserRepository userRepository;
-    private final UserPreferencesRepository userPreferencesRepository;
+    private final UserRepositoryDynamoDb userRepository;
+    private final UserPreferencesRepositoryDynamoDb userPreferencesRepository;
     private final PasswordEncoder passwordEncoder;
     
     // Password pattern: 8+ chars, at least one uppercase, one lowercase, one digit
@@ -28,8 +27,8 @@ public class UserService {
     private static final Pattern passwordPattern = Pattern.compile(PASSWORD_PATTERN);
     
     public UserService(
-            UserRepository userRepository,
-            UserPreferencesRepository userPreferencesRepository,
+            UserRepositoryDynamoDb userRepository,
+            UserPreferencesRepositoryDynamoDb userPreferencesRepository,
             PasswordEncoder passwordEncoder
     ) {
         this.userRepository = userRepository;
@@ -38,40 +37,51 @@ public class UserService {
     }
     
     public UserResponse getUserProfile(String email) {
-        User user = userRepository.findByEmailAndIsActive(email, true)
+        UserDynamoDb user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
+             throw new RuntimeException("User is inactive");
+        }
+        
         return new UserResponse(
-                user.getId(),
+                null, // ID is not available/used
                 user.getEmail(),
                 user.getFirstName(),
                 user.getLastName()
         );
     }
     
-    @Transactional
     public UserResponse updateProfile(String email, UpdateProfileRequest request) {
-        User user = userRepository.findByEmailAndIsActive(email, true)
+        UserDynamoDb user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
+             throw new RuntimeException("User is inactive");
+        }
         
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
+        user.setUpdatedAt(java.time.LocalDateTime.now().toString());
         // Email cannot be changed - it's used as the unique identifier
         
-        User updatedUser = userRepository.save(user);
+        userRepository.save(user);
         
         return new UserResponse(
-                updatedUser.getId(),
-                updatedUser.getEmail(),
-                updatedUser.getFirstName(),
-                updatedUser.getLastName()
+                null,
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName()
         );
     }
     
-    @Transactional
     public void changePassword(String email, String currentPassword, String newPassword) {
-        User user = userRepository.findByEmailAndIsActive(email, true)
+        UserDynamoDb user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
+             throw new RuntimeException("User is inactive");
+        }
         
         // Verify current password
         if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
@@ -85,15 +95,17 @@ public class UserService {
         
         // Update password
         user.setPassword(passwordEncoder.encode(newPassword));
+        user.setUpdatedAt(java.time.LocalDateTime.now().toString());
         userRepository.save(user);
     }
     
     public UserPreferencesResponse getUserPreferences(String email) {
-        User user = userRepository.findByEmailAndIsActive(email, true)
+        // Verify user exists first
+        UserDynamoDb user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
-        UserPreferences preferences = userPreferencesRepository.findByUserId(user.getId())
-                .orElseGet(() -> createDefaultPreferences(user));
+        UserPreferencesDynamoDb preferences = userPreferencesRepository.findByEmail(email)
+                .orElseGet(() -> createDefaultPreferences(email));
         
         return new UserPreferencesResponse(
                 preferences.getTimezone(),
@@ -103,28 +115,13 @@ public class UserService {
         );
     }
     
-    public UserPreferencesResponse getUserPreferences(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        
-        UserPreferences preferences = userPreferencesRepository.findByUserId(user.getId())
-                .orElseGet(() -> createDefaultPreferences(user));
-        
-        return new UserPreferencesResponse(
-                preferences.getTimezone(),
-                preferences.getEmailNotifications(),
-                preferences.getVoiceId(),
-                preferences.getSystemPrompt()
-        );
-    }
-    
-    @Transactional
     public UserPreferencesResponse updateUserPreferences(String email, UpdatePreferencesRequest request) {
-        User user = userRepository.findByEmailAndIsActive(email, true)
+        // Verify user exists
+        UserDynamoDb user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
-        UserPreferences preferences = userPreferencesRepository.findByUserId(user.getId())
-                .orElseGet(() -> createDefaultPreferences(user));
+        UserPreferencesDynamoDb preferences = userPreferencesRepository.findByEmail(email)
+                .orElseGet(() -> createDefaultPreferences(email));
         
         // Update only non-null fields
         if (request.getTimezone() != null) {
@@ -140,19 +137,21 @@ public class UserService {
             preferences.setSystemPrompt(request.getSystemPrompt());
         }
         
-        UserPreferences updatedPreferences = userPreferencesRepository.save(preferences);
+        userPreferencesRepository.save(preferences);
         
         return new UserPreferencesResponse(
-                updatedPreferences.getTimezone(),
-                updatedPreferences.getEmailNotifications(),
-                updatedPreferences.getVoiceId(),
-                updatedPreferences.getSystemPrompt()
+                preferences.getTimezone(),
+                preferences.getEmailNotifications(),
+                preferences.getVoiceId(),
+                preferences.getSystemPrompt()
         );
     }
     
-    private UserPreferences createDefaultPreferences(User user) {
-        UserPreferences preferences = new UserPreferences(user);
-        return userPreferencesRepository.save(preferences);
+    private UserPreferencesDynamoDb createDefaultPreferences(String email) {
+        UserPreferencesDynamoDb preferences = new UserPreferencesDynamoDb();
+        preferences.setEmail(email);
+        userPreferencesRepository.save(preferences);
+        return preferences;
     }
     
     private boolean isValidPassword(String password) {

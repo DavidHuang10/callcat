@@ -1,23 +1,22 @@
 package com.callcat.backend.service;
 
-import com.callcat.backend.entity.EmailVerification;
-import com.callcat.backend.entity.User;
-import com.callcat.backend.repository.EmailVerificationRepository;
-import com.callcat.backend.repository.UserRepository;
+import com.callcat.backend.entity.dynamo.EmailVerificationDynamoDb;
+import com.callcat.backend.entity.dynamo.UserDynamoDb;
+import com.callcat.backend.repository.dynamo.EmailVerificationRepositoryDynamoDb;
+import com.callcat.backend.repository.dynamo.UserRepositoryDynamoDb;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
 @Service
 public class VerificationService {
     
-    private final UserRepository userRepository;
+    private final UserRepositoryDynamoDb userRepository;
     private final EmailService emailService;
-    private final EmailVerificationRepository emailVerificationRepository;
+    private final EmailVerificationRepositoryDynamoDb emailVerificationRepository;
     
-    public VerificationService(UserRepository userRepository, EmailService emailService, EmailVerificationRepository emailVerificationRepository) {
+    public VerificationService(UserRepositoryDynamoDb userRepository, EmailService emailService, EmailVerificationRepositoryDynamoDb emailVerificationRepository) {
         this.userRepository = userRepository;
         this.emailService = emailService;
         this.emailVerificationRepository = emailVerificationRepository;
@@ -33,7 +32,7 @@ public class VerificationService {
         }
         
         // Check if email already registered
-        Optional<User> existingUser = userRepository.findByEmail(email);
+        Optional<UserDynamoDb> existingUser = userRepository.findByEmail(email);
         if (existingUser.isPresent()) {
             throw new RuntimeException("Email already registered");
         }
@@ -43,8 +42,8 @@ public class VerificationService {
         Long expires = System.currentTimeMillis() / 1000 + (15 * 60);
         
         // Create or update email verification record
-        Optional<EmailVerification> existingVerification = emailVerificationRepository.findByEmail(email);
-        EmailVerification verification;
+        Optional<EmailVerificationDynamoDb> existingVerification = emailVerificationRepository.findByEmail(email);
+        EmailVerificationDynamoDb verification;
         
         if (existingVerification.isPresent()) {
             // Update existing verification
@@ -54,7 +53,12 @@ public class VerificationService {
             verification.setVerified(false); // Reset verification status
         } else {
             // Create new verification record
-            verification = new EmailVerification(email, code, expires);
+            verification = new EmailVerificationDynamoDb();
+            verification.setEmail(email);
+            verification.setVerificationCode(code);
+            verification.setExpiresAt(expires);
+            verification.setVerified(false);
+            verification.setCreatedAt(System.currentTimeMillis() / 1000);
         }
         
         emailVerificationRepository.save(verification);
@@ -67,12 +71,12 @@ public class VerificationService {
      * Verifies the email code and marks email as verified
      */
     public boolean verifyEmailCode(String email, String code) {
-        Optional<EmailVerification> verificationOpt = emailVerificationRepository.findByEmail(email);
+        Optional<EmailVerificationDynamoDb> verificationOpt = emailVerificationRepository.findByEmail(email);
         if (verificationOpt.isEmpty()) {
             throw new RuntimeException("No verification found for this email");
         }
         
-        EmailVerification verification = verificationOpt.get();
+        EmailVerificationDynamoDb verification = verificationOpt.get();
         
         // Check if code matches
         if (!code.equals(verification.getVerificationCode())) {
@@ -95,8 +99,10 @@ public class VerificationService {
      * Checks if email is verified and ready for registration
      */
     public boolean isEmailVerified(String email) {
-        Optional<EmailVerification> verificationOpt = emailVerificationRepository.findVerifiedByEmail(email);
-        return verificationOpt.isPresent() && !verificationOpt.get().isExpired();
+        Optional<EmailVerificationDynamoDb> verificationOpt = emailVerificationRepository.findByEmail(email);
+        return verificationOpt.isPresent() && 
+               Boolean.TRUE.equals(verificationOpt.get().getVerified()) && 
+               !verificationOpt.get().isExpired();
     }
     
     /**
@@ -110,7 +116,6 @@ public class VerificationService {
      * Scheduled cleanup task - runs every hour to remove expired verification records
      */
     @Scheduled(cron = "0 0 * * * *") // Every hour at minute 0 second 0
-    @Transactional
     public void scheduledCleanup() {
         try {
             emailVerificationRepository.deleteExpiredVerifications(System.currentTimeMillis() / 1000);

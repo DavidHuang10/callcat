@@ -1,8 +1,8 @@
 package com.callcat.backend.service;
 
 import com.callcat.backend.dto.AuthResponse;
-import com.callcat.backend.entity.User;
-import com.callcat.backend.repository.UserRepository;
+import com.callcat.backend.entity.dynamo.UserDynamoDb;
+import com.callcat.backend.repository.dynamo.UserRepositoryDynamoDb;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,7 +28,7 @@ import static org.mockito.Mockito.*;
 class AuthenticationServiceTest {
 
     @Mock
-    private UserRepository userRepository;
+    private UserRepositoryDynamoDb userRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -48,12 +48,11 @@ class AuthenticationServiceTest {
     @InjectMocks
     private AuthenticationService authenticationService;
 
-    private User testUser;
+    private UserDynamoDb testUser;
 
     @BeforeEach
     void setUp() {
-        testUser = new User();
-        testUser.setId(1L);
+        testUser = new UserDynamoDb();
         testUser.setEmail("test@example.com");
         testUser.setPassword("encodedPassword");
         testUser.setFirstName("John");
@@ -74,18 +73,18 @@ class AuthenticationServiceTest {
         long expectedExpiration = 86400000L;
 
         // Create the saved user after registration completion
-        User savedUser = new User();
-        savedUser.setId(1L);
+        UserDynamoDb savedUser = new UserDynamoDb();
         savedUser.setEmail(email);
         savedUser.setFirstName(firstName);
         savedUser.setLastName(lastName);
         savedUser.setIsActive(true);
 
         when(verificationService.isEmailVerified(email)).thenReturn(true);
-        when(userRepository.existsByEmail(email)).thenReturn(false);
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
         when(passwordEncoder.encode(password)).thenReturn("encodedPassword");
-        when(userRepository.save(any(User.class))).thenReturn(savedUser);
-        when(jwtService.generateToken(anyString(), any(Long.class), anyString())).thenReturn(expectedToken);
+        // save is void
+        // Use any() for the second argument (userId) which is Long but can be null
+        when(jwtService.generateToken(anyString(), any(), anyString())).thenReturn(expectedToken);
         when(jwtService.getExpirationTime()).thenReturn(expectedExpiration);
 
         // Act
@@ -94,15 +93,15 @@ class AuthenticationServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals(expectedToken, result.getToken());
-        assertEquals(savedUser.getId(), result.getUserId());
+        assertNull(result.getUserId()); // UserId is null in DynamoDB (userId field in AuthResponse is Long)
         assertEquals(email, result.getEmail());
         assertEquals(firstName + " " + lastName, result.getFullName());
         assertEquals(expectedExpiration, result.getExpiresIn());
         verify(verificationService).isEmailVerified(email);
-        verify(userRepository).existsByEmail(email);
+        verify(userRepository).findByEmail(email);
         verify(passwordEncoder).encode(password);
-        verify(userRepository).save(any(User.class));
-        verify(jwtService).generateToken(email, savedUser.getId(), firstName + " " + lastName);
+        verify(userRepository).save(any(UserDynamoDb.class));
+        verify(jwtService).generateToken(eq(email), any(), eq(firstName + " " + lastName));
     }
 
     // Tests that registration requires email verification first
@@ -127,8 +126,11 @@ class AuthenticationServiceTest {
     void register_WithAlreadyRegisteredEmail_ShouldThrowException() {
         // Arrange
         String email = "existing@example.com";
+        UserDynamoDb existingUser = new UserDynamoDb();
+        existingUser.setEmail(email);
+        
         when(verificationService.isEmailVerified(email)).thenReturn(true);
-        when(userRepository.existsByEmail(email)).thenReturn(true);
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(existingUser));
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class,
@@ -136,8 +138,8 @@ class AuthenticationServiceTest {
 
         assertEquals("Email already registered", exception.getMessage());
         verify(verificationService).isEmailVerified(email);
-        verify(userRepository).existsByEmail(email);
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository).findByEmail(email);
+        verify(userRepository, never()).save(any(UserDynamoDb.class));
     }
 
     // Tests password strength validation in the business layer
@@ -149,14 +151,14 @@ class AuthenticationServiceTest {
         String weakPassword = "weak";
         
         when(verificationService.isEmailVerified(email)).thenReturn(true);
-        when(userRepository.existsByEmail(email)).thenReturn(false);
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class,
                 () -> authenticationService.register(email, weakPassword, "John", "Doe"));
 
         assertTrue(exception.getMessage().contains("Password must be at least 8 characters"));
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository, never()).save(any(UserDynamoDb.class));
     }
 
     // Tests authentication business logic with correct credentials
@@ -169,8 +171,8 @@ class AuthenticationServiceTest {
         String expectedToken = "jwt-token";
         long expectedExpiration = 86400000L;
 
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(testUser));
-        when(jwtService.generateToken(anyString(), any(Long.class), anyString())).thenReturn(expectedToken);
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+        when(jwtService.generateToken(anyString(), any(), anyString())).thenReturn(expectedToken);
         when(jwtService.getExpirationTime()).thenReturn(expectedExpiration);
 
         // Act
@@ -179,12 +181,12 @@ class AuthenticationServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals(expectedToken, result.getToken());
-        assertEquals(testUser.getId(), result.getUserId());
+        assertNull(result.getUserId()); // UserId is null in DynamoDB
         assertEquals(email, result.getEmail());
         assertEquals(testUser.getFullName(), result.getFullName());
         assertEquals(expectedExpiration, result.getExpiresIn());
         verify(authenticationManager).authenticate(new UsernamePasswordAuthenticationToken(email, password));
-        verify(userRepository).findByEmailAndIsActive(email, true);
+        verify(userRepository).findByEmail(email);
     }
 
     // Tests authentication failure handling for wrong credentials
@@ -212,14 +214,16 @@ class AuthenticationServiceTest {
         // Arrange
         String email = "test@example.com";
         String password = "password";
+        UserDynamoDb inactiveUser = new UserDynamoDb();
+        inactiveUser.setIsActive(false);
 
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(inactiveUser));
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class,
                 () -> authenticationService.authenticate(email, password));
 
-        assertEquals("User not found or inactive", exception.getMessage());
+        assertEquals("User is inactive", exception.getMessage());
     }
 
     // Tests user profile retrieval with valid email address
@@ -228,14 +232,18 @@ class AuthenticationServiceTest {
     void getCurrentUser_WithValidEmail_ShouldReturnUser() {
         // Arrange
         String email = "test@example.com";
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(testUser));
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
 
         // Act
-        User result = authenticationService.getCurrentUser(email);
+        com.callcat.backend.entity.User result = authenticationService.getCurrentUser(email);
 
         // Assert
-        assertEquals(testUser, result);
-        verify(userRepository).findByEmailAndIsActive(email, true);
+        assertNotNull(result);
+        assertEquals(testUser.getEmail(), result.getEmail());
+        assertEquals(testUser.getFirstName(), result.getFirstName());
+        assertEquals(testUser.getLastName(), result.getLastName());
+        assertEquals(testUser.getIsActive(), result.getIsActive());
+        verify(userRepository).findByEmail(email);
     }
 
     // Tests error handling for non-existent user lookup
@@ -244,7 +252,7 @@ class AuthenticationServiceTest {
     void getCurrentUser_WithInvalidEmail_ShouldThrowException() {
         // Arrange
         String email = "nonexistent@example.com";
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class,

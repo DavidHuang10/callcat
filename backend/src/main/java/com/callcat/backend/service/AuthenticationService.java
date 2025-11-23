@@ -2,7 +2,8 @@ package com.callcat.backend.service;
 
 import com.callcat.backend.dto.AuthResponse;
 import com.callcat.backend.entity.User;
-import com.callcat.backend.repository.UserRepository;
+import com.callcat.backend.entity.dynamo.UserDynamoDb;
+import com.callcat.backend.repository.dynamo.UserRepositoryDynamoDb;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
@@ -14,7 +15,7 @@ import java.util.regex.Pattern;
 @Service
 public class AuthenticationService {
     
-    private final UserRepository userRepository;
+    private final UserRepositoryDynamoDb userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
@@ -33,7 +34,7 @@ public class AuthenticationService {
     private static final Pattern emailPattern = Pattern.compile(EMAIL_PATTERN, Pattern.CASE_INSENSITIVE);
     
     public AuthenticationService(
-            UserRepository userRepository,
+            UserRepositoryDynamoDb userRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             AuthenticationManager authenticationManager,
@@ -60,7 +61,7 @@ public class AuthenticationService {
         }
         
         // Check if user already exists
-        if (userRepository.existsByEmail(email)) {
+        if (userRepository.findByEmail(email).isPresent()) {
             throw new RuntimeException("Email already registered");
         }
         
@@ -70,27 +71,29 @@ public class AuthenticationService {
         }
         
         // Create new user with verified email
-        User user = new User();
-        user.setEmail(email);
-        user.setPassword(passwordEncoder.encode(password));
-        user.setFirstName(firstName);
-        user.setLastName(lastName);
-        user.setIsActive(true); // Account is active upon registration
+        UserDynamoDb userDynamo = new UserDynamoDb();
+        userDynamo.setEmail(email);
+        userDynamo.setPassword(passwordEncoder.encode(password));
+        userDynamo.setFirstName(firstName);
+        userDynamo.setLastName(lastName);
+        userDynamo.setIsActive(true); // Account is active upon registration
+        userDynamo.setCreatedAt(java.time.LocalDateTime.now().toString());
+        userDynamo.setUpdatedAt(java.time.LocalDateTime.now().toString());
         
-        User savedUser = userRepository.save(user);
+        userRepository.save(userDynamo);
         
         // Generate JWT token and create response
         String token = jwtService.generateToken(
-                savedUser.getEmail(),
-                savedUser.getId(),
-                savedUser.getFullName()
+                userDynamo.getEmail(),
+                null, // ID is null for DynamoDB users
+                userDynamo.getFullName()
         );
         
         return new AuthResponse(
                 token,
-                savedUser.getId(),
-                savedUser.getEmail(),
-                savedUser.getFullName(),
+                null, // ID
+                userDynamo.getEmail(),
+                userDynamo.getFullName(),
                 jwtService.getExpirationTime()
         );
     }
@@ -103,21 +106,25 @@ public class AuthenticationService {
             );
             
             // Find user
-            User user = userRepository.findByEmailAndIsActive(email, true)
-                    .orElseThrow(() -> new RuntimeException("User not found or inactive"));
+            UserDynamoDb userDynamo = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            if (!Boolean.TRUE.equals(userDynamo.getIsActive())) {
+                throw new RuntimeException("User is inactive");
+            }
             
             // Generate JWT token and create response
             String token = jwtService.generateToken(
-                    user.getEmail(),
-                    user.getId(),
-                    user.getFullName()
+                    userDynamo.getEmail(),
+                    null,
+                    userDynamo.getFullName()
             );
             
             return new AuthResponse(
                     token,
-                    user.getId(),
-                    user.getEmail(),
-                    user.getFullName(),
+                    null,
+                    userDynamo.getEmail(),
+                    userDynamo.getFullName(),
                     jwtService.getExpirationTime()
             );
             
@@ -127,8 +134,23 @@ public class AuthenticationService {
     }
     
     public User getCurrentUser(String email) {
-        return userRepository.findByEmailAndIsActive(email, true)
+        UserDynamoDb userDynamo = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        if (!Boolean.TRUE.equals(userDynamo.getIsActive())) {
+             throw new RuntimeException("User is inactive");
+        }
+
+        // Map to User DTO
+        User user = new User();
+        user.setEmail(userDynamo.getEmail());
+        user.setPassword(userDynamo.getPassword());
+        user.setFirstName(userDynamo.getFirstName());
+        user.setLastName(userDynamo.getLastName());
+        user.setRole(userDynamo.getRole());
+        user.setIsActive(userDynamo.getIsActive());
+        
+        return user;
     }
     
     private boolean isValidPassword(String password) {
@@ -146,17 +168,21 @@ public class AuthenticationService {
      */
     public void forgotPassword(String email) {
         // Find user by email
-        User user = userRepository.findByEmailAndIsActive(email, true)
+        UserDynamoDb userDynamo = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("No account found with this email address"));
+        
+        if (!Boolean.TRUE.equals(userDynamo.getIsActive())) {
+             throw new RuntimeException("User is inactive");
+        }
         
         // Generate secure reset token and expiration (1 hour)
         String resetToken = emailService.generateResetToken();
         Long expires = System.currentTimeMillis() / 1000 + 3600;
         
         // Save reset token to user
-        user.setPasswordResetToken(resetToken);
-        user.setResetTokenExpires(expires);
-        userRepository.save(user);
+        userDynamo.setPasswordResetToken(resetToken);
+        userDynamo.setResetTokenExpires(expires);
+        userRepository.save(userDynamo);
         
         // Send reset email
         emailService.sendPasswordResetEmail(email, resetToken);
@@ -173,22 +199,22 @@ public class AuthenticationService {
         }
         
         // Find user by reset token
-        User user = userRepository.findByPasswordResetToken(token)
+        UserDynamoDb userDynamo = userRepository.findByPasswordResetToken(token)
                 .orElseThrow(() -> new RuntimeException("Invalid reset token"));
         
         // Check if token hasn't expired
-        if (user.getResetTokenExpires() == null || user.getResetTokenExpires() < System.currentTimeMillis() / 1000) {
+        if (userDynamo.getResetTokenExpires() == null || userDynamo.getResetTokenExpires() < System.currentTimeMillis() / 1000) {
             // Clear expired token
-            user.setPasswordResetToken(null);
-            user.setResetTokenExpires(null);
-            userRepository.save(user);
+            userDynamo.setPasswordResetToken(null);
+            userDynamo.setResetTokenExpires(null);
+            userRepository.save(userDynamo);
             throw new RuntimeException("Reset token has expired");
         }
         
         // Update password and clear reset token
-        user.setPassword(passwordEncoder.encode(newPassword));
-        user.setPasswordResetToken(null);
-        user.setResetTokenExpires(null);
-        userRepository.save(user);
+        userDynamo.setPassword(passwordEncoder.encode(newPassword));
+        userDynamo.setPasswordResetToken(null);
+        userDynamo.setResetTokenExpires(null);
+        userRepository.save(userDynamo);
     }
 }

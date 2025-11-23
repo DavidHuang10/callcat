@@ -6,8 +6,9 @@ import com.callcat.backend.dto.CallRequest;
 import com.callcat.backend.dto.UpdateCallRequest;
 import com.callcat.backend.entity.CallRecord;
 import com.callcat.backend.entity.User;
+import com.callcat.backend.entity.dynamo.UserDynamoDb;
 import com.callcat.backend.repository.CallRecordRepository;
-import com.callcat.backend.repository.UserRepository;
+import com.callcat.backend.repository.dynamo.UserRepositoryDynamoDb;
 import com.callcat.backend.util.PhoneNumberValidator;
 import com.callcat.backend.util.BeanUpdateUtils;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -23,19 +24,23 @@ import java.util.stream.Collectors;
 public class CallService {
 
     private final CallRecordRepository callRecordRepository;
-    private final UserRepository userRepository;
+    private final UserRepositoryDynamoDb userRepository;
     private final EventBridgeService eventBridgeService;
 
     @Autowired
-    public CallService(CallRecordRepository callRecordRepository, UserRepository userRepository, EventBridgeService eventBridgeService) {
+    public CallService(CallRecordRepository callRecordRepository, UserRepositoryDynamoDb userRepository, EventBridgeService eventBridgeService) {
         this.callRecordRepository = callRecordRepository;
         this.userRepository = userRepository;
         this.eventBridgeService = eventBridgeService;
     }
 
     public CallResponse createCall(String userEmail, CallRequest request) {
-        User user = userRepository.findByEmailAndIsActive(userEmail, true)
+        UserDynamoDb user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
+             throw new RuntimeException("User is inactive");
+        }
 
         PhoneNumberValidator.validatePhoneNumber(request.getPhoneNumber());
 
@@ -53,7 +58,7 @@ public class CallService {
             callRecord.setAiLanguage("en");
         }
         
-        callRecord.setUserId(user.getId().toString());
+        callRecord.setUserId(user.getEmail()); // Use email as userId
         callRecord.setCallId(UUID.randomUUID().toString());
         callRecord.setStatus("SCHEDULED");
         callRecord.setCreatedAt(currentTime);
@@ -99,8 +104,12 @@ public class CallService {
     }
 
     public InstantCallResult createInstantCall(String userEmail, CallRequest request) {
-        User user = userRepository.findByEmailAndIsActive(userEmail, true)
+        UserDynamoDb userDynamo = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!Boolean.TRUE.equals(userDynamo.getIsActive())) {
+             throw new RuntimeException("User is inactive");
+        }
 
         PhoneNumberValidator.validatePhoneNumber(request.getPhoneNumber());
 
@@ -117,7 +126,7 @@ public class CallService {
             callRecord.setAiLanguage("en");
         }
 
-        callRecord.setUserId(user.getId().toString());
+        callRecord.setUserId(userDynamo.getEmail()); // Use email as userId
         callRecord.setCallId(UUID.randomUUID().toString());
         callRecord.setStatus("SCHEDULED");
         callRecord.setCreatedAt(currentTime);
@@ -129,19 +138,31 @@ public class CallService {
         // This prevents double-save race condition with DynamoDB
         // The record will be saved with all data (including providerId) in one atomic write
 
+        // Map to User DTO
+        User user = new User();
+        user.setEmail(userDynamo.getEmail());
+        user.setFirstName(userDynamo.getFirstName());
+        user.setLastName(userDynamo.getLastName());
+        user.setRole(userDynamo.getRole());
+        user.setIsActive(userDynamo.getIsActive());
+
         // Return both call record and user for controller to use
         return new InstantCallResult(callRecord, user);
     }
 
     public CallListResponse getCalls(String userEmail, String status, Integer limit) {
-        User user = userRepository.findByEmailAndIsActive(userEmail, true)
+        UserDynamoDb user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
+             throw new RuntimeException("User is inactive");
+        }
 
         if (status == null) {
             throw new IllegalArgumentException("Status parameter is required");
         }
 
-        List<CallRecord> calls = callRecordRepository.findByUserIdAndStatus(user.getId().toString(), status, limit);
+        List<CallRecord> calls = callRecordRepository.findByUserIdAndStatus(user.getEmail(), status, limit);
 
         List<CallResponse> callResponses = calls.stream()
                 .map(callRecord -> {

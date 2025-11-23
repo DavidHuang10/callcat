@@ -2,9 +2,9 @@ package com.callcat.backend.service;
 
 import com.callcat.backend.dto.*;
 import com.callcat.backend.entity.CallRecord;
-import com.callcat.backend.entity.User;
+import com.callcat.backend.entity.dynamo.UserDynamoDb;
 import com.callcat.backend.repository.CallRecordRepository;
-import com.callcat.backend.repository.UserRepository;
+import com.callcat.backend.repository.dynamo.UserRepositoryDynamoDb;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,7 +30,7 @@ class CallServiceTest {
     private CallRecordRepository callRecordRepository;
 
     @Mock
-    private UserRepository userRepository;
+    private UserRepositoryDynamoDb userRepository;
 
     @Mock
     private EventBridgeService eventBridgeService;
@@ -38,20 +38,19 @@ class CallServiceTest {
     @InjectMocks
     private CallService callService;
 
-    private User testUser;
+    private UserDynamoDb testUser;
     private CallRecord testCall;
     private CallRequest createRequest;
     private UpdateCallRequest updateRequest;
 
     @BeforeEach
     void setUp() {
-        testUser = new User();
-        testUser.setId(1L);
+        testUser = new UserDynamoDb();
         testUser.setEmail("test@example.com");
         testUser.setIsActive(true);
 
         testCall = new CallRecord();
-        testCall.setUserId("1");
+        testCall.setUserId("test@example.com");
         testCall.setCallId("test-call-id");
         testCall.setCalleeName("John Doe");
         testCall.setPhoneNumber("+15551234567");
@@ -81,7 +80,7 @@ class CallServiceTest {
     @Test
     void createCall_WithValidRequest_ShouldReturnCallResponse() {
         // Arrange
-        when(userRepository.findByEmailAndIsActive("test@example.com", true))
+        when(userRepository.findByEmail("test@example.com"))
                 .thenReturn(Optional.of(testUser));
         when(callRecordRepository.save(any(CallRecord.class)))
                 .thenReturn(testCall);
@@ -98,14 +97,14 @@ class CallServiceTest {
         assertEquals("SCHEDULED", result.getStatus());
         assertEquals("en", result.getAiLanguage());
 
-        verify(userRepository).findByEmailAndIsActive("test@example.com", true);
+        verify(userRepository).findByEmail("test@example.com");
         verify(callRecordRepository).save(any(CallRecord.class));
     }
 
     @Test
     void createCall_WithNonExistentUser_ShouldThrowException() {
         // Arrange
-        when(userRepository.findByEmailAndIsActive("nonexistent@example.com", true))
+        when(userRepository.findByEmail("nonexistent@example.com"))
                 .thenReturn(Optional.empty());
 
         // Act & Assert
@@ -120,7 +119,7 @@ class CallServiceTest {
     void createCall_WithInvalidPhoneNumber_ShouldThrowException() {
         // Arrange
         createRequest.setPhoneNumber("invalid-phone");
-        when(userRepository.findByEmailAndIsActive("test@example.com", true))
+        when(userRepository.findByEmail("test@example.com"))
                 .thenReturn(Optional.of(testUser));
 
         // Act & Assert
@@ -135,7 +134,7 @@ class CallServiceTest {
     void createCall_WithPastScheduledTime_ShouldThrowException() {
         // Arrange
         createRequest.setScheduledFor(System.currentTimeMillis() - 3600000); // 1 hour ago
-        when(userRepository.findByEmailAndIsActive("test@example.com", true))
+        when(userRepository.findByEmail("test@example.com"))
                 .thenReturn(Optional.of(testUser));
 
         // Act & Assert
@@ -150,7 +149,7 @@ class CallServiceTest {
     void createCall_WithNullScheduledTime_ShouldUseCurrentTime() {
         // Arrange
         createRequest.setScheduledFor(null);
-        when(userRepository.findByEmailAndIsActive("test@example.com", true))
+        when(userRepository.findByEmail("test@example.com"))
                 .thenReturn(Optional.of(testUser));
         when(callRecordRepository.save(any(CallRecord.class)))
                 .thenReturn(testCall);
@@ -167,7 +166,7 @@ class CallServiceTest {
     void createCall_WithNullAiLanguage_ShouldDefaultToEnglish() {
         // Arrange
         createRequest.setAiLanguage(null);
-        when(userRepository.findByEmailAndIsActive("test@example.com", true))
+        when(userRepository.findByEmail("test@example.com"))
                 .thenReturn(Optional.of(testUser));
         when(callRecordRepository.save(any(CallRecord.class)))
                 .thenReturn(testCall);
@@ -183,7 +182,7 @@ class CallServiceTest {
     @Test
     void getCalls_WithoutStatusFilter_ShouldThrowException() {
         // Arrange
-        when(userRepository.findByEmailAndIsActive("test@example.com", true))
+        when(userRepository.findByEmail("test@example.com"))
                 .thenReturn(Optional.of(testUser));
 
         // Act & Assert
@@ -199,9 +198,9 @@ class CallServiceTest {
         // Arrange
         List<CallRecord> scheduledCalls = Arrays.asList(testCall);
         
-        when(userRepository.findByEmailAndIsActive("test@example.com", true))
+        when(userRepository.findByEmail("test@example.com"))
                 .thenReturn(Optional.of(testUser));
-        when(callRecordRepository.findByUserIdAndStatus("1", "SCHEDULED", 20))
+        when(callRecordRepository.findByUserIdAndStatus("test@example.com", "SCHEDULED", 20))
                 .thenReturn(scheduledCalls);
 
         // Act
@@ -212,7 +211,7 @@ class CallServiceTest {
         assertEquals(1, result.getCalls().size());
         assertEquals("SCHEDULED", result.getCalls().get(0).getStatus());
 
-        verify(callRecordRepository).findByUserIdAndStatus("1", "SCHEDULED", 20);
+        verify(callRecordRepository).findByUserIdAndStatus("test@example.com", "SCHEDULED", 20);
     }
 
     @Test

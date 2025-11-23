@@ -4,10 +4,10 @@ import com.callcat.backend.dto.UpdatePreferencesRequest;
 import com.callcat.backend.dto.UpdateProfileRequest;
 import com.callcat.backend.dto.UserPreferencesResponse;
 import com.callcat.backend.dto.UserResponse;
-import com.callcat.backend.entity.User;
-import com.callcat.backend.entity.UserPreferences;
-import com.callcat.backend.repository.UserPreferencesRepository;
-import com.callcat.backend.repository.UserRepository;
+import com.callcat.backend.entity.dynamo.UserDynamoDb;
+import com.callcat.backend.entity.dynamo.UserPreferencesDynamoDb;
+import com.callcat.backend.repository.dynamo.UserPreferencesRepositoryDynamoDb;
+import com.callcat.backend.repository.dynamo.UserRepositoryDynamoDb;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,10 +29,10 @@ import static org.mockito.Mockito.*;
 class UserServiceTest {
 
     @Mock
-    private UserRepository userRepository;
+    private UserRepositoryDynamoDb userRepository;
 
     @Mock
-    private UserPreferencesRepository userPreferencesRepository;
+    private UserPreferencesRepositoryDynamoDb userPreferencesRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -40,20 +40,20 @@ class UserServiceTest {
     @InjectMocks
     private UserService userService;
 
-    private User testUser;
-    private UserPreferences testPreferences;
+    private UserDynamoDb testUser;
+    private UserPreferencesDynamoDb testPreferences;
 
     @BeforeEach
     void setUp() {
-        testUser = new User();
-        testUser.setId(1L);
+        testUser = new UserDynamoDb();
         testUser.setEmail("test@example.com");
         testUser.setFirstName("John");
         testUser.setLastName("Doe");
         testUser.setPassword("encodedPassword");
         testUser.setIsActive(true);
 
-        testPreferences = new UserPreferences(testUser);
+        testPreferences = new UserPreferencesDynamoDb();
+        testPreferences.setEmail(testUser.getEmail());
         testPreferences.setTimezone("UTC");
         testPreferences.setEmailNotifications(true);
         testPreferences.setVoiceId("voice123");
@@ -66,18 +66,17 @@ class UserServiceTest {
     void getUserProfile_WithValidUser_ShouldReturnUserResponse() {
         // Arrange
         String email = "test@example.com";
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(testUser));
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
 
         // Act
         UserResponse result = userService.getUserProfile(email);
 
         // Assert
         assertNotNull(result);
-        assertEquals(1L, result.getId());
         assertEquals("test@example.com", result.getEmail());
         assertEquals("John", result.getFirstName());
         assertEquals("Doe", result.getLastName());
-        verify(userRepository).findByEmailAndIsActive(email, true);
+        verify(userRepository).findByEmail(email);
     }
 
     // Tests user profile retrieval failure for non-existent user
@@ -86,14 +85,14 @@ class UserServiceTest {
     void getUserProfile_WithNonExistentUser_ShouldThrowException() {
         // Arrange
         String email = "nonexistent@example.com";
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class,
                 () -> userService.getUserProfile(email));
 
         assertEquals("User not found", exception.getMessage());
-        verify(userRepository).findByEmailAndIsActive(email, true);
+        verify(userRepository).findByEmail(email);
     }
 
     // Tests successful profile update
@@ -104,9 +103,9 @@ class UserServiceTest {
         String email = "test@example.com";
         UpdateProfileRequest request = new UpdateProfileRequest("Jane", "Smith");
         
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(testUser));
-        when(userRepository.save(any(User.class))).thenReturn(testUser);
-
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+        // save is void, so we don't mock return value
+        
         // Act
         UserResponse result = userService.updateProfile(email, request);
 
@@ -115,7 +114,7 @@ class UserServiceTest {
         assertEquals("Jane", result.getFirstName());
         assertEquals("Smith", result.getLastName());
         assertEquals("test@example.com", result.getEmail()); // Email should remain unchanged
-        verify(userRepository).findByEmailAndIsActive(email, true);
+        verify(userRepository).findByEmail(email);
         verify(userRepository).save(testUser);
         
         // Verify user object was updated
@@ -131,14 +130,14 @@ class UserServiceTest {
         String email = "nonexistent@example.com";
         UpdateProfileRequest request = new UpdateProfileRequest("Jane", "Smith");
         
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class,
                 () -> userService.updateProfile(email, request));
 
         assertEquals("User not found", exception.getMessage());
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository, never()).save(any(UserDynamoDb.class));
     }
 
     // Tests successful password change with correct current password
@@ -151,7 +150,7 @@ class UserServiceTest {
         String newPassword = "NewStrongPass123";
         String encodedNewPassword = "encodedNewPassword";
         
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(testUser));
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches(currentPassword, testUser.getPassword())).thenReturn(true);
         when(passwordEncoder.encode(newPassword)).thenReturn(encodedNewPassword);
 
@@ -159,7 +158,7 @@ class UserServiceTest {
         userService.changePassword(email, currentPassword, newPassword);
 
         // Assert
-        verify(userRepository).findByEmailAndIsActive(email, true);
+        verify(userRepository).findByEmail(email);
         verify(passwordEncoder).matches(currentPassword, "encodedPassword"); // Original password
         verify(passwordEncoder).encode(newPassword);
         verify(userRepository).save(testUser);
@@ -175,7 +174,7 @@ class UserServiceTest {
         String wrongCurrentPassword = "wrongPassword";
         String newPassword = "NewStrongPass123";
         
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(testUser));
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches(wrongCurrentPassword, testUser.getPassword())).thenReturn(false);
 
         // Act & Assert
@@ -184,7 +183,7 @@ class UserServiceTest {
 
         assertEquals("Current password is incorrect", exception.getMessage());
         verify(passwordEncoder, never()).encode(anyString());
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository, never()).save(any(UserDynamoDb.class));
     }
 
     // Tests password change failure with weak new password
@@ -196,7 +195,7 @@ class UserServiceTest {
         String currentPassword = "oldPassword";
         String weakNewPassword = "weak"; // Doesn't meet requirements
         
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(testUser));
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches(currentPassword, testUser.getPassword())).thenReturn(true);
 
         // Act & Assert
@@ -205,7 +204,7 @@ class UserServiceTest {
 
         assertTrue(exception.getMessage().contains("New password must be at least 8 characters"));
         verify(passwordEncoder, never()).encode(anyString());
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository, never()).save(any(UserDynamoDb.class));
     }
 
     // Tests password change for non-existent user
@@ -217,7 +216,7 @@ class UserServiceTest {
         String currentPassword = "password";
         String newPassword = "NewStrongPass123";
         
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class,
@@ -233,8 +232,8 @@ class UserServiceTest {
     void getUserPreferences_WithExistingPreferences_ShouldReturnPreferences() {
         // Arrange
         String email = "test@example.com";
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(testUser));
-        when(userPreferencesRepository.findByUserId(1L)).thenReturn(Optional.of(testPreferences));
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+        when(userPreferencesRepository.findByEmail(email)).thenReturn(Optional.of(testPreferences));
 
         // Act
         UserPreferencesResponse result = userService.getUserPreferences(email);
@@ -245,8 +244,8 @@ class UserServiceTest {
         assertEquals(true, result.getEmailNotifications());
         assertEquals("voice123", result.getVoiceId());
         assertEquals("Be helpful and concise", result.getSystemPrompt());
-        verify(userRepository).findByEmailAndIsActive(email, true);
-        verify(userPreferencesRepository).findByUserId(1L);
+        verify(userRepository).findByEmail(email);
+        verify(userPreferencesRepository).findByEmail(email);
     }
 
     // Tests retrieval of preferences for user without existing preferences
@@ -255,20 +254,21 @@ class UserServiceTest {
     void getUserPreferences_WithoutExistingPreferences_ShouldCreateAndReturnDefaults() {
         // Arrange
         String email = "test@example.com";
-        UserPreferences defaultPrefs = new UserPreferences(testUser);
+        UserPreferencesDynamoDb defaultPrefs = new UserPreferencesDynamoDb();
+        defaultPrefs.setEmail(testUser.getEmail());
         
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(testUser));
-        when(userPreferencesRepository.findByUserId(1L)).thenReturn(Optional.empty());
-        when(userPreferencesRepository.save(any(UserPreferences.class))).thenReturn(defaultPrefs);
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+        when(userPreferencesRepository.findByEmail(email)).thenReturn(Optional.empty());
+        // save is void
 
         // Act
         UserPreferencesResponse result = userService.getUserPreferences(email);
 
         // Assert
         assertNotNull(result);
-        verify(userRepository).findByEmailAndIsActive(email, true);
-        verify(userPreferencesRepository).findByUserId(1L);
-        verify(userPreferencesRepository).save(any(UserPreferences.class));
+        verify(userRepository).findByEmail(email);
+        verify(userPreferencesRepository).findByEmail(email);
+        verify(userPreferencesRepository).save(any(UserPreferencesDynamoDb.class));
     }
 
     // Tests preferences retrieval for non-existent user
@@ -277,14 +277,14 @@ class UserServiceTest {
     void getUserPreferences_WithNonExistentUser_ShouldThrowException() {
         // Arrange
         String email = "nonexistent@example.com";
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class,
                 () -> userService.getUserPreferences(email));
 
         assertEquals("User not found", exception.getMessage());
-        verify(userPreferencesRepository, never()).findByUserId(any());
+        verify(userPreferencesRepository, never()).findByEmail(any());
     }
 
     // Tests comprehensive preferences update with all fields
@@ -297,9 +297,9 @@ class UserServiceTest {
                 "America/New_York", false, "voice456", "Be more formal"
         );
         
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(testUser));
-        when(userPreferencesRepository.findByUserId(1L)).thenReturn(Optional.of(testPreferences));
-        when(userPreferencesRepository.save(any(UserPreferences.class))).thenReturn(testPreferences);
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+        when(userPreferencesRepository.findByEmail(email)).thenReturn(Optional.of(testPreferences));
+        // save is void
 
         // Act
         UserPreferencesResponse result = userService.updateUserPreferences(email, request);
@@ -311,8 +311,8 @@ class UserServiceTest {
         assertEquals("voice456", result.getVoiceId());
         assertEquals("Be more formal", result.getSystemPrompt());
         
-        verify(userRepository).findByEmailAndIsActive(email, true);
-        verify(userPreferencesRepository).findByUserId(1L);
+        verify(userRepository).findByEmail(email);
+        verify(userPreferencesRepository).findByEmail(email);
         verify(userPreferencesRepository).save(testPreferences);
         
         // Verify preferences object was updated
@@ -332,9 +332,9 @@ class UserServiceTest {
                 "Europe/London", null, null, "Updated prompt only"
         );
         
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(testUser));
-        when(userPreferencesRepository.findByUserId(1L)).thenReturn(Optional.of(testPreferences));
-        when(userPreferencesRepository.save(any(UserPreferences.class))).thenReturn(testPreferences);
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+        when(userPreferencesRepository.findByEmail(email)).thenReturn(Optional.of(testPreferences));
+        // save is void
 
         // Act
         UserPreferencesResponse result = userService.updateUserPreferences(email, request);
@@ -358,21 +358,21 @@ class UserServiceTest {
         UpdatePreferencesRequest request = new UpdatePreferencesRequest(
                 "Asia/Tokyo", true, "voice789", "Custom prompt"
         );
-        UserPreferences newPreferences = new UserPreferences(testUser);
+        UserPreferencesDynamoDb newPreferences = new UserPreferencesDynamoDb();
+        newPreferences.setEmail(testUser.getEmail());
         
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(testUser));
-        when(userPreferencesRepository.findByUserId(1L)).thenReturn(Optional.empty());
-        when(userPreferencesRepository.save(any(UserPreferences.class)))
-                .thenReturn(newPreferences).thenReturn(newPreferences);
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+        when(userPreferencesRepository.findByEmail(email)).thenReturn(Optional.empty());
+        // save is void
 
         // Act
         UserPreferencesResponse result = userService.updateUserPreferences(email, request);
 
         // Assert
         assertNotNull(result);
-        verify(userRepository).findByEmailAndIsActive(email, true);
-        verify(userPreferencesRepository).findByUserId(1L);
-        verify(userPreferencesRepository, times(2)).save(any(UserPreferences.class)); // Create + Update
+        verify(userRepository).findByEmail(email);
+        verify(userPreferencesRepository).findByEmail(email);
+        verify(userPreferencesRepository, times(2)).save(any(UserPreferencesDynamoDb.class)); // Create + Update
     }
 
     // Tests preferences update for non-existent user
@@ -385,14 +385,14 @@ class UserServiceTest {
                 "UTC", true, "voice123", "prompt"
         );
         
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class,
                 () -> userService.updateUserPreferences(email, request));
 
         assertEquals("User not found", exception.getMessage());
-        verify(userPreferencesRepository, never()).findByUserId(any());
+        verify(userPreferencesRepository, never()).findByEmail(any());
         verify(userPreferencesRepository, never()).save(any());
     }
 
@@ -404,7 +404,7 @@ class UserServiceTest {
         String email = "test@example.com";
         String currentPassword = "validCurrent";
         
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(testUser));
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches(currentPassword, testUser.getPassword())).thenReturn(true);
 
         // Test various invalid passwords
@@ -425,7 +425,7 @@ class UserServiceTest {
         }
 
         verify(passwordEncoder, never()).encode(anyString());
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository, never()).save(any(UserDynamoDb.class));
     }
 
     // Tests password validation with valid formats
@@ -442,7 +442,7 @@ class UserServiceTest {
             "Secure123Pass"
         };
         
-        when(userRepository.findByEmailAndIsActive(email, true)).thenReturn(Optional.of(testUser));
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches(currentPassword, testUser.getPassword())).thenReturn(true);
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
 

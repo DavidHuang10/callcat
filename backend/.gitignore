@@ -38,3 +38,5 @@ build/
 .env.production
 .env.staging
 *.env
+migrate.sh
+run-migration.sh

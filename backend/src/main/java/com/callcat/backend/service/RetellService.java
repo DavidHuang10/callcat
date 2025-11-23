@@ -122,7 +122,7 @@ public class RetellService {
     public CallResponse makeCall(String callId) {
         try {
             CallRecord callRecord = callService.findCallByCallId(callId);
-            String systemPrompt = userService.getUserPreferences(Long.parseLong(callRecord.getUserId())).getSystemPrompt();
+            String systemPrompt = userService.getUserPreferences(callRecord.getUserId()).getSystemPrompt();
 
             // Delegate to the optimized method
             return makeCall(callRecord, systemPrompt);

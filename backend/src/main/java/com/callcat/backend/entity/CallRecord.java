@@ -113,8 +113,8 @@ public class CallRecord {
 
     public void setStatus(String status) {
         // Validate status
-        if (status != null && !"SCHEDULED".equals(status) && !"COMPLETED".equals(status)) {
-            throw new IllegalArgumentException("Status must be SCHEDULED or COMPLETED, got: " + status);
+        if (status != null && !"SCHEDULED".equals(status) && !"COMPLETED".equals(status) && !"FAILED".equals(status)) {
+            throw new IllegalArgumentException("Status must be SCHEDULED, COMPLETED, or FAILED, got: " + status);
         }
         this.status = status;
     }

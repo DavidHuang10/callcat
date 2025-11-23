@@ -59,11 +59,25 @@ public class CallRecordRepository {
                 .collect(Collectors.toList());
     }
 
+    public List<CallRecord> findFailedCallsByUserId(String userId, Integer limit) {
+        QueryConditional queryConditional = QueryConditional.keyEqualTo(
+                Key.builder().partitionValue(userId + "#FAILED").build());
+        
+        return byUserStatusIndex.query(r -> r.queryConditional(queryConditional)
+                .scanIndexForward(false) // Descending order - most recent first
+                .limit(limit != null ? limit : 20))
+                .stream()
+                .flatMap(page -> page.items().stream())
+                .collect(Collectors.toList());
+    }
+
     public List<CallRecord> findByUserIdAndStatus(String userId, String status, Integer limit) {
         if ("SCHEDULED".equals(status)) {
             return findScheduledCallsByUserId(userId, limit);
         } else if ("COMPLETED".equals(status)) {
             return findCompletedCallsByUserId(userId, limit);
+        } else if ("FAILED".equals(status)) {
+            return findFailedCallsByUserId(userId, limit);
         } else {
             return List.of();
         }
