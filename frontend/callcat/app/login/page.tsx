@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -45,19 +45,20 @@ export default function LoginPage() {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
+  useEffect(() => {
+    // Lock body scroll and overscroll
+    document.body.style.overflow = 'hidden'
+    document.body.style.overscrollBehavior = 'none'
+    
+    return () => {
+      // Restore body scroll and overscroll
+      document.body.style.overflow = ''
+      document.body.style.overscrollBehavior = ''
+    }
+  }, [])
+
   return (
-    <div className="min-h-screen relative font-sans text-white">
-      {/* Background Image with Overlay */}
-      <div className="fixed inset-0 z-0">
-        <Image
-          src="/business-cats.jpeg"
-          alt="Background"
-          fill
-          className="object-cover object-center"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/80 backdrop-blur-[2px]" />
-      </div>
+    <div className="fixed inset-0 z-50 bg-purple-grid overflow-hidden overscroll-none font-sans text-white">
 
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/20 backdrop-blur-md">

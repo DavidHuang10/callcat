@@ -70,9 +70,9 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen relative font-sans text-white selection:bg-indigo-500/30 bg-black">
+    <div className="fixed inset-0 z-0 bg-black overflow-y-auto overscroll-none no-scrollbar font-sans text-white selection:bg-indigo-500/30">
       {/* Background Image with Overlay */}
-      <div className="fixed inset-0 z-0">
+      <div className="absolute inset-0 z-0">
         <Image
           src={businessCatsBg}
           alt="Background"
