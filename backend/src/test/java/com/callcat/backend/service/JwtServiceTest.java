@@ -52,7 +52,6 @@ class JwtServiceTest {
 
     private User createTestUser() {
         User user = new User();
-        user.setId(1L);
         user.setEmail("test@example.com");
         user.setFirstName("John");
         user.setLastName("Doe");

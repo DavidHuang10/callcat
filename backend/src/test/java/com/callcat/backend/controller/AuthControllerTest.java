@@ -58,11 +58,9 @@ class AuthControllerTest {
     @BeforeEach
     void setUp() {
         testUser = new User();
-        testUser.setId(1L);
         testUser.setEmail("test@example.com");
         testUser.setFirstName("John");
         testUser.setLastName("Doe");
-        testUser.setCreatedAt(LocalDateTime.now());
         testUser.setIsActive(true);
     }
 
